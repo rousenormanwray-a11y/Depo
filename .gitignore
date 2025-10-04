@@ -11,4 +11,5 @@
 *.sig
 
 pkg/
-src/
+# Ignore src/ in root but not in subdirectories
+/src/
