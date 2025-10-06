@@ -6,11 +6,13 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import * as Haptics from 'expo-haptics';
 
 import { RootState } from '../../store/store';
 import { walletService } from '../../services/walletService';
@@ -19,6 +21,16 @@ import Button from '../../components/common/Button';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, layout } from '../../theme/spacing';
+import { shadows } from '../../theme/shadows';
+import {
+  CountUpAnimation,
+  LottieSuccess,
+  ParticleEffect,
+  PageTransition,
+  ConfettiCelebration,
+} from '../../components/animations';
+
+const { width: screenWidth } = Dimensions.get('window');
 
 const WITHDRAWAL_FEE = 50;
 const MIN_WITHDRAWAL = 500;
@@ -32,6 +44,12 @@ const WithdrawScreen: React.FC = () => {
   const [accountNumber, setAccountNumber] = useState('');
   const [accountName, setAccountName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [showParticles, setShowParticles] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [showParticles, setShowParticles] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [withdrawnAmount, setWithdrawnAmount] = useState(0);
 
   const userBalance = user?.balance || 0;
   const withdrawalAmount = parseInt(amount) || 0;
@@ -109,17 +127,34 @@ const WithdrawScreen: React.FC = () => {
         accountName,
       });
 
-      Alert.alert(
-        'Withdrawal Initiated',
-        response.message || 'Your withdrawal request has been submitted successfully. You will receive the funds within 1-3 business days.',
-        [
-          {
-            text: 'OK',
-            onPress: () => navigation.goBack(),
-          },
-        ]
-      );
+      // Store amount for animations
+      setWithdrawnAmount(withdrawalAmount);
+
+      // Success haptic
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+      // Show success animation
+      setShowSuccess(true);
+
+      // Show particles
+      setTimeout(() => {
+        setShowParticles(true);
+      }, 500);
+
+      // Show confetti
+      setTimeout(() => {
+        setShowConfetti(true);
+      }, 1000);
+
+      // Reset form
+      setTimeout(() => {
+        setAmount('');
+        setBankCode('');
+        setAccountNumber('');
+        setAccountName('');
+      }, 2000);
     } catch (error: any) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Error', error.message || 'Failed to process withdrawal');
     } finally {
       setLoading(false);
@@ -128,33 +163,41 @@ const WithdrawScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.contentContainer}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Icon name="arrow-back" size={24} color={colors.text.primary} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Withdraw Funds</Text>
-          <View style={styles.placeholder} />
-        </View>
+      <PageTransition type="slideUp" duration={300}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.contentContainer}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                navigation.goBack();
+              }}
+            >
+              <Icon name="arrow-back" size={24} color={colors.text.primary} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Withdraw Funds</Text>
+            <View style={styles.placeholder} />
+          </View>
 
-        {/* Current Balance */}
-        <View style={styles.balanceCard}>
-          <Text style={styles.balanceLabel}>Available Balance</Text>
-          <Text style={styles.balanceAmount}>
-            {formatCurrency(userBalance)}
-          </Text>
-          <Text style={styles.balanceHint}>
-            Max withdrawal: {formatCurrency(Math.max(0, userBalance - WITHDRAWAL_FEE))}
-          </Text>
-        </View>
+          {/* Current Balance */}
+          <View style={styles.balanceCard}>
+            <Text style={styles.balanceLabel}>Available Balance</Text>
+            <CountUpAnimation
+              from={0}
+              to={userBalance}
+              duration={1200}
+              formatter={(val) => formatCurrency(val)}
+              style={styles.balanceAmount}
+            />
+            <Text style={styles.balanceHint}>
+              Max withdrawal: {formatCurrency(Math.max(0, userBalance - WITHDRAWAL_FEE))}
+            </Text>
+          </View>
 
         {/* Amount Input */}
         <View style={styles.section}>
@@ -270,7 +313,34 @@ const WithdrawScreen: React.FC = () => {
           fullWidth
           style={styles.withdrawButton}
         />
-      </ScrollView>
+        </ScrollView>
+
+        {/* Premium Animations */}
+        <LottieSuccess
+          visible={showSuccess}
+          onAnimationFinish={() => {
+            setShowSuccess(false);
+            navigation.goBack();
+          }}
+        />
+
+        {showParticles && (
+          <ParticleEffect
+            count={30}
+            colors={[colors.success, colors.gold]}
+            duration={2000}
+            spread={200}
+          />
+        )}
+
+        <ConfettiCelebration
+          visible={showConfetti}
+          message="💸 Withdrawal Initiated!"
+          submessage={`₦${withdrawnAmount.toLocaleString()} on its way to your account`}
+          onComplete={() => setShowConfetti(false)}
+          confettiCount={100}
+        />
+      </PageTransition>
     </SafeAreaView>
   );
 };

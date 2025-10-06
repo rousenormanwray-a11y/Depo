@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import * as Haptics from 'expo-haptics';
 
 import { AppDispatch, RootState } from '../../store/store';
 import { fetchMarketplaceItems, setSelectedCategory, setSearchQuery } from '../../store/slices/marketplaceSlice';
@@ -11,8 +12,21 @@ import { MarketplaceItem } from '../../types';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, layout } from '../../theme/spacing';
+import { shadows } from '../../theme/shadows';
 import Skeleton from '../../components/common/Skeleton';
 import { TextInput } from 'react-native-gesture-handler';
+import {
+  FlipCard,
+  ConfettiCelebration,
+  FloatingHearts,
+  ShimmerEffect,
+  CountUpAnimation,
+  PageTransition,
+  LottieSuccess,
+} from '../../components/animations';
+
+const { width: screenWidth } = Dimensions.get('window');
+const cardWidth = (screenWidth - (spacing.md * 3)) / 2;
 
 const categories = ['all', 'airtime', 'data', 'vouchers', 'services'] as const;
 
@@ -58,13 +72,20 @@ const MarketplaceScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Marketplace</Text>
-        <View style={styles.balanceBadge}>
-          <Icon name="stars" size={14} color={colors.white} />
-          <Text style={styles.balanceText}>{balance} Coins</Text>
+      <PageTransition type="slideUp" duration={300}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Marketplace</Text>
+          <View style={styles.balanceBadge}>
+            <Icon name="stars" size={16} color={colors.white} />
+            <CountUpAnimation
+              from={0}
+              to={balance}
+              duration={1000}
+              formatter={(val) => ` ${Math.round(val)} Coins`}
+              style={styles.balanceText}
+            />
+          </View>
         </View>
-      </View>
 
       <View style={styles.searchRow}>
         <TextInput
@@ -131,6 +152,31 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.secondary },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: layout.screenPadding, paddingVertical: spacing.md, backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.border.light },
   headerTitle: { ...typography.h3, color: colors.text.primary },
+  balanceBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primary, borderRadius: 16, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
+  balanceText: { ...typography.caption, color: colors.white, marginLeft: spacing.xs },
+  filters: { flexDirection: 'row', paddingHorizontal: layout.screenPadding, paddingVertical: spacing.sm },
+  searchRow: { paddingHorizontal: layout.screenPadding, paddingVertical: spacing.sm },
+  searchInput: { backgroundColor: colors.white, borderRadius: 12, borderWidth: 1, borderColor: colors.border.light, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, ...typography.bodyRegular },
+  filterChip: { backgroundColor: colors.gray[100], paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: 16, marginRight: spacing.xs },
+  filterSelected: { backgroundColor: colors.primary },
+  filterText: { ...typography.caption, color: colors.text.secondary },
+  filterTextSelected: { color: colors.white, fontWeight: '600' },
+  list: { padding: layout.screenPadding },
+  skeletonGrid: { padding: layout.screenPadding, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  emptyState: { alignItems: 'center', justifyContent: 'center', padding: spacing['4xl'] },
+  emptyTitle: { ...typography.h3, color: colors.text.primary, marginTop: spacing.sm },
+  emptySubtitle: { ...typography.bodyRegular, color: colors.text.secondary, marginTop: spacing.xs, textAlign: 'center' },
+  card: { backgroundColor: colors.white, borderRadius: 12, padding: spacing.sm, marginBottom: spacing.sm, width: '48%', shadowColor: colors.black, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 3.84, elevation: 5 },
+  image: { width: '100%', height: 90, borderRadius: 8, backgroundColor: colors.gray[100], marginBottom: spacing.xs },
+  name: { ...typography.bodyRegular, color: colors.text.primary },
+  price: { ...typography.label, color: colors.text.primary },
+  metaRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.xs },
+  meta: { ...typography.caption, color: colors.text.secondary },
+  stock: { ...typography.caption },
+});
+
+export default MarketplaceScreen;
+y.h3, color: colors.text.primary },
   balanceBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primary, borderRadius: 16, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
   balanceText: { ...typography.caption, color: colors.white, marginLeft: spacing.xs },
   filters: { flexDirection: 'row', paddingHorizontal: layout.screenPadding, paddingVertical: spacing.sm },

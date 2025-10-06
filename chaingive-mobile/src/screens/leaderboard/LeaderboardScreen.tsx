@@ -9,6 +9,7 @@ import {
   Modal,
   TextInput,
   ActivityIndicator,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
@@ -26,8 +27,19 @@ import {
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
+import { shadows } from '../../theme/shadows';
 import { showToast } from '../../components/common/Toast';
 import Badge from '../../components/common/Badge';
+import {
+  LevelBadge,
+  CountUpAnimation,
+  StreakFlame,
+  PageTransition,
+  ConfettiCelebration,
+} from '../../components/animations';
+import GradientCard from '../../components/common/GradientCard';
+
+const { width: screenWidth } = Dimensions.get('window');
 
 const LeaderboardScreen: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -41,6 +53,7 @@ const LeaderboardScreen: React.FC = () => {
   const [showBoostModal, setShowBoostModal] = useState(false);
   const [boostType, setBoostType] = useState<'visibility' | 'multiplier' | 'position'>('multiplier');
   const [coinsToSpend, setCoinsToSpend] = useState('');
+  const [showCelebration, setShowCelebration] = useState(false);
 
   useEffect(() => {
     loadLeaderboard();
@@ -88,6 +101,10 @@ const LeaderboardScreen: React.FC = () => {
       showToast('Leaderboard boosted! 🚀', 'success');
       setShowBoostModal(false);
       setCoinsToSpend('');
+      
+      // Show celebration
+      setShowCelebration(true);
+      
       dispatch(fetchMyRank());
       loadLeaderboard();
     } catch (error: any) {
@@ -330,6 +347,15 @@ const LeaderboardScreen: React.FC = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Premium Animations */}
+      <ConfettiCelebration
+        visible={showCelebration}
+        message="🚀 Leaderboard Boosted!"
+        submessage="Your visibility has been increased"
+        onComplete={() => setShowCelebration(false)}
+        confettiCount={150}
+      />
     </SafeAreaView>
   );
 };
@@ -447,6 +473,15 @@ const styles = StyleSheet.create({
   },
   rankText: {
     ...typography.h3,
+  },
+  topThreeBadge: {
+    marginRight: spacing.sm,
+  },
+  streakContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xxs,
+    marginLeft: spacing.sm,
   },
   entryInfo: {
     flex: 1,

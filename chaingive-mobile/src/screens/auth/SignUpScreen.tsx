@@ -8,11 +8,13 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import * as Haptics from 'expo-haptics';
 
 import { AppDispatch, RootState } from '../../store/store';
 import { registerUser } from '../../store/slices/authSlice';
@@ -21,6 +23,15 @@ import Button from '../../components/common/Button';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, layout } from '../../theme/spacing';
+import { shadows } from '../../theme/shadows';
+import {
+  ProgressRing,
+  ConfettiCelebration,
+  PageTransition,
+  LottieSuccess,
+} from '../../components/animations';
+
+const { width: screenWidth } = Dimensions.get('window');
 
 const SignUpScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -35,6 +46,15 @@ const SignUpScreen: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [referralCode, setReferralCode] = useState('');
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
+  const totalSteps = 3;
+  const [currentStep, setCurrentStep] = useState(1);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+  
+  const totalSteps = 3;
 
   const validateForm = (): boolean => {
     const newErrors: { [key: string]: string } = {};
@@ -74,9 +94,14 @@ const SignUpScreen: React.FC = () => {
   };
 
   const handleSignUp = async () => {
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
 
     try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      
       await dispatch(registerUser({
         firstName: firstName.trim(),
         lastName: lastName.trim(),
@@ -86,14 +111,36 @@ const SignUpScreen: React.FC = () => {
         referralCode: referralCode.trim() || undefined,
       })).unwrap();
 
-      // Navigate to OTP screen
-      navigation.navigate('OTP', {
-        phoneNumber: phoneNumber.trim(),
-        type: 'registration',
-      });
+      // Success haptic
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+      // Show success animation
+      setShowSuccess(true);
+
+      // Show confetti
+      setTimeout(() => {
+        setShowConfetti(true);
+      }, 1000);
+
+      // Navigate to OTP screen after celebration
+      setTimeout(() => {
+        navigation.navigate('OTP', {
+          phoneNumber: phoneNumber.trim(),
+          type: 'registration',
+        });
+      }, 3000);
     } catch (error: any) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Registration Failed', error.message || 'Please try again');
     }
+  };
+
+  const calculateProgress = () => {
+    let completed = 0;
+    if (firstName && lastName) completed += 1;
+    if (email && phoneNumber) completed += 1;
+    if (password && confirmPassword && password === confirmPassword) completed += 1;
+    return completed / totalSteps;
   };
 
   return (
@@ -223,6 +270,21 @@ const SignUpScreen: React.FC = () => {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Premium Animations */}
+      <LottieSuccess
+        visible={showSuccess}
+        onAnimationFinish={() => setShowSuccess(false)}
+      />
+
+      <ConfettiCelebration
+        visible={showConfetti}
+        message="🎉 Welcome to ChainGive!"
+        submessage="Start making a difference today"
+        onComplete={() => setShowConfetti(false)}
+        confettiCount={200}
+      />
+      </PageTransition>
     </SafeAreaView>
   );
 };
@@ -247,6 +309,25 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     marginBottom: spacing.xl,
+  },
+  headerCenter: {
+    alignItems: 'center',
+  },
+  headerTitle: {
+    ...typography.h2,
+    color: colors.text.primary,
+    marginBottom: spacing.xs,
+  },
+  progressContainer: {
+    marginTop: spacing.xs,
+  },
+  progressText: {
+    ...typography.caption,
+    color: colors.primary,
+    fontWeight: '700',
+  },
+  placeholder: {
+    width: 40,
   },
   title: {
     ...typography.h1,
