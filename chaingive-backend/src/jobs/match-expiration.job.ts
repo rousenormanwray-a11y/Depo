@@ -1,6 +1,7 @@
 import { Job } from 'bull';
 import prisma from '../utils/prisma';
 import logger from '../utils/logger';
+import { sendTemplateNotification } from '../services/notification.service';
 
 /**
  * Expire old matches (24-hour window)

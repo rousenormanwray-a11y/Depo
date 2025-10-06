@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useSelector } from 'react-redux';
 
 import { RootState } from '../store/store';
+import { LinkingOptions } from '@react-navigation/native';
 import { RootStackParamList } from '../types';
 import AuthNavigator from './AuthNavigator';
 import MainNavigator from './MainNavigator';
@@ -15,6 +16,33 @@ const AppNavigator: React.FC = () => {
   
   // Check if user needs onboarding (new user or incomplete profile)
   const needsOnboarding = user && (!user.isVerified || user.tier === 'Tier 1');
+
+  const linking: LinkingOptions<any> = {
+    prefixes: ['chaingive://', 'https://chaingive.ng/app'],
+    config: {
+      screens: {
+        Auth: {
+          screens: {
+            Login: 'login',
+            Register: 'register',
+            OTP: 'otp',
+          },
+        },
+        Main: {
+          screens: {
+            Home: {
+              screens: {
+                HomeScreen: 'home',
+                TransactionHistory: 'transactions',
+              },
+            },
+            Marketplace: 'marketplace',
+            Profile: 'profile',
+          },
+        },
+      },
+    },
+  };
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>

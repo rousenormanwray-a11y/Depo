@@ -148,6 +148,14 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.error.message || 'OTP verification failed';
       })
+
+      // Fetch user balance snapshot
+      .addCase(fetchUserBalance.fulfilled, (state, action) => {
+        if (state.user) {
+          state.user.balance = action.payload.balance;
+          state.user.charityCoins = action.payload.charityCoins;
+        }
+      })
       
       // Logout
       .addCase(logout.fulfilled, (state) => {

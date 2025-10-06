@@ -10,6 +10,8 @@ interface MarketplaceState {
   searchQuery: string;
   loading: boolean;
   error: string | null;
+  page: number;
+  hasMore: boolean;
 }
 
 const initialState: MarketplaceState = {
@@ -20,6 +22,8 @@ const initialState: MarketplaceState = {
   searchQuery: '',
   loading: false,
   error: null,
+  page: 1,
+  hasMore: true,
 };
 
 // Async thunks
@@ -122,6 +126,9 @@ const marketplaceSlice = createSlice({
       .addCase(redeemItem.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || 'Failed to redeem item';
+        try {
+          analytics.track('redeem_failure', { error: state.error });
+        } catch {}
       });
   },
 });

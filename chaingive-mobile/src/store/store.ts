@@ -6,6 +6,8 @@ import authReducer from './slices/authSlice';
 import checklistReducer from './slices/checklistSlice';
 import agentReducer from './slices/agentSlice';
 import marketplaceReducer from './slices/marketplaceSlice';
+import walletReducer from './slices/walletSlice';
+import donationReducer from './slices/donationSlice';
 
 // Persist config
 const persistConfig = {
@@ -20,6 +22,8 @@ const rootReducer = combineReducers({
   checklist: checklistReducer,
   agent: agentReducer,
   marketplace: marketplaceReducer,
+  wallet: walletReducer,
+  donation: donationReducer,
 });
 
 // Persisted reducer

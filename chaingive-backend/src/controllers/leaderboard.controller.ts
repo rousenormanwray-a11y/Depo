@@ -4,29 +4,8 @@ import prisma from '../utils/prisma';
 import { AppError } from '../middleware/errorHandler';
 import logger from '../utils/logger';
 
-/**
- * Calculate leaderboard score for a user
- */
-function calculateLeaderboardScore(user: any, boosts: any): number {
-  // Base score calculation
-  const donationScore = Number(user.totalDonated || 0) * 0.4;
-  const cycleScore = (user.totalCyclesCompleted || 0) * 100 * 0.3;
-  const coinScore = (user.charityCoinsBalance || 0) * 10 * 0.2;
-  
-  // Speed bonus (lower avg completion time = higher score)
-  const speedBonus = user.avgCompletionDays 
-    ? Math.max(0, (30 - user.avgCompletionDays) * 50) * 0.1 
-    : 0;
-
-  const baseScore = donationScore + cycleScore + coinScore + speedBonus;
-
-  // Apply boosts
-  const multiplier = boosts?.multiplierBoost || 1.0;
-  const visibility = boosts?.visibilityBoost || 0;
-  const position = boosts?.positionBoost || 0;
-
-  return (baseScore * Number(multiplier)) + Number(visibility) + Number(position);
-}
+// Import enhanced score calculator from service
+import { calculateLeaderboardScore } from '../services/leaderboard.service';
 
 /**
  * Get leaderboard (top 100 users)
@@ -52,6 +31,7 @@ export const getLeaderboard = async (req: Request, res: Response, next: NextFunc
             id: true,
             firstName: true,
             lastName: true,
+            role: true, // Include role for tag display
             locationCity: true,
             locationState: true,
             charityCoinsBalance: true,
@@ -122,7 +102,7 @@ export const getMyPosition = async (req: AuthRequest, res: Response, next: NextF
           )
         : 0;
 
-      const score = calculateLeaderboardScore(user, null);
+      const score = await calculateLeaderboardScore(user, null, userId);
 
       const newLeaderboard = await prisma.leaderboard.create({
         data: {
@@ -384,11 +364,11 @@ export const purchaseBoost = async (req: AuthRequest, res: Response, next: NextF
       where: { id: userId },
     });
 
-    const newScore = calculateLeaderboardScore(updatedUser, {
+    const newScore = await calculateLeaderboardScore(updatedUser, {
       multiplierBoost: config.boostType === 'multiplier' ? config.boostValue : leaderboard.multiplierBoost,
       visibilityBoost: config.boostType === 'visibility' ? config.boostValue : leaderboard.visibilityBoost,
       positionBoost: config.boostType === 'position' ? config.boostValue : leaderboard.positionBoost,
-    });
+    }, userId);
 
     await prisma.leaderboard.update({
       where: { id: leaderboard.id },
