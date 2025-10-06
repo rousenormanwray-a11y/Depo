@@ -76,7 +76,7 @@ const GiveScreen: React.FC = () => {
       </ScrollView>
 
       <View style={styles.bottom}>
-        <Text style={styles.trust}><Icon name="shield" size={16} color={colors.primary} /> Your donation is secured in escrow until confirmed by recipient</Text>
+        <Text style={styles.trust}><Icon name="verified-user" size={16} color={colors.primary} /> Your donation is secured in escrow until confirmed by recipient</Text>
         <TouchableOpacity style={styles.primaryBtn} onPress={handleConfirm}>
           <Text style={styles.primaryBtnText}>Confirm Donation</Text>
         </TouchableOpacity>

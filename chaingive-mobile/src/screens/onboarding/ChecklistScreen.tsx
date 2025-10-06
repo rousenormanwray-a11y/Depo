@@ -122,7 +122,7 @@ const ChecklistScreen: React.FC = () => {
   const renderHeader = () => (
     <View style={styles.header}>
       <View style={styles.titleContainer}>
-        <Icon name="checklist" size={28} color={colors.primary} />
+        <Icon name="fact-check" size={28} color={colors.primary} />
         <Text style={styles.title}>Setup Checklist</Text>
       </View>
       <Text style={styles.subtitle}>
