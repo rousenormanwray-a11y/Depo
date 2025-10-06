@@ -1,0 +1,300 @@
+// ============================================
+// GAMIFICATION SYSTEM - DATABASE MODELS
+// ============================================
+
+// Add these to your existing schema.prisma file
+
+// ============================================
+// 1. DAILY MISSIONS
+// ============================================
+
+model DailyMission {
+  id        String   @id @default(uuid())
+  userId    String
+  date      DateTime @default(now())
+  
+  // Missions (rotate daily)
+  mission1Type    String   // "donate", "buy_coins", "refer", "leaderboard", "marketplace"
+  mission1Done    Boolean  @default(false)
+  mission1Reward  Int      @default(50)
+  
+  mission2Type    String
+  mission2Done    Boolean  @default(false)
+  mission2Reward  Int      @default(30)
+  
+  mission3Type    String
+  mission3Done    Boolean  @default(false)
+  mission3Reward  Int      @default(20)
+  
+  // Completion
+  allCompleted    Boolean  @default(false)
+  bonusReward     Int      @default(50)  // Bonus for completing all 3
+  totalCoinsEarned Int     @default(0)
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  completedAt DateTime?
+  
+  // Relations
+  user      User     @relation("UserDailyMissions", fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, date])
+  @@index([userId])
+  @@index([date])
+  @@map("daily_missions")
+}
+
+// ============================================
+// 2. DAILY STREAK
+// ============================================
+
+model DailyStreak {
+  id              String    @id @default(uuid())
+  userId          String    @unique
+  
+  // Streak tracking
+  currentStreak   Int       @default(0)
+  longestStreak   Int       @default(0)
+  lastLoginDate   DateTime?
+  
+  // Rewards
+  totalCoinsEarned Int      @default(0)
+  streakLevel     String    @default("bronze")  // bronze, silver, gold, platinum, diamond
+  
+  // Milestones
+  streakMilestones Json     @default("[]")  // [7, 14, 30, 60, 90, 180, 365]
+  
+  // Timestamps
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations
+  user            User      @relation("UserStreak", fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("daily_streaks")
+}
+
+// ============================================
+// 3. PROGRESS RINGS (Daily Goals)
+// ============================================
+
+model DailyProgress {
+  id        String   @id @default(uuid())
+  userId    String
+  date      DateTime @default(now())
+  
+  // Ring 1: GIVE (Make donations)
+  giveGoal      Int      @default(1)      // Target: 1 donation
+  giveProgress  Int      @default(0)
+  giveClosed    Boolean  @default(false)
+  
+  // Ring 2: EARN (Buy coins or refer)
+  earnGoal      Int      @default(50)     // Target: Buy 50 coins OR refer 1 person
+  earnProgress  Int      @default(0)
+  earnClosed    Boolean  @default(false)
+  
+  // Ring 3: ENGAGE (App interactions)
+  engageGoal    Int      @default(3)      // Target: 3 interactions
+  engageProgress Int     @default(0)
+  engageClosed  Boolean  @default(false)
+  
+  // Perfect Day Bonus
+  allRingsClosed Boolean @default(false)
+  bonusAwarded   Boolean @default(false)
+  bonusAmount    Int     @default(100)
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  user      User     @relation("UserDailyProgress", fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, date])
+  @@index([userId])
+  @@index([date])
+  @@map("daily_progress")
+}
+
+// ============================================
+// 4. WEEKLY CHALLENGES
+// ============================================
+
+model WeeklyChallenge {
+  id            String   @id @default(uuid())
+  
+  // Challenge details
+  name          String
+  description   String
+  type          String   // "donations", "coin_purchases", "referrals", "leaderboard"
+  
+  // Goals
+  targetValue   Int      // e.g., 5 donations, 500 coins, 3 referrals
+  rewardCoins   Int      @default(500)
+  rewardType    String?  // "coins", "badge", "boost", "multiplier"
+  rewardValue   String?  // JSON for complex rewards
+  
+  // Schedule
+  startDate     DateTime
+  endDate       DateTime
+  weekNumber    Int      // Week of year
+  
+  // Status
+  isActive      Boolean  @default(true)
+  
+  // Timestamps
+  createdAt     DateTime @default(now())
+  
+  // Relations
+  progress      WeeklyChallengeProgress[]
+  
+  @@index([isActive])
+  @@index([startDate, endDate])
+  @@map("weekly_challenges")
+}
+
+model WeeklyChallengeProgress {
+  id            String   @id @default(uuid())
+  userId        String
+  challengeId   String
+  
+  // Progress
+  currentValue  Int      @default(0)
+  targetValue   Int
+  percentage    Int      @default(0)
+  
+  // Completion
+  completed     Boolean  @default(false)
+  completedAt   DateTime?
+  rewardClaimed Boolean  @default(false)
+  
+  // Timestamps
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  user          User             @relation("UserWeeklyChallenges", fields: [userId], references: [id], onDelete: Cascade)
+  challenge     WeeklyChallenge  @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, challengeId])
+  @@index([userId])
+  @@index([challengeId])
+  @@map("weekly_challenge_progress")
+}
+
+// ============================================
+// 5. ACHIEVEMENTS / BADGES
+// ============================================
+
+model Achievement {
+  id            String   @id @default(uuid())
+  
+  // Achievement details
+  code          String   @unique  // "bronze_giver", "silver_giver", etc.
+  name          String
+  description   String
+  category      String   // "donations", "coins", "referrals", "streaks", "social"
+  
+  // Requirements
+  requirementType  String  // "donation_count", "coin_purchase_total", "referral_count", "streak_days"
+  requirementValue Int     // The threshold to unlock
+  
+  // Rewards
+  rewardCoins   Int      @default(0)
+  rewardBadge   String?  // Icon/image name
+  tier          String   // "bronze", "silver", "gold", "platinum", "diamond"
+  
+  // Display
+  icon          String
+  color         String   @default("#FFD700")
+  isSecret      Boolean  @default(false)  // Hidden until unlocked
+  
+  // Status
+  isActive      Boolean  @default(true)
+  
+  // Timestamps
+  createdAt     DateTime @default(now())
+  
+  // Relations
+  unlocked      UserAchievement[]
+  
+  @@index([category])
+  @@index([tier])
+  @@map("achievements")
+}
+
+model UserAchievement {
+  id            String   @id @default(uuid())
+  userId        String
+  achievementId String
+  
+  // Unlock details
+  unlockedAt    DateTime @default(now())
+  progress      Int      @default(0)
+  maxProgress   Int      // Same as Achievement.requirementValue
+  
+  // Display
+  isNew         Boolean  @default(true)  // For "NEW!" badge
+  viewedAt      DateTime?
+  
+  // Relations
+  user          User        @relation("UserAchievements", fields: [userId], references: [id], onDelete: Cascade)
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, achievementId])
+  @@index([userId])
+  @@index([unlockedAt])
+  @@map("user_achievements")
+}
+
+// ============================================
+// 6. GAMIFICATION STATS (Summary)
+// ============================================
+
+model GamificationStats {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  
+  // Overall stats
+  totalCoinsEarned    Int  @default(0)
+  totalMissionsCompleted Int @default(0)
+  totalPerfectDays    Int  @default(0)  // Days with all rings closed
+  totalAchievements   Int  @default(0)
+  
+  // Current week
+  weeklyMissionsCompleted Int @default(0)
+  weeklyPerfectDays   Int  @default(0)
+  
+  // Levels (optional for future)
+  level         Int      @default(1)
+  experience    Int      @default(0)
+  nextLevelXP   Int      @default(100)
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  user      User     @relation("UserGamificationStats", fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("gamification_stats")
+}
+
+// ============================================
+// UPDATE EXISTING USER MODEL
+// ============================================
+
+// Add these relations to your existing User model:
+/*
+model User {
+  // ... existing fields ...
+  
+  // Gamification Relations
+  dailyMissions       DailyMission[]          @relation("UserDailyMissions")
+  dailyStreak         DailyStreak?            @relation("UserStreak")
+  dailyProgress       DailyProgress[]         @relation("UserDailyProgress")
+  weeklyChallenges    WeeklyChallengeProgress[] @relation("UserWeeklyChallenges")
+  achievements        UserAchievement[]       @relation("UserAchievements")
+  gamificationStats   GamificationStats?      @relation("UserGamificationStats")
+}
+*/
