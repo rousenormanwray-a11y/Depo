@@ -7,11 +7,13 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import * as Haptics from 'expo-haptics';
 
 import { RootState } from '../../store/store';
 import { donationService, Match } from '../../services/donationService';
@@ -21,6 +23,15 @@ import Modal from '../../components/common/Modal';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, layout } from '../../theme/spacing';
+import {
+  DonationSuccessAnimation,
+  FloatingHearts,
+  ConfettiCelebration,
+  PageTransition,
+  CountUpAnimation,
+} from '../../components/animations';
+
+const { width: screenWidth } = Dimensions.get('window');
 
 const GiveScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -33,6 +44,11 @@ const GiveScreen: React.FC = () => {
   const [findingMatch, setFindingMatch] = useState(false);
   const [match, setMatch] = useState<Match | null>(null);
   const [showMatchModal, setShowMatchModal] = useState(false);
+  const [showDonationSuccess, setShowDonationSuccess] = useState(false);
+  const [showHearts, setShowHearts] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [completedAmount, setCompletedAmount] = useState(0);
+  const [recipientName, setRecipientName] = useState('');
 
   const userBalance = user?.balance || 0;
   const suggestedAmounts = [1000, 2000, 5000, 10000];
@@ -91,25 +107,41 @@ const GiveScreen: React.FC = () => {
 
     setLoading(true);
     try {
-      Alert.alert(
-        'Donation Confirmed!',
-        `Your donation of ${formatCurrency(match.amount)} has been sent to ${match.recipient.firstName}. The funds are held in escrow for 48 hours.`,
-        [
-          {
-            text: 'View Cycle',
-            onPress: () => navigation.navigate('CycleDetail', { cycleId: match.id }),
-          },
-          {
-            text: 'OK',
-            onPress: () => navigation.goBack(),
-          },
-        ]
-      );
+      // Store for animations
+      setCompletedAmount(match.amount);
+      setRecipientName(match.recipient.firstName);
+      
+      // Close modal
+      setShowMatchModal(false);
+      
+      // Trigger success haptic
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      
+      // Show donation success animation
+      setTimeout(() => {
+        setShowDonationSuccess(true);
+      }, 300);
+      
+      // Show hearts after 500ms
+      setTimeout(() => {
+        setShowHearts(true);
+      }, 800);
+      
+      // Show confetti after 2 seconds
+      setTimeout(() => {
+        setShowConfetti(true);
+      }, 2000);
+      
+      // Reset form
+      setAmount('');
+      setLocation('');
+      setFaith('');
+      setMatch(null);
     } catch (error: any) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Error', error.message || 'Failed to process donation');
     } finally {
       setLoading(false);
-      setShowMatchModal(false);
     }
   };
 
@@ -323,6 +355,36 @@ const GiveScreen: React.FC = () => {
           </View>
         )}
       </Modal>
+
+      {/* Premium Animations */}
+      {showDonationSuccess && (
+        <DonationSuccessAnimation
+          amount={completedAmount}
+          recipientName={recipientName}
+          onComplete={() => {
+            setShowDonationSuccess(false);
+            navigation.navigate('Home');
+          }}
+        />
+      )}
+
+      {showHearts && (
+        <FloatingHearts
+          count={20}
+          duration={3000}
+          startX={screenWidth / 2}
+          startY={200}
+          color={colors.error}
+        />
+      )}
+
+      <ConfettiCelebration
+        visible={showConfetti}
+        message="🎉 Thank You!"
+        submessage="Your generosity makes a difference"
+        onComplete={() => setShowConfetti(false)}
+        confettiCount={200}
+      />
     </SafeAreaView>
   );
 };

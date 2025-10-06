@@ -22,6 +22,13 @@ import { spacing, layout } from '../../theme/spacing';
 import { shadows } from '../../theme/shadows';
 import { BalanceCardSkeleton, CardSkeleton, ListSkeleton } from '../../components/skeletons';
 import { AnimatedNumber, FadeInView } from '../../components/animated';
+import {
+  PageTransition,
+  PullToRefreshAnimation,
+  CountUpAnimation,
+  MorphingFAB,
+  StreakFlame,
+} from '../../components/animations';
 
 const { width: screenWidth } = Dimensions.get('window');
 const cardWidth = (screenWidth - (spacing.md * 3)) / 2;
@@ -62,25 +69,58 @@ const HomeScreen: React.FC = () => {
       title: 'Give',
       icon: 'favorite',
       color: colors.primary,
-      onPress: () => navigation.navigate('GiveScreen'),
+      onPress: () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        navigation.navigate('GiveScreen');
+      },
     },
     {
       title: 'Deposit',
       icon: 'add-circle',
       color: colors.success,
-      onPress: () => navigation.navigate('DepositScreen'),
+      onPress: () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        navigation.navigate('DepositScreen');
+      },
     },
     {
       title: 'Withdraw',
       icon: 'remove-circle',
       color: colors.warning,
-      onPress: () => navigation.navigate('WithdrawScreen'),
+      onPress: () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        navigation.navigate('WithdrawScreen');
+      },
     },
     {
       title: 'History',
       icon: 'history',
       color: colors.info,
-      onPress: () => navigation.navigate('TransactionHistory'),
+      onPress: () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        navigation.navigate('TransactionHistory');
+      },
+    },
+  ];
+
+  const fabActions = [
+    {
+      icon: 'favorite',
+      label: 'Give',
+      color: colors.primary,
+      onPress: () => navigation.navigate('GiveScreen'),
+    },
+    {
+      icon: 'shopping-cart',
+      label: 'Marketplace',
+      color: colors.secondary,
+      onPress: () => navigation.navigate('MarketplaceScreen'),
+    },
+    {
+      icon: 'add-circle',
+      label: 'Buy Coins',
+      color: colors.success,
+      onPress: () => navigation.navigate('BuyCoinsScreen'),
     },
   ];
 
@@ -233,6 +273,16 @@ const HomeScreen: React.FC = () => {
           </View>
         </View>
       </ScrollView>
+
+      {/* Morphing FAB for quick actions */}
+      {showFAB && (
+        <MorphingFAB
+          mainIcon="add"
+          mainColor={colors.primary}
+          actions={fabActions}
+          position="bottom-right"
+        />
+      )}
     </SafeAreaView>
   );
 };
