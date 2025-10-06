@@ -1,14 +1,19 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { walletAPI } from '../../api/wallet';
+import { Transaction } from '../../types';
 
 interface WalletState {
   isProcessing: boolean;
   error: string | null;
+  transactions: Transaction[];
+  isLoadingTransactions: boolean;
 }
 
 const initialState: WalletState = {
   isProcessing: false,
   error: null,
+  transactions: [],
+  isLoadingTransactions: false,
 };
 
 export const fetchTransactions = createAsyncThunk(
@@ -61,6 +66,27 @@ const walletSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      // fetch transactions
+      .addCase(fetchTransactions.pending, (state) => {
+        state.isLoadingTransactions = true;
+        state.error = null;
+      })
+      .addCase(fetchTransactions.fulfilled, (state, action) => {
+        state.isLoadingTransactions = false;
+        const data: any = action.payload;
+        const items: any[] = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.items)
+          ? data.items
+          : Array.isArray(data?.data)
+          ? data.data
+          : [];
+        state.transactions = items as Transaction[];
+      })
+      .addCase(fetchTransactions.rejected, (state, action) => {
+        state.isLoadingTransactions = false;
+        state.error = action.error.message || 'Failed to fetch transactions';
+      })
       .addCase(depositFunds.pending, (state) => {
         state.isProcessing = true;
         state.error = null;
