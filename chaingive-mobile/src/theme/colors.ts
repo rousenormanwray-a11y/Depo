@@ -26,8 +26,13 @@ export const colors = {
     900: '#1A1D20',
   },
   
+  // Additional Colors
+  gold: '#FFD700',
+  primaryDark: '#1E7A46',
+  
   // Background Colors
   background: {
+    default: '#F8F9FA',
     primary: '#FFFFFF',
     secondary: '#F8F9FA',
     tertiary: '#E9ECEF',
