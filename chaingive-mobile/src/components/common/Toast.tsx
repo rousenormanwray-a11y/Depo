@@ -4,125 +4,126 @@ import {
   Text,
   StyleSheet,
   Animated,
-  TouchableOpacity,
   Dimensions,
+  TouchableOpacity,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
-import { typography } from '../../theme/typography';
-import { spacing } from '../../theme/spacing';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get('window');
+
+export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
 interface ToastProps {
   visible: boolean;
   message: string;
-  type?: 'success' | 'error' | 'warning' | 'info';
+  type?: ToastType;
   duration?: number;
-  onHide?: () => void;
-  position?: 'top' | 'bottom';
+  onHide: () => void;
 }
 
-const Toast: React.FC<ToastProps> = ({
+export default function Toast({
   visible,
   message,
   type = 'info',
   duration = 3000,
   onHide,
-  position = 'top',
-}) => {
-  const translateY = useRef(new Animated.Value(position === 'top' ? -100 : 100)).current;
+}: ToastProps) {
+  const translateY = useRef(new Animated.Value(-100)).current;
   const opacity = useRef(new Animated.Value(0)).current;
-  const timeoutRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
     if (visible) {
-      // Show toast
+      // Haptic feedback
+      if (type === 'success') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } else if (type === 'error') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      } else {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      }
+
+      // Show animation
       Animated.parallel([
-        Animated.timing(translateY, {
+        Animated.spring(translateY, {
           toValue: 0,
-          duration: 300,
+          tension: 50,
+          friction: 7,
           useNativeDriver: true,
         }),
         Animated.timing(opacity, {
           toValue: 1,
-          duration: 300,
+          duration: 200,
           useNativeDriver: true,
         }),
       ]).start();
 
-      // Auto hide after duration
-      if (duration > 0) {
-        timeoutRef.current = setTimeout(() => {
-          hideToast();
-        }, duration);
-      }
+      // Auto hide
+      const timer = setTimeout(() => {
+        hideToast();
+      }, duration);
+
+      return () => clearTimeout(timer);
     } else {
       hideToast();
     }
-
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
   }, [visible]);
 
   const hideToast = () => {
     Animated.parallel([
       Animated.timing(translateY, {
-        toValue: position === 'top' ? -100 : 100,
-        duration: 300,
+        toValue: -100,
+        duration: 200,
         useNativeDriver: true,
       }),
       Animated.timing(opacity, {
         toValue: 0,
-        duration: 300,
+        duration: 200,
         useNativeDriver: true,
       }),
     ]).start(() => {
-      if (onHide) {
-        onHide();
-      }
+      onHide();
     });
   };
 
-  const getConfig = () => {
+  const getToastConfig = () => {
     switch (type) {
       case 'success':
         return {
-          backgroundColor: colors.success,
+          backgroundColor: '#48BB78',
           icon: 'check-circle',
+          iconColor: '#FFF',
         };
       case 'error':
         return {
-          backgroundColor: colors.error,
-          icon: 'error',
+          backgroundColor: '#F56565',
+          icon: 'alert-circle',
+          iconColor: '#FFF',
         };
       case 'warning':
         return {
-          backgroundColor: colors.warning,
-          icon: 'warning',
+          backgroundColor: '#ED8936',
+          icon: 'alert',
+          iconColor: '#FFF',
         };
       default:
         return {
-          backgroundColor: colors.info,
-          icon: 'info',
+          backgroundColor: colors.primary,
+          icon: 'information',
+          iconColor: '#FFF',
         };
     }
   };
 
-  const config = getConfig();
+  const config = getToastConfig();
 
-  if (!visible && opacity._value === 0) {
-    return null;
-  }
+  if (!visible) return null;
 
   return (
     <Animated.View
       style={[
         styles.container,
-        position === 'top' ? styles.topPosition : styles.bottomPosition,
         {
           backgroundColor: config.backgroundColor,
           transform: [{ translateY }],
@@ -135,68 +136,47 @@ const Toast: React.FC<ToastProps> = ({
         onPress={hideToast}
         activeOpacity={0.9}
       >
-        <Icon name={config.icon} size={24} color={colors.white} />
+        <MaterialCommunityIcons
+          name={config.icon as any}
+          size={24}
+          color={config.iconColor}
+        />
         <Text style={styles.message} numberOfLines={2}>
           {message}
         </Text>
-        <TouchableOpacity onPress={hideToast} style={styles.closeButton}>
-          <Icon name="close" size={20} color={colors.white} />
+        <TouchableOpacity onPress={hideToast} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <MaterialCommunityIcons name="close" size={20} color="#FFF" />
         </TouchableOpacity>
       </TouchableOpacity>
     </Animated.View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    left: spacing.md,
-    right: spacing.md,
+    top: 60,
+    left: 16,
+    right: 16,
     borderRadius: 12,
-    shadowColor: colors.black,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 10,
+    elevation: 8,
     zIndex: 9999,
-  },
-  topPosition: {
-    top: spacing.lg,
-  },
-  bottomPosition: {
-    bottom: spacing.lg,
   },
   content: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: spacing.md,
+    padding: 16,
+    gap: 12,
   },
   message: {
-    ...typography.bodyRegular,
-    color: colors.white,
     flex: 1,
-    marginLeft: spacing.sm,
-    marginRight: spacing.sm,
-  },
-  closeButton: {
-    padding: spacing.xs,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFF',
+    lineHeight: 20,
   },
 });
-
-export default Toast;
-
-// Toast Manager Hook
-let toastHandler: ((props: Omit<ToastProps, 'visible'>) => void) | null = null;
-
-export const setToastHandler = (handler: typeof toastHandler) => {
-  toastHandler = handler;
-};
-
-export const showToast = (props: Omit<ToastProps, 'visible'>) => {
-  if (toastHandler) {
-    toastHandler(props);
-  }
-};
