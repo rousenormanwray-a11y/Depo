@@ -22,6 +22,7 @@ import adminCoinRoutes from './routes/adminCoin.routes';
 import matchRoutes from './routes/match.routes';
 import leaderboardRoutes from './routes/leaderboard.routes';
 import notificationRoutes from './routes/notification.routes';
+import uploadRoutes from './routes/upload.routes';
 
 // Load environment variables
 dotenv.config();
@@ -66,6 +67,10 @@ app.use(`/${API_VERSION}/admin`, adminCoinRoutes); // Admin coin management
 app.use(`/${API_VERSION}/matches`, matchRoutes);
 app.use(`/${API_VERSION}/leaderboard`, leaderboardRoutes);
 app.use(`/${API_VERSION}/notifications`, notificationRoutes);
+app.use(`/${API_VERSION}/upload`, uploadRoutes);
+
+// Serve uploaded files statically
+app.use('/uploads', express.static('uploads'));
 
 // Error handling
 app.use(notFoundHandler);
