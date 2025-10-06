@@ -178,6 +178,7 @@ export type AuthStackParamList = {
   Register: undefined;
   OTP: { phoneNumber: string };
   ForgotPassword: undefined;
+  ResetPassword: undefined;
 };
 
 export type MainTabParamList = {
