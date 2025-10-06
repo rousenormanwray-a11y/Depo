@@ -69,7 +69,7 @@ const LoginScreen: React.FC = () => {
   };
 
   const handleSignUp = () => {
-    navigation.navigate('SignUp');
+    navigation.navigate('Register');
   };
 
   return (

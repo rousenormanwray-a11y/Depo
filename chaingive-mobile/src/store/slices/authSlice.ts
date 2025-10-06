@@ -33,17 +33,18 @@ const initialState: AuthState = {
 };
 
 // Async thunks
-export const login = createAsyncThunk(
-  'auth/login',
-  async (credentials: { phoneNumber: string; password: string }) => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // Mock authentication - accept any credentials
+// For compatibility with existing screens using loginUser
+export const loginUser = createAsyncThunk(
+  'auth/loginUser',
+  async (credentials: { email?: string; phoneNumber?: string; password: string }) => {
+    await new Promise(resolve => setTimeout(resolve, 800));
     const token = 'mock-jwt-token-' + Date.now();
-    
     return {
-      user: mockUser,
+      user: {
+        ...mockUser,
+        email: credentials.email || mockUser.email,
+        phoneNumber: credentials.phoneNumber || mockUser.phoneNumber,
+      },
       token,
     };
   }
@@ -96,6 +97,18 @@ export const verifyOTP = createAsyncThunk(
   }
 );
 
+export const fetchUserBalance = createAsyncThunk(
+  'auth/fetchUserBalance',
+  async (userId: string) => {
+    // Simulate API call to fetch wallet snapshot
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return {
+      balance: Math.floor(Math.random() * 100000),
+      charityCoins: Math.floor(Math.random() * 500),
+    } as Pick<User, 'balance' | 'charityCoins'>;
+  }
+);
+
 export const logout = createAsyncThunk(
   'auth/logout',
   async () => {
@@ -120,18 +133,18 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Login
-      .addCase(login.pending, (state) => {
+      // Login (loginUser)
+      .addCase(loginUser.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(login.fulfilled, (state, action) => {
+      .addCase(loginUser.fulfilled, (state, action) => {
         state.loading = false;
         state.user = action.payload.user;
         state.token = action.payload.token;
         state.isAuthenticated = true;
       })
-      .addCase(login.rejected, (state, action) => {
+      .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || 'Login failed';
       })
@@ -166,6 +179,14 @@ const authSlice = createSlice({
       .addCase(verifyOTP.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || 'OTP verification failed';
+      })
+
+      // Fetch user balance snapshot
+      .addCase(fetchUserBalance.fulfilled, (state, action) => {
+        if (state.user) {
+          state.user.balance = action.payload.balance;
+          state.user.charityCoins = action.payload.charityCoins;
+        }
       })
       
       // Logout
