@@ -145,14 +145,15 @@ const SignUpScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        style={styles.keyboardAvoid}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
+      <PageTransition type="slideUp" duration={300}>
+        <KeyboardAvoidingView
+          style={styles.keyboardAvoid}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
           {/* Header */}
           <TouchableOpacity
             style={styles.backButton}
@@ -162,9 +163,22 @@ const SignUpScreen: React.FC = () => {
           </TouchableOpacity>
 
           <View style={styles.header}>
-            <Icon name="favorite" size={48} color={colors.primary} />
+            <View style={styles.headerTop}>
+              <Icon name="favorite" size={48} color={colors.primary} />
+              <ProgressRing
+                progress={calculateProgress()}
+                size={80}
+                strokeWidth={6}
+                color={colors.primary}
+                showPercentage
+                animated
+              />
+            </View>
             <Text style={styles.title}>Create Account</Text>
             <Text style={styles.subtitle}>Join ChainGive and start giving</Text>
+            <Text style={styles.progressText}>
+              {Math.round(calculateProgress() * 100)}% Complete
+            </Text>
           </View>
 
           {/* Form */}

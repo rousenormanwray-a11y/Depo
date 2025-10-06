@@ -6,14 +6,25 @@ import {
   FlatList,
   TouchableOpacity,
   RefreshControl,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import * as Haptics from 'expo-haptics';
 
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, layout } from '../../theme/spacing';
+import { shadows } from '../../theme/shadows';
+import {
+  PulseRing,
+  PageTransition,
+  SwipeableRow,
+} from '../../components/animations';
+import EnhancedBadge from '../../components/common/EnhancedBadge';
+
+const { width: screenWidth } = Dimensions.get('window');
 
 interface Notification {
   id: string;
@@ -68,8 +79,23 @@ const NotificationsScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<'ALL' | 'UNREAD'>('ALL');
 
+  const handleMarkAsRead = (id: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setNotifications((prev) =>
+      prev.map((notif) =>
+        notif.id === id ? { ...notif, read: true } : notif
+      )
+    );
+  };
+
+  const handleDeleteNotification = (id: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setNotifications((prev) => prev.filter((notif) => notif.id !== id));
+  };
+
   const handleRefresh = async () => {
     setRefreshing(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     // TODO: Fetch notifications from API
     await new Promise(resolve => setTimeout(resolve, 1000));
     setRefreshing(false);
@@ -167,25 +193,60 @@ const NotificationsScreen: React.FC = () => {
 
   const renderNotification = ({ item }: { item: Notification }) => {
     const typeConfig = getTypeConfig(item.type);
+    const isUrgent = !item.read && ['AGENT', 'CYCLE'].includes(item.type);
 
     return (
-      <TouchableOpacity
-        style={[styles.notificationCard, !item.read && styles.notificationCardUnread]}
-        onPress={() => handleNotificationPress(item)}
+      <SwipeableRow
+        leftAction={{
+          icon: 'check',
+          label: 'Read',
+          color: colors.success,
+          onPress: () => handleMarkAsRead(item.id),
+        }}
+        rightAction={{
+          icon: 'delete',
+          label: 'Delete',
+          color: colors.error,
+          onPress: () => handleDeleteNotification(item.id),
+        }}
       >
-        <View style={[styles.iconContainer, { backgroundColor: `${typeConfig.color}20` }]}>
-          <Icon name={typeConfig.icon} size={24} color={typeConfig.color} />
-        </View>
-
-        <View style={styles.notificationContent}>
-          <View style={styles.notificationHeader}>
-            <Text style={styles.notificationTitle}>{item.title}</Text>
-            {!item.read && <View style={styles.unreadDot} />}
+        <TouchableOpacity
+          style={[styles.notificationCard, !item.read && styles.notificationCardUnread]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            handleNotificationPress(item);
+          }}
+        >
+          <View style={styles.iconWrapper}>
+            {isUrgent && (
+              <View style={styles.pulseWrapper}>
+                <PulseRing size={50} color={typeConfig.color} count={2} duration={2000} />
+              </View>
+            )}
+            <View style={[styles.iconContainer, { backgroundColor: `${typeConfig.color}20` }]}>
+              <Icon name={typeConfig.icon} size={24} color={typeConfig.color} />
+            </View>
           </View>
-          <Text style={styles.notificationMessage}>{item.message}</Text>
-          <Text style={styles.notificationTime}>{formatTime(item.createdAt)}</Text>
-        </View>
-      </TouchableOpacity>
+
+          <View style={styles.notificationContent}>
+            <View style={styles.notificationHeader}>
+              <Text style={styles.notificationTitle}>{item.title}</Text>
+              {!item.read && (
+                <EnhancedBadge
+                  value="New"
+                  color={colors.primary}
+                  size="small"
+                  variant="solid"
+                  position="inline"
+                  pulse
+                />
+              )}
+            </View>
+            <Text style={styles.notificationMessage}>{item.message}</Text>
+            <Text style={styles.notificationTime}>{formatTime(item.createdAt)}</Text>
+          </View>
+        </TouchableOpacity>
+      </SwipeableRow>
     );
   };
 
@@ -204,29 +265,41 @@ const NotificationsScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Icon name="arrow-back" size={24} color={colors.text.primary} />
-        </TouchableOpacity>
-        <View style={styles.headerTitle}>
-          <Text style={styles.headerTitleText}>Notifications</Text>
-          {unreadCount > 0 && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{unreadCount}</Text>
-            </View>
-          )}
+      <PageTransition type="fade" duration={300}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              navigation.goBack();
+            }}
+          >
+            <Icon name="arrow-back" size={24} color={colors.text.primary} />
+          </TouchableOpacity>
+          <View style={styles.headerTitleWrapper}>
+            <Text style={styles.headerTitleText}>Notifications</Text>
+            {unreadCount > 0 && (
+              <EnhancedBadge
+                value={unreadCount}
+                color={colors.error}
+                size="small"
+                pulse
+                position="inline"
+                style={styles.headerBadge}
+              />
+            )}
+          </View>
+          <TouchableOpacity
+            style={styles.headerAction}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              handleMarkAllRead();
+            }}
+          >
+            <Icon name="done-all" size={24} color={colors.primary} />
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          style={styles.headerAction}
-          onPress={handleMarkAllRead}
-        >
-          <Icon name="done-all" size={24} color={colors.primary} />
-        </TouchableOpacity>
-      </View>
 
       {/* Filter */}
       <View style={styles.filterContainer}>
@@ -275,6 +348,7 @@ const NotificationsScreen: React.FC = () => {
           <Text style={styles.clearButtonText}>Clear All</Text>
         </TouchableOpacity>
       )}
+      </PageTransition>
     </SafeAreaView>
   );
 };
@@ -293,11 +367,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderBottomWidth: 1,
     borderBottomColor: colors.border.light,
+    ...shadows.small,
   },
   backButton: {
     padding: spacing.xs,
   },
-  headerTitle: {
+  headerTitleWrapper: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -307,20 +382,17 @@ const styles = StyleSheet.create({
     ...typography.h3,
     color: colors.text.primary,
   },
-  badge: {
-    backgroundColor: colors.error,
-    borderRadius: 10,
-    paddingHorizontal: spacing.xs,
-    paddingVertical: 2,
+  headerBadge: {
     marginLeft: spacing.xs,
-    minWidth: 20,
-    alignItems: 'center',
   },
-  badgeText: {
-    ...typography.caption,
-    color: colors.white,
-    fontSize: 10,
-    fontWeight: 'bold',
+  iconWrapper: {
+    position: 'relative',
+    marginRight: spacing.md,
+  },
+  pulseWrapper: {
+    position: 'absolute',
+    top: -5,
+    left: -5,
   },
   headerAction: {
     padding: spacing.xs,
