@@ -1,14 +1,21 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { donationsAPI } from '../../api/donations';
+import { DonationCycle } from '../../types';
 
 interface DonationState {
   isProcessing: boolean;
   error: string | null;
+  cycles: DonationCycle[];
+  isLoadingCycles: boolean;
+  selectedCycle: DonationCycle | null;
 }
 
 const initialState: DonationState = {
   isProcessing: false,
   error: null,
+  cycles: [],
+  isLoadingCycles: false,
+  selectedCycle: null,
 };
 
 export const giveDonation = createAsyncThunk(
@@ -38,6 +45,22 @@ export const confirmReceipt = createAsyncThunk(
     } catch (e: any) {
       return Promise.reject(new Error(e.message || 'Failed to confirm receipt'));
     }
+  }
+);
+
+export const fetchCycles = createAsyncThunk(
+  'donations/fetchCycles',
+  async (params?: { status?: string; page?: number; limit?: number }) => {
+    const res = await donationsAPI.getCycles(params);
+    return res.data;
+  }
+);
+
+export const fetchCycleById = createAsyncThunk(
+  'donations/fetchCycleById',
+  async (cycleId: string) => {
+    const res = await donationsAPI.getCycle(cycleId);
+    return res.data;
   }
 );
 
@@ -72,6 +95,29 @@ const donationSlice = createSlice({
       .addCase(confirmReceipt.rejected, (state, action) => {
         state.isProcessing = false;
         state.error = action.error.message || 'Failed to confirm receipt';
+      })
+      .addCase(fetchCycles.pending, (state) => {
+        state.isLoadingCycles = true;
+        state.error = null;
+      })
+      .addCase(fetchCycles.fulfilled, (state, action: PayloadAction<any>) => {
+        state.isLoadingCycles = false;
+        const data: any = action.payload;
+        const items: any[] = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.items)
+          ? data.items
+          : Array.isArray(data?.data)
+          ? data.data
+          : [];
+        state.cycles = items as DonationCycle[];
+      })
+      .addCase(fetchCycles.rejected, (state, action) => {
+        state.isLoadingCycles = false;
+        state.error = action.error.message || 'Failed to fetch cycles';
+      })
+      .addCase(fetchCycleById.fulfilled, (state, action: PayloadAction<DonationCycle>) => {
+        state.selectedCycle = action.payload;
       });
   },
 });

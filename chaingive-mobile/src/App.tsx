@@ -11,6 +11,7 @@ import AppNavigator from './navigation/AppNavigator';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import { colors } from './theme/colors';
+import GlobalToastHost from './components/common/GlobalToastHost';
 
 const App: React.FC = () => {
   return (
@@ -28,6 +29,7 @@ const App: React.FC = () => {
                   backgroundColor={colors.primary}
                 />
                 <AppNavigator />
+                <GlobalToastHost />
               </NavigationContainer>
             </SafeAreaProvider>
           </PersistGate>
