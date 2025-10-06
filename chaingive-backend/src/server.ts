@@ -6,7 +6,10 @@ import dotenv from 'dotenv';
 import { errorHandler } from './middleware/errorHandler';
 import { notFoundHandler } from './middleware/notFoundHandler';
 import { rateLimiter } from './middleware/rateLimiter';
+import { sentryRequestHandler, sentryTracingHandler, sentryErrorHandler } from './middleware/sentryHandler';
 import logger from './utils/logger';
+import { startScheduledJobs } from './jobs';
+import { initializeSentry } from './services/sentry.service';
 
 // Routes
 import authRoutes from './routes/auth.routes';
@@ -15,17 +18,33 @@ import walletRoutes from './routes/wallet.routes';
 import donationRoutes from './routes/donation.routes';
 import cycleRoutes from './routes/cycle.routes';
 import marketplaceRoutes from './routes/marketplace.routes';
+import marketplaceAdminRoutes from './routes/marketplaceAdmin.routes';
 import agentRoutes from './routes/agent.routes';
 import agentCoinRoutes from './routes/agentCoin.routes';
 import adminCoinRoutes from './routes/adminCoin.routes';
+import adminRoutes from './routes/admin.routes';
+import adminAdvancedRoutes from './routes/adminAdvanced.routes';
 import matchRoutes from './routes/match.routes';
+import leaderboardRoutes from './routes/leaderboard.routes';
+import notificationRoutes from './routes/notification.routes';
+import uploadRoutes from './routes/upload.routes';
+import referralRoutes from './routes/referral.routes';
+import disputeRoutes from './routes/dispute.routes';
+import coinPurchaseRoutes from './routes/coinPurchase.routes';
 
 // Load environment variables
 dotenv.config();
 
+// Initialize Sentry (must be before Express app)
+initializeSentry();
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 const API_VERSION = process.env.API_VERSION || 'v1';
+
+// Sentry request handler (must be first middleware)
+app.use(sentryRequestHandler);
+app.use(sentryTracingHandler);
 
 // Middleware
 app.use(helmet()); // Security headers
@@ -57,12 +76,25 @@ app.use(`/${API_VERSION}/wallet`, walletRoutes);
 app.use(`/${API_VERSION}/donations`, donationRoutes);
 app.use(`/${API_VERSION}/cycles`, cycleRoutes);
 app.use(`/${API_VERSION}/marketplace`, marketplaceRoutes);
+app.use(`/${API_VERSION}/admin/marketplace`, marketplaceAdminRoutes);
 app.use(`/${API_VERSION}/agents`, agentRoutes);
 app.use(`/${API_VERSION}/agents`, agentCoinRoutes); // Agent coin management
-app.use(`/${API_VERSION}/admin`, adminCoinRoutes); // Admin coin management
+app.use(`/${API_VERSION}/admin/coins`, adminCoinRoutes); // Admin coin management
+app.use(`/${API_VERSION}/admin/advanced`, adminAdvancedRoutes); // Admin advanced features
+app.use(`/${API_VERSION}/admin`, adminRoutes); // Admin general management
 app.use(`/${API_VERSION}/matches`, matchRoutes);
+app.use(`/${API_VERSION}/leaderboard`, leaderboardRoutes);
+app.use(`/${API_VERSION}/notifications`, notificationRoutes);
+app.use(`/${API_VERSION}/upload`, uploadRoutes);
+app.use(`/${API_VERSION}/referrals`, referralRoutes);
+app.use(`/${API_VERSION}/disputes`, disputeRoutes);
+app.use(`/${API_VERSION}/coins/purchase`, coinPurchaseRoutes);
 
-// Error handling
+// Serve uploaded files statically
+app.use('/uploads', express.static('uploads'));
+
+// Error handling (Sentry must be before other error handlers)
+app.use(sentryErrorHandler);
 app.use(notFoundHandler);
 app.use(errorHandler);
 
@@ -72,6 +104,12 @@ app.listen(PORT, () => {
   logger.info(`📝 Environment: ${process.env.NODE_ENV}`);
   logger.info(`🔗 API Version: ${API_VERSION}`);
   logger.info(`🌍 Health check: http://localhost:${PORT}/health`);
+  
+  // Start background jobs
+  if (process.env.NODE_ENV !== 'test') {
+    startScheduledJobs();
+    logger.info('⏰ Background jobs scheduled');
+  }
 });
 
 export default app;

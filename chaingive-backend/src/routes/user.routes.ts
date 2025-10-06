@@ -25,7 +25,7 @@ router.patch('/me', validate(userValidation.updateProfileSchema), userController
 
 /**
  * @route   GET /v1/users/stats
- * @desc    Get user statistics
+ * @desc    Get user statistics (includes donation streak & qualification status)
  * @access  Private
  */
 router.get('/stats', userController.getStats);

@@ -4,6 +4,11 @@ import prisma from '../utils/prisma';
 import { AppError } from '../middleware/errorHandler';
 import logger from '../utils/logger';
 import { findBestMatch } from '../services/matching.service';
+import { updateLeaderboardAfterCycle } from '../services/leaderboard.service';
+import { sendTemplateNotification } from '../services/notification.service';
+import { markSecondDonation } from '../services/forceRecycle.service';
+import { sendDonationConfirmationSMS, sendReceiptConfirmationSMS } from '../services/sms.service';
+import { sendDonationReceiptEmail, sendReceiptConfirmationEmail } from '../services/email.service';
 
 /**
  * Give donation
@@ -118,6 +123,32 @@ export const giveDonation = async (req: AuthRequest, res: Response, next: NextFu
 
     logger.info(`Donation initiated: ${transaction.id} from ${userId} to ${finalRecipientId}`);
 
+    // Send notification to recipient (Push + SMS + Email)
+    await sendTemplateNotification(
+      finalRecipientId,
+      'DONATION_RECEIVED',
+      amount,
+      req.user!.firstName
+    );
+
+    // Send SMS
+    await sendDonationConfirmationSMS(
+      recipient.phoneNumber,
+      recipient.firstName,
+      amount,
+      donor.firstName
+    );
+
+    // Send email if available
+    if (recipient.email) {
+      await sendDonationReceiptEmail(
+        recipient.email,
+        recipient.firstName,
+        amount,
+        donor.firstName
+      );
+    }
+
     res.status(201).json({
       success: true,
       data: {
@@ -172,6 +203,56 @@ export const confirmReceipt = async (req: AuthRequest, res: Response, next: Next
         where: { id: transactionId },
         data: { status: 'completed', completedAt: new Date() },
       });
+
+      // Update leaderboard for donor (they completed a donation)
+      if (transaction.fromUserId) {
+        // Mark as second donation if applicable (for leaderboard boost)
+        const cycle = await prisma.cycle.findFirst({
+          where: {
+            userId: transaction.fromUserId,
+            givenTransactionId: transaction.id,
+          },
+        });
+        
+        if (cycle) {
+          await markSecondDonation(transaction.fromUserId, cycle.id);
+        }
+
+        await updateLeaderboardAfterCycle(transaction.fromUserId);
+      }
+
+      // Notify donor (Push + SMS)
+      if (transaction.fromUserId) {
+        await sendTemplateNotification(
+          transaction.fromUserId,
+          'DONATION_CONFIRMED',
+          Number(transaction.amount)
+        );
+
+        const donor = await prisma.user.findUnique({
+          where: { id: transaction.fromUserId },
+          select: { phoneNumber: true, firstName: true, email: true },
+        });
+
+        if (donor) {
+          await sendReceiptConfirmationSMS(
+            donor.phoneNumber,
+            donor.firstName,
+            Number(transaction.amount)
+          );
+
+          // Send email confirmation
+          if (donor.email) {
+            await sendReceiptConfirmationEmail(
+              donor.email,
+              donor.firstName,
+              Number(transaction.amount),
+              recipient.firstName,
+              transaction.transactionRef
+            );
+          }
+        }
+      }
 
       logger.info(`Receipt confirmed: ${transactionId}`);
 
