@@ -218,7 +218,7 @@ export async function sendReceiptConfirmationEmail(
   email: string,
   firstName: string,
   amount: number,
-  donor: string,
+  recipient: string,
   transactionRef: string
 ): Promise<boolean> {
   const subject = `Donation Received - ₦${amount.toLocaleString()}`;

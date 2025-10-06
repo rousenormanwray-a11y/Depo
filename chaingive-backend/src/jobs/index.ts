@@ -181,4 +181,5 @@ export {
   processDailyReport,
   processWeeklyReport,
   processMonthlyDigest,
+  processCoinEscrowExpiration,
 };

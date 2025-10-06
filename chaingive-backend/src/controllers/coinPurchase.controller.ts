@@ -3,6 +3,8 @@ import { AuthRequest } from '../middleware/auth';
 import prisma from '../utils/prisma';
 import { AppError } from '../middleware/errorHandler';
 import logger from '../utils/logger';
+import { sendTemplateNotification } from '../services/notification.service';
+import { sendSMS } from '../services/sms.service';
 
 /**
  * Get available agents for coin purchase
@@ -212,7 +214,17 @@ export const confirmPaymentSent = async (req: AuthRequest, res: Response, next: 
 
     logger.info(`User ${userId} confirmed payment sent for transaction ${transactionId}`);
 
-    // TODO: Notify agent via push notification/SMS
+    // Notify agent via push + SMS
+    await sendTemplateNotification(
+      transaction.agent.user.id,
+      'PAYMENT_PENDING',
+      Number(transaction.totalPrice)
+    );
+
+    await sendSMS(
+      transaction.agent.user.phoneNumber,
+      `ChainGive: Payment pending confirmation. ${transaction.quantity} coins. Check app to verify.`
+    );
 
     res.status(200).json({
       success: true,
@@ -306,7 +318,25 @@ export const agentConfirmPayment = async (req: AuthRequest, res: Response, next:
 
     logger.info(`Agent ${agent.id} confirmed payment for transaction ${transactionId} - ${transaction.quantity} coins released to user ${transaction.userId}`);
 
-    // TODO: Notify user via push notification
+    // Notify user via push + SMS
+    await sendTemplateNotification(
+      transaction.userId,
+      'COINS_PURCHASED',
+      transaction.quantity,
+      `${agent.user.firstName} ${agent.user.lastName}`
+    );
+
+    const user = await prisma.user.findUnique({
+      where: { id: transaction.userId },
+      select: { phoneNumber: true },
+    });
+
+    if (user) {
+      await sendSMS(
+        user.phoneNumber,
+        `ChainGive: ${transaction.quantity} coins added to your account! New balance: ${result.updatedUser.charityCoinsBalance} coins.`
+      );
+    }
 
     res.status(200).json({
       success: true,
@@ -381,7 +411,24 @@ export const agentRejectPayment = async (req: AuthRequest, res: Response, next: 
 
     logger.info(`Agent ${agent.id} rejected transaction ${transactionId}. Reason: ${reason}`);
 
-    // TODO: Notify user via push notification
+    // Notify user via push + SMS
+    await sendTemplateNotification(
+      transaction.userId,
+      'PAYMENT_REJECTED',
+      0
+    );
+
+    const user = await prisma.user.findUnique({
+      where: { id: transaction.userId },
+      select: { phoneNumber: true },
+    });
+
+    if (user) {
+      await sendSMS(
+        user.phoneNumber,
+        `ChainGive: Coin purchase cancelled. Reason: ${reason}. Please contact agent or try again.`
+      );
+    }
 
     res.status(200).json({
       success: true,

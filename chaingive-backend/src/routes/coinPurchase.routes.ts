@@ -2,7 +2,8 @@ import { Router } from 'express';
 import * as coinPurchaseController from '../controllers/coinPurchase.controller';
 import { authenticate, requireRole } from '../middleware/auth';
 import { validate } from '../middleware/validation';
-import Joi from 'joi';
+import * as coinPurchaseValidation from '../validations/coinPurchase.validation';
+import { requireFeature } from '../middleware/featureFlag';
 
 const router = Router();
 
@@ -22,20 +23,15 @@ router.get(
 // Request coin purchase (creates escrow)
 router.post(
   '/request',
-  validate(Joi.object({
-    agentId: Joi.string().uuid().required(),
-    quantity: Joi.number().integer().min(10).max(10000).required(),
-  })),
+  requireFeature('coin_purchases'),
+  validate(coinPurchaseValidation.requestPurchaseSchema),
   coinPurchaseController.requestCoinPurchase
 );
 
 // Confirm payment sent
 router.post(
   '/:transactionId/confirm-payment',
-  validate(Joi.object({
-    paymentMethod: Joi.string().valid('bank_transfer', 'mobile_money', 'cash').required(),
-    paymentProof: Joi.string().uri().optional(),
-  })),
+  validate(coinPurchaseValidation.confirmPaymentSchema),
   coinPurchaseController.confirmPaymentSent
 );
 
@@ -67,9 +63,7 @@ router.post(
 router.post(
   '/agent/:transactionId/reject',
   requireRole('agent', 'power_partner', 'csc_council'),
-  validate(Joi.object({
-    reason: Joi.string().min(10).max(500).required(),
-  })),
+  validate(coinPurchaseValidation.rejectPaymentSchema),
   coinPurchaseController.agentRejectPayment
 );
 

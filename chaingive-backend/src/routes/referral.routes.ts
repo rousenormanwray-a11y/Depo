@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import * as referralController from '../controllers/referral.controller';
 import { authenticate } from '../middleware/auth';
+import { requireFeature } from '../middleware/featureFlag';
 
 const router = Router();
 
@@ -12,7 +13,7 @@ router.use(authenticate);
  * @desc    Get user's referral code and stats
  * @access  Private
  */
-router.get('/my-code', referralController.getMyReferralCode);
+router.get('/my-code', requireFeature('referrals'), referralController.getMyReferralCode);
 
 /**
  * @route   GET /v1/referrals/history

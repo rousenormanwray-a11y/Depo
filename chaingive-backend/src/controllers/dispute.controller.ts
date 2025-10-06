@@ -3,6 +3,9 @@ import { AuthRequest } from '../middleware/auth';
 import prisma from '../utils/prisma';
 import { AppError } from '../middleware/errorHandler';
 import logger from '../utils/logger';
+import { sendTemplateNotification } from '../services/notification.service';
+import { sendSMS } from '../services/sms.service';
+import { sendEmail } from '../services/email.service';
 
 /**
  * Create a new dispute
@@ -78,8 +81,36 @@ export const createDispute = async (req: AuthRequest, res: Response, next: NextF
 
     logger.info(`Dispute created: ${dispute.id} for transaction ${transactionId}`);
 
-    // TODO: Send notification to respondent
-    // TODO: Send notification to admin/CSC members
+    // Notify respondent
+    await sendTemplateNotification(
+      respondentId,
+      'DISPUTE_CREATED',
+      0
+    );
+
+    await sendSMS(
+      dispute.responder.phoneNumber,
+      `ChainGive: A dispute has been filed against transaction. Please check app and respond.`
+    );
+
+    // Notify admins/CSC members
+    const admins = await prisma.user.findMany({
+      where: {
+        role: { in: ['csc_council', 'agent'] },
+        isActive: true,
+      },
+      select: { id: true, email: true, firstName: true },
+    });
+
+    for (const admin of admins) {
+      if (admin.email) {
+        await sendEmail(
+          admin.email,
+          `New Dispute Filed - ${category}`,
+          `<p>Hi ${admin.firstName},</p><p>A new dispute has been filed. Category: ${category}</p><p>Login to admin panel to review.</p>`
+        );
+      }
+    }
 
     res.status(201).json({
       success: true,
@@ -507,7 +538,45 @@ export const resolveDispute = async (req: AuthRequest, res: Response, next: Next
 
     logger.info(`Dispute ${disputeId} resolved by admin ${adminId}. Resolution: ${resolutionType}`);
 
-    // TODO: Send notifications to both parties
+    // Notify both parties
+    await sendTemplateNotification(
+      resolvedDispute.reporter.id,
+      'DISPUTE_RESOLVED',
+      0
+    );
+
+    await sendTemplateNotification(
+      resolvedDispute.responder.id,
+      'DISPUTE_RESOLVED',
+      0
+    );
+
+    // Send email to both parties
+    const reporter = await prisma.user.findUnique({
+      where: { id: resolvedDispute.reporter.id },
+      select: { email: true, phoneNumber: true },
+    });
+
+    const responder = await prisma.user.findUnique({
+      where: { id: resolvedDispute.responder.id },
+      select: { email: true, phoneNumber: true },
+    });
+
+    if (reporter?.email) {
+      await sendEmail(
+        reporter.email,
+        'Dispute Resolved',
+        `<p>Your dispute has been resolved.</p><p><strong>Resolution:</strong> ${resolution}</p>`
+      );
+    }
+
+    if (responder?.email) {
+      await sendEmail(
+        responder.email,
+        'Dispute Resolved',
+        `<p>The dispute has been resolved.</p><p><strong>Resolution:</strong> ${resolution}</p>`
+      );
+    }
 
     res.status(200).json({
       success: true,

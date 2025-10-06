@@ -18,6 +18,7 @@ import walletRoutes from './routes/wallet.routes';
 import donationRoutes from './routes/donation.routes';
 import cycleRoutes from './routes/cycle.routes';
 import marketplaceRoutes from './routes/marketplace.routes';
+import marketplaceAdminRoutes from './routes/marketplaceAdmin.routes';
 import agentRoutes from './routes/agent.routes';
 import agentCoinRoutes from './routes/agentCoin.routes';
 import adminCoinRoutes from './routes/adminCoin.routes';
@@ -75,6 +76,7 @@ app.use(`/${API_VERSION}/wallet`, walletRoutes);
 app.use(`/${API_VERSION}/donations`, donationRoutes);
 app.use(`/${API_VERSION}/cycles`, cycleRoutes);
 app.use(`/${API_VERSION}/marketplace`, marketplaceRoutes);
+app.use(`/${API_VERSION}/admin/marketplace`, marketplaceAdminRoutes);
 app.use(`/${API_VERSION}/agents`, agentRoutes);
 app.use(`/${API_VERSION}/agents`, agentCoinRoutes); // Agent coin management
 app.use(`/${API_VERSION}/admin/coins`, adminCoinRoutes); // Admin coin management

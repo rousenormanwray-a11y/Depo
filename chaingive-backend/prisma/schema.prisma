@@ -38,6 +38,9 @@ model User {
   fcmToken              String?   @map("fcm_token")
   devicePlatform        String?   @map("device_platform") // 'ios' or 'android'
   
+  // Profile
+  profilePictureUrl     String?   @map("profile_picture_url")
+  
   createdAt             DateTime  @default(now()) @map("created_at")
   updatedAt             DateTime  @updatedAt @map("updated_at")
   lastLoginAt           DateTime? @map("last_login_at")

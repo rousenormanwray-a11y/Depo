@@ -2,6 +2,9 @@ import { Job } from 'bull';
 import prisma from '../utils/prisma';
 import logger from '../utils/logger';
 import { sendTemplateNotification } from '../services/notification.service';
+import { updateReferralOnFirstCycle, updateReferralOnCompletion } from '../controllers/referral.controller';
+import { sendEscrowReleaseSMS } from '../services/sms.service';
+import { sendEscrowReleaseEmail } from '../services/email.service';
 
 /**
  * Process escrow releases (48-hour holds)
@@ -105,10 +108,47 @@ async function releaseEscrow(escrow: any) {
     Number(escrow.amount)
   );
 
+  // Send SMS to recipient
+  if (transaction.toUser) {
+    await sendEscrowReleaseSMS(
+      transaction.toUser.phoneNumber,
+      transaction.toUser.firstName,
+      Number(escrow.amount)
+    );
+
+    // Send email if available
+    if (transaction.toUser.email) {
+      await sendEscrowReleaseEmail(
+        transaction.toUser.email,
+        transaction.toUser.firstName,
+        Number(escrow.amount)
+      );
+    }
+  }
+
   // Notify donor about coins earned
   await sendTemplateNotification(
     transaction.fromUserId,
     'COINS_EARNED',
     50
   );
+
+  // Check and update referral milestones
+  if (transaction.toUserId) {
+    // Check if this is recipient's first cycle completion
+    const cycleCount = await prisma.cycle.count({
+      where: {
+        userId: transaction.toUserId,
+        status: 'fulfilled',
+      },
+    });
+
+    if (cycleCount === 1) {
+      // First cycle - award 100 coins to referrer
+      await updateReferralOnFirstCycle(transaction.toUserId);
+    } else if (cycleCount === 3) {
+      // Third cycle - award final 175 coins to referrer
+      await updateReferralOnCompletion(transaction.toUserId);
+    }
+  }
 }

@@ -2,7 +2,7 @@ import { Router } from 'express';
 import * as adminAdvancedController from '../controllers/adminAdvanced.controller';
 import { authenticate, requireRole } from '../middleware/auth';
 import { validate } from '../middleware/validation';
-import Joi from 'joi';
+import * as adminAdvancedValidation from '../validations/adminAdvanced.validation';
 
 const router = Router();
 
@@ -23,9 +23,7 @@ router.post(
 // Update user role
 router.patch(
   '/users/:userId/role',
-  validate(Joi.object({
-    role: Joi.string().valid('beginner', 'agent', 'power_partner', 'csc_council').required(),
-  })),
+  validate(adminAdvancedValidation.updateUserRoleSchema),
   adminAdvancedController.updateUserRole
 );
 
@@ -42,11 +40,7 @@ router.post(
 // Send coins to any user/agent
 router.post(
   '/coins/send',
-  validate(Joi.object({
-    userId: Joi.string().uuid().required(),
-    amount: Joi.number().integer().min(1).max(100000).required(),
-    reason: Joi.string().min(5).max(500).required(),
-  })),
+  validate(adminAdvancedValidation.sendCoinsSchema),
   adminAdvancedController.sendCoins
 );
 
@@ -57,27 +51,14 @@ router.post(
 // Send bulk email
 router.post(
   '/emails/bulk',
-  validate(Joi.object({
-    subject: Joi.string().min(5).max(200).required(),
-    body: Joi.string().min(10).max(10000).required(),
-    filters: Joi.object({
-      role: Joi.string().valid('beginner', 'agent', 'power_partner', 'csc_council').optional(),
-      tier: Joi.number().integer().min(1).max(3).optional(),
-      city: Joi.string().optional(),
-      kycStatus: Joi.string().valid('pending', 'approved', 'rejected').optional(),
-    }).optional(),
-  })),
+  validate(adminAdvancedValidation.sendBulkEmailSchema),
   adminAdvancedController.sendBulkEmail
 );
 
 // Send single email
 router.post(
   '/emails/single',
-  validate(Joi.object({
-    userId: Joi.string().uuid().required(),
-    subject: Joi.string().min(5).max(200).required(),
-    body: Joi.string().min(10).max(10000).required(),
-  })),
+  validate(adminAdvancedValidation.sendSingleEmailSchema),
   adminAdvancedController.sendSingleEmail
 );
 
@@ -94,10 +75,7 @@ router.get(
 // Toggle feature flag
 router.post(
   '/features/toggle',
-  validate(Joi.object({
-    featureName: Joi.string().required(),
-    isEnabled: Joi.boolean().required(),
-  })),
+  validate(adminAdvancedValidation.toggleFeatureFlagSchema),
   adminAdvancedController.toggleFeatureFlag
 );
 

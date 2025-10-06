@@ -2,7 +2,8 @@ import { Router } from 'express';
 import * as disputeController from '../controllers/dispute.controller';
 import { authenticate, requireRole } from '../middleware/auth';
 import { validate } from '../middleware/validation';
-import Joi from 'joi';
+import * as disputeValidation from '../validations/dispute.validation';
+import { requireFeature } from '../middleware/featureFlag';
 
 const router = Router();
 
@@ -16,11 +17,8 @@ router.use(authenticate);
 // Create dispute
 router.post(
   '/create',
-  validate(Joi.object({
-    transactionId: Joi.string().uuid().required(),
-    category: Joi.string().valid('non_receipt', 'wrong_amount', 'fraud', 'other').required(),
-    description: Joi.string().min(20).max(1000).required(),
-  })),
+  requireFeature('disputes'),
+  validate(disputeValidation.createDisputeSchema),
   disputeController.createDispute
 );
 
@@ -39,20 +37,14 @@ router.get(
 // Add message to dispute
 router.post(
   '/:disputeId/message',
-  validate(Joi.object({
-    message: Joi.string().min(1).max(1000).required(),
-  })),
+  validate(disputeValidation.addMessageSchema),
   disputeController.addDisputeMessage
 );
 
 // Upload evidence
 router.post(
   '/:disputeId/evidence',
-  validate(Joi.object({
-    fileUrl: Joi.string().uri().required(),
-    fileType: Joi.string().valid('image', 'pdf', 'screenshot').required(),
-    description: Joi.string().max(500).optional(),
-  })),
+  validate(disputeValidation.uploadEvidenceSchema),
   disputeController.uploadDisputeEvidence
 );
 
@@ -71,9 +63,7 @@ router.get(
 router.post(
   '/:disputeId/assign',
   requireRole('csc_council', 'agent'),
-  validate(Joi.object({
-    mediatorId: Joi.string().uuid().required(),
-  })),
+  validate(disputeValidation.assignDisputeSchema),
   disputeController.assignDispute
 );
 
@@ -81,10 +71,7 @@ router.post(
 router.post(
   '/:disputeId/resolve',
   requireRole('csc_council', 'agent'),
-  validate(Joi.object({
-    resolution: Joi.string().min(20).max(1000).required(),
-    resolutionType: Joi.string().valid('refund', 'no_action', 'partial_refund').required(),
-  })),
+  validate(disputeValidation.resolveDisputeSchema),
   disputeController.resolveDispute
 );
 

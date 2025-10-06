@@ -3,6 +3,7 @@ import { AuthRequest } from '../middleware/auth';
 import prisma from '../utils/prisma';
 import { AppError } from '../middleware/errorHandler';
 import logger from '../utils/logger';
+import { sendKYCApprovalEmail } from '../services/email.service';
 
 /**
  * Get all users with filters and pagination
@@ -414,6 +415,15 @@ export const approveKYC = async (req: AuthRequest, res: Response, next: NextFunc
     }
 
     logger.info(`KYC ${kycId} approved by admin ${adminId} for user ${kycRecord.userId}`);
+
+    // Send approval email
+    if (kycRecord.user.email) {
+      await sendKYCApprovalEmail(
+        kycRecord.user.email,
+        kycRecord.user.firstName,
+        kycRecord.verificationType
+      );
+    }
 
     res.status(200).json({
       success: true,
