@@ -26,6 +26,7 @@ const rootReducer = combineReducers({
   donation: donationReducer,
   coinPurchase: coinPurchaseReducer,
   leaderboard: leaderboardReducer,
+  gamification: gamificationReducer,
 });
 
 // Persisted reducer

@@ -5,6 +5,7 @@ import { AppError } from '../middleware/errorHandler';
 import logger from '../utils/logger';
 import { sendTemplateNotification } from '../services/notification.service';
 import { sendSMS } from '../services/sms.service';
+import gamificationService from '../services/gamification.service';
 
 /**
  * Get available agents for coin purchase

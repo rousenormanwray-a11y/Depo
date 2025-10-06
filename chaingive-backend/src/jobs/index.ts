@@ -17,6 +17,7 @@ export const cycleQueue = new Bull('cycle-reminders', redisConfig);
 export const leaderboardQueue = new Bull('leaderboard-update', redisConfig);
 export const reportQueue = new Bull('scheduled-reports', redisConfig);
 export const coinEscrowQueue = new Bull('coin-escrow-expiration', redisConfig);
+export const gamificationQueue = new Bull('gamification-reminders', redisConfig);
 
 // Import job processors
 import { processEscrowRelease } from './escrow-release.job';
@@ -27,6 +28,7 @@ import { processDailyReport } from './daily-report.job';
 import { processWeeklyReport } from './weekly-report.job';
 import { processMonthlyDigest } from './monthly-digest.job';
 import { processCoinEscrowExpiration } from './coin-escrow-expiration.job';
+import { sendMissionReminders, sendStreakAlerts } from './gamification-reminders.job';
 
 // Register job processors
 escrowQueue.process(processEscrowRelease);
@@ -37,6 +39,10 @@ reportQueue.process(processDailyReport);
 reportQueue.process(processWeeklyReport);
 reportQueue.process(processMonthlyDigest);
 coinEscrowQueue.process(processCoinEscrowExpiration);
+gamificationQueue.process(async (job) => {
+  const { processGamificationJob } = await import('./gamification.job');
+  return processGamificationJob(job);
+});
 
 // Error handling
 escrowQueue.on('failed', (job, err) => {
@@ -63,6 +69,10 @@ coinEscrowQueue.on('failed', (job, err) => {
   logger.error(`Coin escrow job ${job.id} failed:`, err);
 });
 
+gamificationQueue.on('failed', (job, err) => {
+  logger.error(`Gamification job ${job.id} failed:`, err);
+});
+
 // Success logging
 escrowQueue.on('completed', (job) => {
   logger.info(`Escrow job ${job.id} completed`);
@@ -86,6 +96,10 @@ reportQueue.on('completed', (job) => {
 
 coinEscrowQueue.on('completed', (job) => {
   logger.info(`Coin escrow job ${job.id} completed`);
+});
+
+gamificationQueue.on('completed', (job) => {
+  logger.info(`Gamification job ${job.id} completed`);
 });
 
 // Schedule recurring jobs
@@ -170,7 +184,37 @@ export function startScheduledJobs() {
     }
   );
 
-  logger.info('✅ Scheduled jobs started');
+  // ✨ Gamification: Evening mission reminders - 6:00 PM
+  gamificationQueue.add(
+    'evening-mission-reminders',
+    { time: 'evening' },
+    {
+      repeat: { cron: '0 18 * * *' }, // 6:00 PM daily
+      jobId: 'evening-mission-reminders',
+    }
+  );
+
+  // ✨ Gamification: Night mission reminders - 11:00 PM
+  gamificationQueue.add(
+    'night-mission-reminders',
+    { time: 'night' },
+    {
+      repeat: { cron: '0 23 * * *' }, // 11:00 PM daily
+      jobId: 'night-mission-reminders',
+    }
+  );
+
+  // ✨ Gamification: Streak protection alerts - 8:00 PM
+  gamificationQueue.add(
+    'streak-protection-alerts',
+    {},
+    {
+      repeat: { cron: '0 20 * * *' }, // 8:00 PM daily
+      jobId: 'streak-protection-alerts',
+    }
+  );
+
+  logger.info('✅ Scheduled jobs started (including gamification)');
 }
 
 export { 
