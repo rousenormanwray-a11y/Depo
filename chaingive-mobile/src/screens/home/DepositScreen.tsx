@@ -8,6 +8,7 @@ import { typography } from '../../theme/typography';
 import { spacing, layout } from '../../theme/spacing';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../store/store';
+import InlineError from '../../components/common/InlineError';
 import { depositFunds } from '../../store/slices/walletSlice';
 
 const DepositScreen: React.FC = () => {
@@ -45,11 +46,12 @@ const DepositScreen: React.FC = () => {
       <View style={styles.content}>
         <Text style={styles.label}>Amount (₦)</Text>
         <TextInput style={styles.input} value={amount} onChangeText={setAmount} keyboardType="numeric" placeholder="Enter amount" />
+        {(!amount || Number(amount) <= 0) && <InlineError message="Enter a positive amount" />}
 
         <Text style={[styles.label, { marginTop: spacing.md }]}>Payment Method</Text>
         <TextInput style={styles.input} value={method} onChangeText={setMethod} placeholder="Flutterwave / Paystack / Bank Transfer" />
         {!method.trim() && (
-          <Text style={styles.hint}>Choose a payment method like Flutterwave or Paystack</Text>
+          <InlineError message="Choose a payment method like Flutterwave or Paystack" />
         )}
 
         <TouchableOpacity style={styles.primaryBtn} onPress={handleDeposit}>

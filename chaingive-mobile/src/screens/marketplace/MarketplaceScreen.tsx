@@ -23,6 +23,7 @@ const MarketplaceScreen: React.FC = () => {
   const { user } = useSelector((s: RootState) => s.auth);
 
   useEffect(() => { dispatch(fetchMarketplaceItems()); }, [dispatch]);
+  useEffect(() => { dispatch(fetchMarketplaceItems()); }, [dispatch, selectedCategory]);
 
   const renderItem = ({ item }: { item: MarketplaceItem }) => (
     <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('ItemDetail', { itemId: item.id })}>

@@ -105,9 +105,12 @@ const initialState: MarketplaceState = {
 // Async thunks
 export const fetchMarketplaceItems = createAsyncThunk(
   'marketplace/fetchItems',
-  async () => {
+  async (_: void, { getState }) => {
     try {
-      const res = await marketplaceAPI.getListings({ limit: 50 });
+      const state = getState() as { marketplace: typeof initialState };
+      const category = state.marketplace.selectedCategory || undefined;
+      const q = state.marketplace.searchQuery || undefined;
+      const res = await marketplaceAPI.getListings({ limit: 50, category, q });
       const data: any = res.data;
       return (data?.items || data || mockMarketplaceItems) as MarketplaceItem[];
     } catch (_err) {
