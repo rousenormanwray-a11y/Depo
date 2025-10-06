@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSelector } from 'react-redux';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 import { RootState } from '../../store/store';
+import { fetchMarketplaceItems } from '../../store/slices/marketplaceSlice';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, layout } from '../../theme/spacing';
@@ -16,7 +17,16 @@ const ItemDetailScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { itemId } = route.params as RouteParams;
+  const dispatch = useDispatch();
   const { items } = useSelector((s: RootState) => s.marketplace);
+
+  useFocusEffect(
+    useCallback(() => {
+      // Ensure fresh item data when returning to this screen
+      // @ts-ignore simple dispatch
+      dispatch(fetchMarketplaceItems());
+    }, [dispatch])
+  );
 
   const item = items.find((i) => i.id === itemId);
   if (!item) {

@@ -52,6 +52,11 @@ const TransactionHistoryScreen: React.FC = () => {
             </View>
           ))}
         </View>
+      ) : transactions.length === 0 ? (
+        <View style={styles.emptyWrap}>
+          <Icon name="receipt-long" size={48} color={colors.gray[300]} />
+          <Text style={styles.empty}>No transactions yet.</Text>
+        </View>
       ) : (
         <FlatList
           data={transactions as any}
@@ -96,6 +101,7 @@ const styles = StyleSheet.create({
   plus: { color: colors.success },
   minus: { color: colors.primary },
   empty: { ...typography.bodyRegular, color: colors.text.secondary, textAlign: 'center', marginTop: spacing.lg },
+  emptyWrap: { alignItems: 'center', justifyContent: 'center', padding: spacing['4xl'] },
 });
 
 export default TransactionHistoryScreen;
