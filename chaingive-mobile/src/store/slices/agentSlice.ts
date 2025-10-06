@@ -1,59 +1,12 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { Agent, VerificationRequest } from '../../types';
-
-// Mock data for agent dashboard
-const mockAgent: Agent = {
-  id: 'agent-1',
-  userId: '1',
-  agentCode: 'CG001',
-  location: {
-    state: 'Lagos',
-    city: 'Ikeja',
-    address: '123 Allen Avenue, Ikeja, Lagos',
-  },
-  rating: 4.8,
-  totalVerifications: 45,
-  totalDeposits: 120,
-  commissionEarned: 25000,
-  isActive: true,
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-};
-
-const mockVerificationRequests: VerificationRequest[] = [
-  {
-    id: 'req-1',
-    userId: 'user-1',
-    agentId: 'agent-1',
-    type: 'tier2',
-    status: 'pending',
-    documents: {
-      selfie: 'https://example.com/selfie1.jpg',
-      idCard: 'https://example.com/id1.jpg',
-    },
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'req-2',
-    userId: 'user-2',
-    agentId: 'agent-1',
-    type: 'tier3',
-    status: 'pending',
-    documents: {
-      selfie: 'https://example.com/selfie2.jpg',
-      idCard: 'https://example.com/id2.jpg',
-      utilityBill: 'https://example.com/bill2.jpg',
-    },
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
+import { agentService, PendingCoinPurchase } from '../../services/agentService';
 
 interface AgentState {
-  agent: Agent | null;
+  agent: any | null;
   verificationRequests: VerificationRequest[];
   pendingRequests: VerificationRequest[];
+  pendingCoinRequests: PendingCoinPurchase[];
   loading: boolean;
   error: string | null;
 }
@@ -62,6 +15,7 @@ const initialState: AgentState = {
   agent: null,
   verificationRequests: [],
   pendingRequests: [],
+  pendingCoinRequests: [],
   loading: false,
   error: null,
 };
@@ -70,14 +24,37 @@ const initialState: AgentState = {
 export const fetchAgentData = createAsyncThunk(
   'agent/fetchData',
   async (userId: string) => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    const dashboard = await agentService.getDashboard();
+    const coinRequests = await agentService.getPendingCoinRequests();
     
     return {
-      agent: mockAgent,
-      verificationRequests: mockVerificationRequests,
-      pendingRequests: mockVerificationRequests.filter(req => req.status === 'pending'),
+      agent: dashboard,
+      pendingCoinRequests: coinRequests.purchases,
     };
+  }
+);
+
+export const fetchPendingCoinRequests = createAsyncThunk(
+  'agent/fetchCoinRequests',
+  async () => {
+    const response = await agentService.getPendingCoinRequests();
+    return response.purchases;
+  }
+);
+
+export const confirmCoinPayment = createAsyncThunk(
+  'agent/confirmPayment',
+  async (data: { purchaseId: string; paymentReceived: boolean; notes?: string }) => {
+    const response = await agentService.confirmPaymentAndRelease(data);
+    return response;
+  }
+);
+
+export const rejectCoinRequest = createAsyncThunk(
+  'agent/rejectRequest',
+  async ({ purchaseId, reason }: { purchaseId: string; reason: string }) => {
+    const response = await agentService.rejectCoinPurchase(purchaseId, reason);
+    return { purchaseId, ...response };
   }
 );
 
@@ -88,41 +65,17 @@ export const processVerificationRequest = createAsyncThunk(
     status: 'approved' | 'rejected'; 
     notes?: string;
   }) => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    return { requestId, status, notes };
-  }
-);
-
-export const logCashDeposit = createAsyncThunk(
-  'agent/logCashDeposit',
-  async (depositData: {
-    userId: string;
-    amount: number;
-    phoneNumber: string;
-    notes?: string;
-  }) => {
-    // Simulate API call
+    // TODO: Implement verifyUser API call when endpoint is ready
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const commission = depositData.amount * 0.02; // 2% commission
-    
-    return {
-      depositId: 'deposit-' + Date.now(),
-      ...depositData,
-      commission,
-      timestamp: new Date().toISOString(),
-    };
+    return { requestId, status, notes };
   }
 );
 
 export const updateAgentLocation = createAsyncThunk(
   'agent/updateLocation',
   async (location: { state: string; city: string; address: string }) => {
-    // Simulate API call
+    // TODO: Implement update location API when endpoint is ready
     await new Promise(resolve => setTimeout(resolve, 800));
-    
     return location;
   }
 );
@@ -156,12 +109,61 @@ const agentSlice = createSlice({
       .addCase(fetchAgentData.fulfilled, (state, action) => {
         state.loading = false;
         state.agent = action.payload.agent;
-        state.verificationRequests = action.payload.verificationRequests;
-        state.pendingRequests = action.payload.pendingRequests;
+        state.pendingCoinRequests = action.payload.pendingCoinRequests;
       })
       .addCase(fetchAgentData.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || 'Failed to fetch agent data';
+      })
+      
+      // Fetch pending coin requests
+      .addCase(fetchPendingCoinRequests.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchPendingCoinRequests.fulfilled, (state, action) => {
+        state.loading = false;
+        state.pendingCoinRequests = action.payload;
+      })
+      .addCase(fetchPendingCoinRequests.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to fetch coin requests';
+      })
+      
+      // Confirm coin payment
+      .addCase(confirmCoinPayment.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(confirmCoinPayment.fulfilled, (state, action) => {
+        state.loading = false;
+        // Remove from pending
+        state.pendingCoinRequests = state.pendingCoinRequests.filter(
+          req => req.id !== action.payload.purchase.id
+        );
+        // Update agent stats
+        if (state.agent) {
+          state.agent.stats = state.agent.stats || {};
+          state.agent.stats.totalCommissions = 
+            (state.agent.stats.totalCommissions || 0) + action.payload.commission;
+        }
+      })
+      .addCase(confirmCoinPayment.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to confirm payment';
+      })
+      
+      // Reject coin request
+      .addCase(rejectCoinRequest.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(rejectCoinRequest.fulfilled, (state, action) => {
+        state.loading = false;
+        state.pendingCoinRequests = state.pendingCoinRequests.filter(
+          req => req.id !== action.payload.purchaseId
+        );
+      })
+      .addCase(rejectCoinRequest.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to reject request';
       })
       
       // Process verification request
@@ -172,7 +174,6 @@ const agentSlice = createSlice({
         state.loading = false;
         const { requestId, status, notes } = action.payload;
         
-        // Update the request in both arrays
         const updateRequest = (req: VerificationRequest) => {
           if (req.id === requestId) {
             req.status = status;
@@ -185,33 +186,13 @@ const agentSlice = createSlice({
         state.verificationRequests = state.verificationRequests.map(updateRequest);
         state.pendingRequests = state.pendingRequests.filter(req => req.id !== requestId);
         
-        // Update agent stats
         if (state.agent && status === 'approved') {
-          state.agent.totalVerifications += 1;
-          state.agent.commissionEarned += 500; // ₦500 per verification
+          state.agent.totalVerifications = (state.agent.totalVerifications || 0) + 1;
         }
       })
       .addCase(processVerificationRequest.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || 'Failed to process verification';
-      })
-      
-      // Log cash deposit
-      .addCase(logCashDeposit.pending, (state) => {
-        state.loading = true;
-      })
-      .addCase(logCashDeposit.fulfilled, (state, action) => {
-        state.loading = false;
-        
-        // Update agent stats
-        if (state.agent) {
-          state.agent.totalDeposits += 1;
-          state.agent.commissionEarned += action.payload.commission;
-        }
-      })
-      .addCase(logCashDeposit.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message || 'Failed to log cash deposit';
       })
       
       // Update agent location
