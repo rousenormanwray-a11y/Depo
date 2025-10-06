@@ -45,9 +45,20 @@ const TransactionHistoryScreen: React.FC = () => {
 
   const handleRefresh = async () => {
     setRefreshing(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setPage(1);
     await fetchTransactions();
     setRefreshing(false);
+  };
+
+  const handleShareTransaction = (transaction: Transaction) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Alert.alert('Share Transaction', `Share transaction ${transaction.id}?`);
+  };
+
+  const handleDownloadReceipt = (transaction: Transaction) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Alert.alert('Download Receipt', `Download receipt for ${transaction.id}?`);
   };
 
   const formatCurrency = (amount: number) => {
@@ -132,43 +143,75 @@ const TransactionHistoryScreen: React.FC = () => {
     const statusColor = getStatusColor(item.status);
     const isPositive = item.type === 'DEPOSIT' || item.type === 'DONATION_RECEIVED';
 
+    const leftAction: SwipeAction = {
+      icon: 'receipt',
+      label: 'Receipt',
+      color: colors.info,
+      onPress: () => handleDownloadReceipt(item),
+    };
+
+    const rightAction: SwipeAction = {
+      icon: 'share',
+      label: 'Share',
+      color: colors.success,
+      onPress: () => handleShareTransaction(item),
+    };
+
     return (
-      <TouchableOpacity
-        style={styles.transactionCard}
-        onPress={() => navigation.navigate('TransactionDetail', { transactionId: item.id })}
+      <SwipeableRow
+        leftAction={leftAction}
+        rightAction={rightAction}
       >
-        <View style={[styles.iconContainer, { backgroundColor: `${typeConfig.color}20` }]}>
-          <Icon name={typeConfig.icon} size={24} color={typeConfig.color} />
-        </View>
-
-        <View style={styles.transactionInfo}>
-          <Text style={styles.transactionTitle}>{typeConfig.label}</Text>
-          <Text style={styles.transactionDescription}>{item.description}</Text>
-          <Text style={styles.transactionDate}>{formatDate(item.createdAt)}</Text>
-        </View>
-
-        <View style={styles.transactionRight}>
-          <Text style={[styles.transactionAmount, { color: isPositive ? colors.success : colors.error }]}>
-            {isPositive ? '+' : '-'}{formatCurrency(item.amount)}
-          </Text>
-          <View style={[styles.statusBadge, { backgroundColor: `${statusColor}20` }]}>
-            <Text style={[styles.statusText, { color: statusColor }]}>
-              {item.status}
-            </Text>
+        <TouchableOpacity
+          style={styles.transactionCard}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            navigation.navigate('TransactionDetail', { transactionId: item.id });
+          }}
+        >
+          <View style={[styles.iconContainer, { backgroundColor: `${typeConfig.color}20` }]}>
+            <Icon name={typeConfig.icon} size={24} color={typeConfig.color} />
           </View>
-        </View>
-      </TouchableOpacity>
+
+          <View style={styles.transactionInfo}>
+            <Text style={styles.transactionTitle}>{typeConfig.label}</Text>
+            <Text style={styles.transactionDescription} numberOfLines={1}>
+              {item.description}
+            </Text>
+            <Text style={styles.transactionDate}>{formatDate(item.createdAt)}</Text>
+          </View>
+
+          <View style={styles.transactionRight}>
+            <Text style={[styles.transactionAmount, { color: isPositive ? colors.success : colors.error }]}>
+              {isPositive ? '+' : '-'}{formatCurrency(item.amount)}
+            </Text>
+            <EnhancedBadge
+              value={item.status}
+              color={statusColor}
+              textColor={colors.white}
+              size="small"
+              variant="solid"
+              position="inline"
+              style={styles.statusBadge}
+            />
+          </View>
+        </TouchableOpacity>
+      </SwipeableRow>
     );
   };
 
   const renderEmptyState = () => (
-    <View style={styles.emptyState}>
-      <Icon name="receipt-long" size={64} color={colors.gray[300]} />
-      <Text style={styles.emptyStateTitle}>No Transactions</Text>
-      <Text style={styles.emptyStateSubtitle}>
-        Your transaction history will appear here
-      </Text>
-    </View>
+    <EnhancedEmptyState
+      icon="receipt-long"
+      title="No Transactions Yet"
+      description="Your transaction history will appear here once you start making donations, deposits, or withdrawals."
+      actionLabel="Make Your First Donation"
+      onActionPress={() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        navigation.navigate('GiveScreen');
+      }}
+      style={styles.emptyState}
+    />
   );
 
   return (
@@ -177,13 +220,19 @@ const TransactionHistoryScreen: React.FC = () => {
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => navigation.goBack()}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            navigation.goBack();
+          }}
         >
           <Icon name="arrow-back" size={24} color={colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Transaction History</Text>
         <View style={styles.placeholder} />
       </View>
+
+      {/* Breadcrumb */}
+      <Breadcrumb />
 
       {/* Filters */}
       <ScrollView
@@ -199,7 +248,10 @@ const TransactionHistoryScreen: React.FC = () => {
               styles.filterButton,
               filter === f && styles.filterButtonActive,
             ]}
-            onPress={() => setFilter(f)}
+            onPress={() => {
+              Haptics.selectionAsync();
+              setFilter(f);
+            }}
           >
             <Text
               style={[
@@ -214,22 +266,31 @@ const TransactionHistoryScreen: React.FC = () => {
       </ScrollView>
 
       {/* List */}
-      <FlatList
-        data={filteredTransactions}
-        renderItem={renderTransaction}
-        keyExtractor={(item) => item.id}
-        ListEmptyComponent={loading ? null : renderEmptyState}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            colors={[colors.primary]}
-            tintColor={colors.primary}
-          />
-        }
-      />
+      {loading ? (
+        <ListSkeleton count={8}>
+          <CardSkeleton height={90} />
+        </ListSkeleton>
+      ) : (
+        <FlatList
+          data={filteredTransactions}
+          renderItem={renderTransaction}
+          keyExtractor={(item) => item.id}
+          ListEmptyComponent={renderEmptyState}
+          contentContainerStyle={[
+            styles.listContent,
+            filteredTransactions.length === 0 && styles.emptyListContent,
+          ]}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={[colors.primary]}
+              tintColor={colors.primary}
+            />
+          }
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -289,6 +350,10 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: layout.screenPadding,
+    paddingBottom: 100, // Account for floating tab bar
+  },
+  emptyListContent: {
+    flex: 1,
   },
   transactionCard: {
     flexDirection: 'row',
