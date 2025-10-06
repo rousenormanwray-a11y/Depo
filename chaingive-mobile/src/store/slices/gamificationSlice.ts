@@ -1,17 +1,18 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import gamificationAPI, {
-  DailyMissionsResponse,
+import * as gamificationAPI from '../../api/gamification';
+import type {
+  DailyMission,
   DailyStreak,
   DailyProgress,
   WeeklyChallengeProgress,
   Achievement,
   UserAchievement,
-  GamificationDashboard,
+  GamificationStats,
 } from '../../api/gamification';
 
 interface GamificationState {
   // Daily Missions
-  missions: DailyMissionsResponse['missions'] | null;
+  todaysMissions: DailyMission | null;
   missionsLoading: boolean;
   missionsError: string | null;
   
@@ -21,12 +22,12 @@ interface GamificationState {
   streakError: string | null;
   
   // Progress Rings
-  progress: DailyProgress | null;
+  todaysProgress: DailyProgress | null;
   progressLoading: boolean;
   progressError: string | null;
   
   // Weekly Challenges
-  challenges: WeeklyChallengeProgress[];
+  activeChallenges: WeeklyChallengeProgress[];
   challengesLoading: boolean;
   challengesError: string | null;
   
@@ -36,13 +37,20 @@ interface GamificationState {
   achievementsLoading: boolean;
   achievementsError: string | null;
   
+  // Stats
+  stats: GamificationStats | null;
+  
   // Dashboard
   dashboardLoading: boolean;
   dashboardError: string | null;
+  
+  // Recent Rewards
+  recentCoinsEarned: number;
+  showRewardAnimation: boolean;
 }
 
 const initialState: GamificationState = {
-  missions: null,
+  todaysMissions: null,
   missionsLoading: false,
   missionsError: null,
   
@@ -50,11 +58,11 @@ const initialState: GamificationState = {
   streakLoading: false,
   streakError: null,
   
-  progress: null,
+  todaysProgress: null,
   progressLoading: false,
   progressError: null,
   
-  challenges: [],
+  activeChallenges: [],
   challengesLoading: false,
   challengesError: null,
   
@@ -63,8 +71,13 @@ const initialState: GamificationState = {
   achievementsLoading: false,
   achievementsError: null,
   
+  stats: null,
+  
   dashboardLoading: false,
   dashboardError: null,
+  
+  recentCoinsEarned: 0,
+  showRewardAnimation: false,
 };
 
 // ============================================
@@ -73,63 +86,97 @@ const initialState: GamificationState = {
 
 export const fetchTodaysMissions = createAsyncThunk(
   'gamification/fetchTodaysMissions',
-  async () => {
-    const response = await gamificationAPI.getTodaysMissions();
-    return response.missions;
+  async (_, { rejectWithValue }) => {
+    try {
+      const data = await gamificationAPI.getTodaysMissions();
+      return data.missions;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.error?.message || 'Failed to fetch missions');
+    }
   }
 );
 
 export const completeMission = createAsyncThunk(
   'gamification/completeMission',
-  async (missionType: string) => {
-    const response = await gamificationAPI.completeMission(missionType);
-    return response;
+  async (missionType: string, { rejectWithValue }) => {
+    try {
+      const data = await gamificationAPI.completeMission(missionType);
+      return data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.error?.message || 'Failed to complete mission');
+    }
   }
 );
 
 export const fetchStreak = createAsyncThunk(
   'gamification/fetchStreak',
-  async () => {
-    const response = await gamificationAPI.getStreak();
-    return response.streak;
+  async (_, { rejectWithValue }) => {
+    try {
+      const data = await gamificationAPI.getStreak();
+      return data.streak;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.error?.message || 'Failed to fetch streak');
+    }
   }
 );
 
 export const fetchTodaysProgress = createAsyncThunk(
   'gamification/fetchTodaysProgress',
-  async () => {
-    const response = await gamificationAPI.getTodaysProgress();
-    return response.progress;
+  async (_, { rejectWithValue }) => {
+    try {
+      const data = await gamificationAPI.getTodaysProgress();
+      return data.progress;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.error?.message || 'Failed to fetch progress');
+    }
   }
 );
 
-export const fetchChallenges = createAsyncThunk(
-  'gamification/fetchChallenges',
-  async () => {
-    const response = await gamificationAPI.getChallengeProgress();
-    return response.progress;
+export const fetchActiveChallenges = createAsyncThunk(
+  'gamification/fetchActiveChallenges',
+  async (_, { rejectWithValue }) => {
+    try {
+      const data = await gamificationAPI.getChallengeProgress();
+      return data.progress;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.error?.message || 'Failed to fetch challenges');
+    }
   }
 );
 
-export const fetchAchievements = createAsyncThunk(
-  'gamification/fetchAchievements',
-  async () => {
-    const [all, unlocked] = await Promise.all([
-      gamificationAPI.getAllAchievements(),
-      gamificationAPI.getUnlockedAchievements(),
-    ]);
-    return {
-      achievements: all.achievements,
-      unlocked: unlocked.achievements,
-    };
+export const fetchAllAchievements = createAsyncThunk(
+  'gamification/fetchAllAchievements',
+  async (_, { rejectWithValue }) => {
+    try {
+      const data = await gamificationAPI.getAllAchievements();
+      return data.achievements;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.error?.message || 'Failed to fetch achievements');
+    }
+  }
+);
+
+export const fetchUnlockedAchievements = createAsyncThunk(
+  'gamification/fetchUnlockedAchievements',
+  async (_, { rejectWithValue }) => {
+    try {
+      const data = await gamificationAPI.getUnlockedAchievements();
+      return data.achievements;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.error?.message || 'Failed to fetch unlocked achievements');
+    }
   }
 );
 
 export const fetchDashboard = createAsyncThunk(
   'gamification/fetchDashboard',
-  async () => {
-    const response = await gamificationAPI.getDashboard();
-    return response;
+  async (_, { rejectWithValue }) => {
+    try {
+      const data = await gamificationAPI.getDashboard();
+      return data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.error?.message || 'Failed to fetch dashboard');
+    }
   }
 );
 
@@ -141,113 +188,147 @@ const gamificationSlice = createSlice({
   name: 'gamification',
   initialState,
   reducers: {
-    clearGamificationErrors: (state) => {
-      state.missionsError = null;
-      state.streakError = null;
-      state.progressError = null;
-      state.challengesError = null;
-      state.achievementsError = null;
-      state.dashboardError = null;
+    hideRewardAnimation: (state) => {
+      state.showRewardAnimation = false;
+      state.recentCoinsEarned = 0;
+    },
+    
+    updateLocalProgress: (state, action: PayloadAction<{ ring: 'give' | 'earn' | 'engage'; value: number }>) => {
+      if (state.todaysProgress) {
+        const { ring, value } = action.payload;
+        if (ring === 'give') {
+          state.todaysProgress.giveProgress = Math.min(value, state.todaysProgress.giveGoal);
+          state.todaysProgress.giveClosed = value >= state.todaysProgress.giveGoal;
+        } else if (ring === 'earn') {
+          state.todaysProgress.earnProgress = Math.min(value, state.todaysProgress.earnGoal);
+          state.todaysProgress.earnClosed = value >= state.todaysProgress.earnGoal;
+        } else if (ring === 'engage') {
+          state.todaysProgress.engageProgress = Math.min(value, state.todaysProgress.engageGoal);
+          state.todaysProgress.engageClosed = value >= state.todaysProgress.engageGoal;
+        }
+        
+        state.todaysProgress.allRingsClosed =
+          state.todaysProgress.giveClosed &&
+          state.todaysProgress.earnClosed &&
+          state.todaysProgress.engageClosed;
+      }
+    },
+    
+    resetGamification: (state) => {
+      return initialState;
     },
   },
   extraReducers: (builder) => {
-    // Missions
-    builder.addCase(fetchTodaysMissions.pending, (state) => {
-      state.missionsLoading = true;
-      state.missionsError = null;
-    });
-    builder.addCase(fetchTodaysMissions.fulfilled, (state, action) => {
-      state.missionsLoading = false;
-      state.missions = action.payload;
-    });
-    builder.addCase(fetchTodaysMissions.rejected, (state, action) => {
-      state.missionsLoading = false;
-      state.missionsError = action.error.message || 'Failed to fetch missions';
-    });
+    // Today's Missions
+    builder
+      .addCase(fetchTodaysMissions.pending, (state) => {
+        state.missionsLoading = true;
+        state.missionsError = null;
+      })
+      .addCase(fetchTodaysMissions.fulfilled, (state, action) => {
+        state.missionsLoading = false;
+        state.todaysMissions = action.payload;
+      })
+      .addCase(fetchTodaysMissions.rejected, (state, action) => {
+        state.missionsLoading = false;
+        state.missionsError = action.payload as string;
+      });
     
     // Complete Mission
-    builder.addCase(completeMission.fulfilled, (state, action) => {
-      // Refresh missions after completion
-      if (state.missions) {
-        // Will be refreshed by fetchTodaysMissions
-      }
-    });
+    builder
+      .addCase(completeMission.fulfilled, (state, action) => {
+        state.recentCoinsEarned = action.payload.coinsAwarded;
+        state.showRewardAnimation = true;
+        // Refresh missions after completion
+      });
     
     // Streak
-    builder.addCase(fetchStreak.pending, (state) => {
-      state.streakLoading = true;
-      state.streakError = null;
-    });
-    builder.addCase(fetchStreak.fulfilled, (state, action) => {
-      state.streakLoading = false;
-      state.streak = action.payload;
-    });
-    builder.addCase(fetchStreak.rejected, (state, action) => {
-      state.streakLoading = false;
-      state.streakError = action.error.message || 'Failed to fetch streak';
-    });
+    builder
+      .addCase(fetchStreak.pending, (state) => {
+        state.streakLoading = true;
+        state.streakError = null;
+      })
+      .addCase(fetchStreak.fulfilled, (state, action) => {
+        state.streakLoading = false;
+        state.streak = action.payload;
+      })
+      .addCase(fetchStreak.rejected, (state, action) => {
+        state.streakLoading = false;
+        state.streakError = action.payload as string;
+      });
     
-    // Progress
-    builder.addCase(fetchTodaysProgress.pending, (state) => {
-      state.progressLoading = true;
-      state.progressError = null;
-    });
-    builder.addCase(fetchTodaysProgress.fulfilled, (state, action) => {
-      state.progressLoading = false;
-      state.progress = action.payload;
-    });
-    builder.addCase(fetchTodaysProgress.rejected, (state, action) => {
-      state.progressLoading = false;
-      state.progressError = action.error.message || 'Failed to fetch progress';
-    });
+    // Today's Progress
+    builder
+      .addCase(fetchTodaysProgress.pending, (state) => {
+        state.progressLoading = true;
+        state.progressError = null;
+      })
+      .addCase(fetchTodaysProgress.fulfilled, (state, action) => {
+        state.progressLoading = false;
+        state.todaysProgress = action.payload;
+      })
+      .addCase(fetchTodaysProgress.rejected, (state, action) => {
+        state.progressLoading = false;
+        state.progressError = action.payload as string;
+      });
     
-    // Challenges
-    builder.addCase(fetchChallenges.pending, (state) => {
-      state.challengesLoading = true;
-      state.challengesError = null;
-    });
-    builder.addCase(fetchChallenges.fulfilled, (state, action) => {
-      state.challengesLoading = false;
-      state.challenges = action.payload;
-    });
-    builder.addCase(fetchChallenges.rejected, (state, action) => {
-      state.challengesLoading = false;
-      state.challengesError = action.error.message || 'Failed to fetch challenges';
-    });
+    // Active Challenges
+    builder
+      .addCase(fetchActiveChallenges.pending, (state) => {
+        state.challengesLoading = true;
+        state.challengesError = null;
+      })
+      .addCase(fetchActiveChallenges.fulfilled, (state, action) => {
+        state.challengesLoading = false;
+        state.activeChallenges = action.payload;
+      })
+      .addCase(fetchActiveChallenges.rejected, (state, action) => {
+        state.challengesLoading = false;
+        state.challengesError = action.payload as string;
+      });
     
-    // Achievements
-    builder.addCase(fetchAchievements.pending, (state) => {
-      state.achievementsLoading = true;
-      state.achievementsError = null;
-    });
-    builder.addCase(fetchAchievements.fulfilled, (state, action) => {
-      state.achievementsLoading = false;
-      state.achievements = action.payload.achievements;
-      state.unlockedAchievements = action.payload.unlocked;
-    });
-    builder.addCase(fetchAchievements.rejected, (state, action) => {
-      state.achievementsLoading = false;
-      state.achievementsError = action.error.message || 'Failed to fetch achievements';
-    });
+    // All Achievements
+    builder
+      .addCase(fetchAllAchievements.pending, (state) => {
+        state.achievementsLoading = true;
+        state.achievementsError = null;
+      })
+      .addCase(fetchAllAchievements.fulfilled, (state, action) => {
+        state.achievementsLoading = false;
+        state.achievements = action.payload;
+      })
+      .addCase(fetchAllAchievements.rejected, (state, action) => {
+        state.achievementsLoading = false;
+        state.achievementsError = action.payload as string;
+      });
+    
+    // Unlocked Achievements
+    builder
+      .addCase(fetchUnlockedAchievements.fulfilled, (state, action) => {
+        state.unlockedAchievements = action.payload;
+      });
     
     // Dashboard
-    builder.addCase(fetchDashboard.pending, (state) => {
-      state.dashboardLoading = true;
-      state.dashboardError = null;
-    });
-    builder.addCase(fetchDashboard.fulfilled, (state, action) => {
-      state.dashboardLoading = false;
-      state.missions = action.payload.missions;
-      state.streak = action.payload.streak;
-      state.progress = action.payload.progress;
-      state.challenges = action.payload.challenges;
-    });
-    builder.addCase(fetchDashboard.rejected, (state, action) => {
-      state.dashboardLoading = false;
-      state.dashboardError = action.error.message || 'Failed to fetch dashboard';
-    });
+    builder
+      .addCase(fetchDashboard.pending, (state) => {
+        state.dashboardLoading = true;
+        state.dashboardError = null;
+      })
+      .addCase(fetchDashboard.fulfilled, (state, action) => {
+        state.dashboardLoading = false;
+        state.todaysMissions = action.payload.missions;
+        state.streak = action.payload.streak;
+        state.todaysProgress = action.payload.progress;
+        state.activeChallenges = action.payload.challenges;
+        state.stats = action.payload.stats;
+      })
+      .addCase(fetchDashboard.rejected, (state, action) => {
+        state.dashboardLoading = false;
+        state.dashboardError = action.payload as string;
+      });
   },
 });
 
-export const { clearGamificationErrors } = gamificationSlice.actions;
+export const { hideRewardAnimation, updateLocalProgress, resetGamification } = gamificationSlice.actions;
+
 export default gamificationSlice.reducer;

@@ -4,6 +4,7 @@ import prisma from '../utils/prisma';
 import { AppError } from '../middleware/errorHandler';
 import logger from '../utils/logger';
 import crypto from 'crypto';
+import gamificationService from '../services/gamification.service';
 
 /**
  * Generate unique referral code

@@ -6,241 +6,214 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Animated,
+  RefreshControl,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import { AppDispatch, RootState } from '../../store/store';
-import { fetchTodaysMissions, completeMission } from '../../store/slices/gamificationSlice';
-import { colors } from '../../theme/colors';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
+import ConfettiCannon from 'react-native-confetti-cannon';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { fetchTodaysMissions, completeMission, hideRewardAnimation } from '../../store/slices/gamificationSlice';
+import type { RootState, AppDispatch } from '../../store/store';
+import { colors } from '../../theme/colors';
 
-const DailyMissionsScreen = () => {
+export default function DailyMissionsScreen({ navigation }: any) {
   const dispatch = useDispatch<AppDispatch>();
-  const { missions, missionsLoading } = useSelector((state: RootState) => state.gamification);
+  const { todaysMissions, missionsLoading, missionsError, recentCoinsEarned, showRewardAnimation } = useSelector(
+    (state: RootState) => state.gamification
+  );
+  
   const [refreshing, setRefreshing] = useState(false);
+  const [confettiKey, setConfettiKey] = useState(0);
 
   useEffect(() => {
     loadMissions();
   }, []);
 
+  useEffect(() => {
+    if (showRewardAnimation) {
+      setConfettiKey((prev) => prev + 1);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setTimeout(() => {
+        dispatch(hideRewardAnimation());
+      }, 3000);
+    }
+  }, [showRewardAnimation]);
+
   const loadMissions = async () => {
-    setRefreshing(true);
     await dispatch(fetchTodaysMissions());
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadMissions();
     setRefreshing(false);
   };
 
-  const handleRefresh = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    loadMissions();
+  const renderMissionCard = (
+    title: string,
+    description: string,
+    reward: number,
+    isDone: boolean,
+    icon: string
+  ) => {
+    return (
+      <View style={[styles.missionCard, isDone && styles.missionCardComplete]}>
+        <View style={styles.missionLeft}>
+          <View style={[styles.iconCircle, isDone && styles.iconCircleComplete]}>
+            <MaterialCommunityIcons
+              name={isDone ? 'check-circle' : (icon as any)}
+              size={32}
+              color={isDone ? colors.success : colors.primary}
+            />
+          </View>
+        </View>
+        
+        <View style={styles.missionCenter}>
+          <Text style={[styles.missionTitle, isDone && styles.missionTitleComplete]}>
+            {title}
+          </Text>
+          <Text style={styles.missionDescription}>{description}</Text>
+        </View>
+        
+        <View style={styles.missionRight}>
+          <View style={[styles.rewardBadge, isDone && styles.rewardBadgeComplete]}>
+            <MaterialCommunityIcons name="coin" size={16} color="#FFD700" />
+            <Text style={styles.rewardText}>+{reward}</Text>
+          </View>
+        </View>
+      </View>
+    );
   };
 
-  if (missionsLoading && !missions) {
+  const missions = todaysMissions
+    ? [
+        {
+          title: todaysMissions.mission1Name,
+          description: todaysMissions.mission1Desc,
+          reward: todaysMissions.mission1Reward,
+          isDone: todaysMissions.mission1Done,
+          icon: 'gift-outline',
+        },
+        {
+          title: todaysMissions.mission2Name,
+          description: todaysMissions.mission2Desc,
+          reward: todaysMissions.mission2Reward,
+          isDone: todaysMissions.mission2Done,
+          icon: 'wallet-outline',
+        },
+        {
+          title: todaysMissions.mission3Name,
+          description: todaysMissions.mission3Desc,
+          reward: todaysMissions.mission3Reward,
+          isDone: todaysMissions.mission3Done,
+          icon: 'share-variant-outline',
+        },
+      ]
+    : [];
+
+  const completedCount = missions.filter((m) => m.isDone).length;
+  const totalRewards = missions.reduce((sum, m) => (m.isDone ? sum + m.reward : sum), 0);
+  const potentialBonus = todaysMissions?.allCompleted ? todaysMissions.bonusReward : 0;
+
+  if (missionsLoading && !todaysMissions) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Loading your daily missions...</Text>
+        <Text style={styles.loadingText}>Loading today's missions...</Text>
       </View>
     );
   }
-
-  if (!missions) {
-    return (
-      <View style={styles.emptyContainer}>
-        <Icon name="assignment" size={80} color={colors.textSecondary} />
-        <Text style={styles.emptyText}>No missions available</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={loadMissions}>
-          <Text style={styles.retryText}>Retry</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  const mission1Done = missions.mission1Done;
-  const mission2Done = missions.mission2Done;
-  const mission3Done = missions.mission3Done;
-  const allCompleted = missions.allCompleted;
-
-  const totalMissions = 3;
-  const completedCount = [mission1Done, mission2Done, mission3Done].filter(Boolean).length;
-  const progressPercentage = (completedCount / totalMissions) * 100;
-
-  const potentialCoins = 
-    (!mission1Done ? missions.mission1Reward : 0) +
-    (!mission2Done ? missions.mission2Reward : 0) +
-    (!mission3Done ? missions.mission3Reward : 0) +
-    (completedCount === totalMissions - 1 && !allCompleted ? missions.bonusReward : 0);
 
   return (
-    <ScrollView 
+    <ScrollView
       style={styles.container}
-      contentContainerStyle={styles.contentContainer}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-      }
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
     >
-      {/* Header Card */}
-      <View style={styles.headerCard}>
-        <View style={styles.headerTop}>
-          <View>
-            <Text style={styles.headerTitle}>Daily Missions</Text>
-            <Text style={styles.headerSubtitle}>
-              Complete all 3 for bonus rewards!
-            </Text>
-          </View>
-          <View style={styles.coinsContainer}>
-            <Icon name="monetization-on" size={24} color={colors.warning} />
-            <Text style={styles.coinsText}>{missions.totalCoinsEarned}</Text>
-            <Text style={styles.coinsLabel}>earned</Text>
-          </View>
-        </View>
+      {showRewardAnimation && (
+        <ConfettiCannon key={confettiKey} count={50} origin={{ x: -10, y: 0 }} fadeOut autoStart />
+      )}
 
-        {/* Progress Bar */}
+      {/* Header */}
+      <LinearGradient colors={[colors.primary, colors.primaryDark]} style={styles.header}>
+        <Text style={styles.headerTitle}>🎯 Daily Missions</Text>
+        <Text style={styles.headerSubtitle}>Complete all 3 for a bonus!</Text>
+        
         <View style={styles.progressContainer}>
-          <View style={styles.progressBarBg}>
-            <Animated.View 
+          <View style={styles.progressBar}>
+            <View
               style={[
-                styles.progressBarFill,
-                { width: `${progressPercentage}%` }
-              ]} 
+                styles.progressFill,
+                { width: `${(completedCount / 3) * 100}%` },
+              ]}
             />
           </View>
           <Text style={styles.progressText}>
-            {completedCount}/{totalMissions} missions complete
+            {completedCount}/3 Complete
           </Text>
         </View>
+      </LinearGradient>
 
-        {!allCompleted && potentialCoins > 0 && (
-          <View style={styles.potentialCoinsContainer}>
-            <Icon name="stars" size={20} color={colors.warning} />
-            <Text style={styles.potentialCoinsText}>
-              {potentialCoins} more coins available today!
-            </Text>
-          </View>
-        )}
-
-        {allCompleted && (
-          <View style={styles.completedBanner}>
-            <Icon name="celebration" size={24} color={colors.success} />
-            <Text style={styles.completedText}>
-              🎉 All missions complete! +{missions.bonusReward} bonus coins!
-            </Text>
-          </View>
-        )}
-      </View>
-
-      {/* Mission 1 */}
-      <MissionCard
-        title={missions.mission1Name}
-        description={missions.mission1Desc}
-        reward={missions.mission1Reward}
-        completed={mission1Done}
-        icon="favorite"
-        color={colors.error}
-      />
-
-      {/* Mission 2 */}
-      <MissionCard
-        title={missions.mission2Name}
-        description={missions.mission2Desc}
-        reward={missions.mission2Reward}
-        completed={mission2Done}
-        icon="monetization-on"
-        color={colors.warning}
-      />
-
-      {/* Mission 3 */}
-      <MissionCard
-        title={missions.mission3Name}
-        description={missions.mission3Desc}
-        reward={missions.mission3Reward}
-        completed={mission3Done}
-        icon="share"
-        color={colors.info}
-      />
-
-      {/* Footer Tips */}
-      <View style={styles.tipsCard}>
-        <Icon name="lightbulb" size={24} color={colors.warning} />
-        <View style={styles.tipsContent}>
-          <Text style={styles.tipsTitle}>💡 Daily Tips</Text>
-          <Text style={styles.tipsText}>
-            • New missions available every day at midnight{'\n'}
-            • Complete all 3 for a special bonus{'\n'}
-            • Weekend missions give 1.5x rewards!
-          </Text>
+      {/* Stats Row */}
+      <View style={styles.statsRow}>
+        <View style={styles.statCard}>
+          <MaterialCommunityIcons name="coin" size={24} color="#FFD700" />
+          <Text style={styles.statValue}>{totalRewards}</Text>
+          <Text style={styles.statLabel}>Coins Earned</Text>
+        </View>
+        
+        <View style={styles.statCard}>
+          <MaterialCommunityIcons name="trophy" size={24} color={colors.primary} />
+          <Text style={styles.statValue}>{todaysMissions?.bonusReward || 0}</Text>
+          <Text style={styles.statLabel}>Bonus Reward</Text>
         </View>
       </View>
+
+      {/* Missions List */}
+      <View style={styles.missionsContainer}>
+        <Text style={styles.sectionTitle}>Today's Missions</Text>
+        
+        {missions.map((mission, index) => (
+          <View key={index}>{renderMissionCard(mission.title, mission.description, mission.reward, mission.isDone, mission.icon)}</View>
+        ))}
+      </View>
+
+      {/* All Complete Bonus */}
+      {todaysMissions?.allCompleted && (
+        <View style={styles.bonusCard}>
+          <LinearGradient colors={['#FFD700', '#FFA500']} style={styles.bonusGradient}>
+            <MaterialCommunityIcons name="star-circle" size={48} color="#FFF" />
+            <Text style={styles.bonusTitle}>🎉 All Missions Complete!</Text>
+            <Text style={styles.bonusText}>You earned {todaysMissions.bonusReward} bonus coins!</Text>
+          </LinearGradient>
+        </View>
+      )}
+
+      {/* Next Steps */}
+      {!todaysMissions?.allCompleted && (
+        <View style={styles.tipsCard}>
+          <Text style={styles.tipsTitle}>💡 Quick Tips</Text>
+          {!todaysMissions?.mission1Done && (
+            <Text style={styles.tipText}>• Make a donation to complete Mission 1</Text>
+          )}
+          {!todaysMissions?.mission2Done && (
+            <Text style={styles.tipText}>• Buy 10+ coins to complete Mission 2</Text>
+          )}
+          {!todaysMissions?.mission3Done && (
+            <Text style={styles.tipText}>• Share your referral code to complete Mission 3</Text>
+          )}
+        </View>
+      )}
+
+      <View style={{ height: 40 }} />
     </ScrollView>
   );
-};
-
-// ============================================
-// MISSION CARD COMPONENT
-// ============================================
-
-interface MissionCardProps {
-  title: string;
-  description: string;
-  reward: number;
-  completed: boolean;
-  icon: string;
-  color: string;
 }
-
-const MissionCard: React.FC<MissionCardProps> = ({
-  title,
-  description,
-  reward,
-  completed,
-  icon,
-  color,
-}) => {
-  return (
-    <View style={[styles.missionCard, completed && styles.missionCardCompleted]}>
-      <View style={[styles.missionIcon, { backgroundColor: color + '20' }]}>
-        <Icon name={icon} size={32} color={color} />
-      </View>
-      
-      <View style={styles.missionContent}>
-        <View style={styles.missionHeader}>
-          <Text style={[styles.missionTitle, completed && styles.missionTitleCompleted]}>
-            {title}
-          </Text>
-          {completed && (
-            <Icon name="check-circle" size={24} color={colors.success} />
-          )}
-        </View>
-        
-        <Text style={styles.missionDescription}>{description}</Text>
-        
-        <View style={styles.missionFooter}>
-          <View style={styles.rewardBadge}>
-            <Icon name="monetization-on" size={16} color={colors.warning} />
-            <Text style={styles.rewardText}>{reward} coins</Text>
-          </View>
-          
-          {completed && (
-            <Text style={styles.completedLabel}>✓ Completed</Text>
-          )}
-        </View>
-      </View>
-    </View>
-  );
-};
-
-// ============================================
-// STYLES
-// ============================================
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-  },
-  contentContainer: {
-    padding: 20,
-    paddingBottom: 40,
   },
   loadingContainer: {
     flex: 1,
@@ -253,216 +226,190 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.textSecondary,
   },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.background,
-    padding: 20,
+  header: {
+    padding: 24,
+    paddingTop: 40,
+    paddingBottom: 32,
   },
-  emptyText: {
-    marginTop: 16,
-    fontSize: 18,
-    color: colors.textSecondary,
-    textAlign: 'center',
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#FFF',
+    marginBottom: 8,
   },
-  retryButton: {
-    marginTop: 24,
-    paddingHorizontal: 32,
-    paddingVertical: 12,
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-  },
-  retryText: {
-    color: colors.white,
+  headerSubtitle: {
     fontSize: 16,
-    fontWeight: '600',
+    color: '#FFF',
+    opacity: 0.9,
+    marginBottom: 20,
   },
-  headerCard: {
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
+  progressContainer: {
+    marginTop: 8,
+  },
+  progressBar: {
+    height: 8,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#FFD700',
+  },
+  progressText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '600',
+    marginTop: 8,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    padding: 16,
+    gap: 12,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: '#FFF',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowRadius: 4,
     elevation: 3,
   },
-  headerTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 20,
-  },
-  headerTitle: {
+  statValue: {
     fontSize: 24,
     fontWeight: 'bold',
     color: colors.text,
+    marginTop: 8,
   },
-  headerSubtitle: {
-    fontSize: 14,
+  statLabel: {
+    fontSize: 12,
     color: colors.textSecondary,
     marginTop: 4,
   },
-  coinsContainer: {
-    alignItems: 'center',
+  missionsContainer: {
+    padding: 16,
   },
-  coinsText: {
+  sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: colors.warning,
-    marginTop: 4,
-  },
-  coinsLabel: {
-    fontSize: 12,
-    color: colors.textSecondary,
-  },
-  progressContainer: {
-    marginBottom: 12,
-  },
-  progressBarBg: {
-    height: 8,
-    backgroundColor: colors.border,
-    borderRadius: 4,
-    overflow: 'hidden',
-    marginBottom: 8,
-  },
-  progressBarFill: {
-    height: '100%',
-    backgroundColor: colors.primary,
-    borderRadius: 4,
-  },
-  progressText: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  potentialCoinsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.warning + '10',
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 8,
-  },
-  potentialCoinsText: {
-    marginLeft: 8,
-    fontSize: 14,
-    color: colors.warning,
-    fontWeight: '600',
-  },
-  completedBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.success + '10',
-    padding: 16,
-    borderRadius: 8,
-    marginTop: 8,
-  },
-  completedText: {
-    marginLeft: 8,
-    fontSize: 14,
-    color: colors.success,
-    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 16,
   },
   missionCard: {
-    backgroundColor: colors.white,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
     flexDirection: 'row',
+    backgroundColor: '#FFF',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 3,
   },
-  missionCardCompleted: {
-    opacity: 0.7,
+  missionCardComplete: {
+    backgroundColor: '#F0FFF4',
     borderWidth: 2,
-    borderColor: colors.success + '30',
+    borderColor: colors.success,
   },
-  missionIcon: {
+  missionLeft: {
+    marginRight: 16,
+  },
+  iconCircle: {
     width: 56,
     height: 56,
     borderRadius: 28,
+    backgroundColor: colors.primaryLight,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
   },
-  missionContent: {
+  iconCircleComplete: {
+    backgroundColor: '#C6F6D5',
+  },
+  missionCenter: {
     flex: 1,
-  },
-  missionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
+    justifyContent: 'center',
   },
   missionTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: colors.text,
-    flex: 1,
+    marginBottom: 4,
   },
-  missionTitleCompleted: {
+  missionTitleComplete: {
     textDecorationLine: 'line-through',
-    color: colors.textSecondary,
+    opacity: 0.7,
   },
   missionDescription: {
     fontSize: 14,
     color: colors.textSecondary,
-    marginBottom: 12,
   },
-  missionFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  missionRight: {
+    justifyContent: 'center',
   },
   rewardBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.warning + '10',
+    backgroundColor: '#FFF9E6',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
+    gap: 4,
+  },
+  rewardBadgeComplete: {
+    opacity: 0.6,
   },
   rewardText: {
-    marginLeft: 4,
     fontSize: 14,
     fontWeight: '600',
-    color: colors.warning,
+    color: '#B8860B',
   },
-  completedLabel: {
-    fontSize: 12,
-    color: colors.success,
-    fontWeight: '600',
+  bonusCard: {
+    margin: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  bonusGradient: {
+    padding: 24,
+    alignItems: 'center',
+  },
+  bonusTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#FFF',
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  bonusText: {
+    fontSize: 16,
+    color: '#FFF',
+    opacity: 0.9,
   },
   tipsCard: {
-    backgroundColor: colors.warning + '10',
+    margin: 16,
+    backgroundColor: '#FFF',
+    padding: 20,
     borderRadius: 12,
-    padding: 16,
-    flexDirection: 'row',
-    marginTop: 8,
-  },
-  tipsContent: {
-    flex: 1,
-    marginLeft: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   tipsTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: colors.warning,
-    marginBottom: 8,
-  },
-  tipsText: {
-    fontSize: 13,
+    fontWeight: 'bold',
     color: colors.text,
+    marginBottom: 12,
+  },
+  tipText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginBottom: 8,
     lineHeight: 20,
   },
 });
-
-export default DailyMissionsScreen;

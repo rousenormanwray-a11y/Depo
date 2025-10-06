@@ -9,6 +9,7 @@ import { sendTemplateNotification } from '../services/notification.service';
 import { markSecondDonation } from '../services/forceRecycle.service';
 import { sendDonationConfirmationSMS, sendReceiptConfirmationSMS } from '../services/sms.service';
 import { sendDonationReceiptEmail, sendReceiptConfirmationEmail } from '../services/email.service';
+import gamificationService from '../services/gamification.service';
 
 /**
  * Give donation
