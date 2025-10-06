@@ -1,11 +1,14 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSelector } from 'react-redux';
+import { Platform } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import * as Haptics from 'expo-haptics';
 
 import { MainTabParamList } from '../types';
 import { RootState } from '../store/store';
 import { colors } from '../theme/colors';
+import { shadows } from '../theme/shadows';
 import HomeNavigator from './HomeNavigator';
 import MarketplaceNavigator from './MarketplaceNavigator';
 import ProfileNavigator from './ProfileNavigator';
@@ -16,6 +19,13 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 const MainNavigator: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const isAgent = user?.isAgent;
+
+  const handleTabPress = () => {
+    // Add haptic feedback on tab press
+    if (Platform.OS === 'ios' || Platform.OS === 'android') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  };
 
   return (
     <Tab.Navigator
@@ -47,20 +57,30 @@ const MainNavigator: React.FC = () => {
               iconName = 'help';
           }
 
-          return <Icon name={iconName} size={size} color={color} />;
+          return <Icon name={iconName} size={focused ? 26 : 24} color={color} />;
         },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.gray[500],
         tabBarStyle: {
+          position: 'absolute',
+          bottom: 20,
+          left: 20,
+          right: 20,
           backgroundColor: colors.white,
-          borderTopColor: colors.border.light,
-          paddingBottom: 5,
-          paddingTop: 5,
-          height: 60,
+          borderRadius: 16,
+          height: 70,
+          borderTopWidth: 0,
+          paddingBottom: 10,
+          paddingTop: 10,
+          ...shadows.floating,
         },
         tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '500',
+          fontSize: 11,
+          fontWeight: '600',
+          marginTop: -5,
+        },
+        tabBarItemStyle: {
+          paddingVertical: 5,
         },
       })}
     >
@@ -68,22 +88,34 @@ const MainNavigator: React.FC = () => {
         name="Home" 
         component={HomeNavigator}
         options={{ tabBarLabel: 'Home' }}
+        listeners={{
+          tabPress: handleTabPress,
+        }}
       />
       <Tab.Screen 
         name="Marketplace" 
         component={MarketplaceNavigator}
         options={{ tabBarLabel: 'Marketplace' }}
+        listeners={{
+          tabPress: handleTabPress,
+        }}
       />
       <Tab.Screen 
         name="Profile" 
         component={ProfileNavigator}
         options={{ tabBarLabel: 'Profile' }}
+        listeners={{
+          tabPress: handleTabPress,
+        }}
       />
       {isAgent && (
         <Tab.Screen 
           name="Agent" 
           component={AgentNavigator}
           options={{ tabBarLabel: 'Agent' }}
+          listeners={{
+            tabPress: handleTabPress,
+          }}
         />
       )}
     </Tab.Navigator>

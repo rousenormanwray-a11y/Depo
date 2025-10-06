@@ -13,4 +13,5 @@ export const donationsAPI = {
   }) => apiClient.post('/donations/give', payload),
   confirmReceipt: (payload: { transactionId: string; confirm: boolean }) =>
     apiClient.post('/cycles/confirm-receipt', payload),
+  getParties: (cycleId: string) => apiClient.get(`/cycles/${cycleId}/parties`),
 };

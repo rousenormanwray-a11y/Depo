@@ -6,7 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 import { AppDispatch, RootState } from '../../store/store';
-import { fetchMarketplaceItems, setSelectedCategory, setSearchQuery } from '../../store/slices/marketplaceSlice';
+import { fetchMarketplaceItems, setSelectedCategory, setSearchQuery, setInStockOnly, setSort } from '../../store/slices/marketplaceSlice';
 import { MarketplaceItem } from '../../types';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
@@ -21,7 +21,7 @@ type Category = typeof categories[number];
 const MarketplaceScreen: React.FC = () => {
   const navigation = useNavigation();
   const dispatch = useDispatch<AppDispatch>();
-  const { filteredItems, selectedCategory, loading, page, hasMore } = useSelector((s: RootState) => s.marketplace);
+  const { filteredItems, selectedCategory, loading, page, hasMore, inStockOnly, sort } = useSelector((s: RootState) => s.marketplace);
   const [query, setQuery] = useState('');
   const { user } = useSelector((s: RootState) => s.auth);
 
@@ -89,6 +89,24 @@ const MarketplaceScreen: React.FC = () => {
         ))}
       </View>
 
+      <View style={styles.advFilters}>
+        <TouchableOpacity
+          style={[styles.inStockToggle, inStockOnly && styles.inStockActive]}
+          onPress={() => { dispatch(setInStockOnly(!inStockOnly)); dispatch(fetchMarketplaceItems({ page: 1 })); }}
+        >
+          <Text style={[styles.inStockText, inStockOnly && styles.inStockTextActive]}>In Stock Only</Text>
+        </TouchableOpacity>
+        <View style={styles.sortRow}>
+          <Text style={styles.sortLabel}>Sort:</Text>
+          {['newest','price_asc','price_desc','rating_desc'].map((s) => (
+            <TouchableOpacity key={s} style={[styles.sortPill, sort === s && styles.sortPillActive]} onPress={() => { dispatch(setSort(s as any)); dispatch(fetchMarketplaceItems({ page: 1 })); }}>
+              <Icon name={s === 'newest' ? 'schedule' : s === 'price_asc' ? 'arrow-upward' : s === 'price_desc' ? 'arrow-downward' : 'star-rate'} size={14} color={sort === s ? colors.primary : colors.text.secondary} />
+              <Text style={[styles.sortPillText, sort === s && styles.sortPillTextActive]}>{s.replace('_',' ').toUpperCase()}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
       {loading ? (
         <View style={styles.skeletonGrid}>
           {[...Array(6)].map((_, i) => (
@@ -134,6 +152,17 @@ const styles = StyleSheet.create({
   balanceBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primary, borderRadius: 16, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
   balanceText: { ...typography.caption, color: colors.white, marginLeft: spacing.xs },
   filters: { flexDirection: 'row', paddingHorizontal: layout.screenPadding, paddingVertical: spacing.sm },
+  advFilters: { paddingHorizontal: layout.screenPadding, paddingBottom: spacing.sm },
+  inStockToggle: { borderWidth: 1, borderColor: colors.border.light, borderRadius: 16, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, alignSelf: 'flex-start', backgroundColor: colors.white },
+  inStockActive: { backgroundColor: `${colors.primary}15`, borderColor: colors.primary },
+  inStockText: { ...typography.caption, color: colors.text.primary },
+  inStockTextActive: { color: colors.primary, fontWeight: '600' },
+  sortRow: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm },
+  sortLabel: { ...typography.caption, color: colors.text.secondary, marginRight: spacing.xs },
+  sortPill: { borderWidth: 1, borderColor: colors.border.light, borderRadius: 16, paddingHorizontal: spacing.sm, paddingVertical: 4, marginRight: spacing.xs, backgroundColor: colors.white, flexDirection: 'row', alignItems: 'center', gap: 4 },
+  sortPillActive: { borderColor: colors.primary, backgroundColor: `${colors.primary}12` },
+  sortPillText: { ...typography.caption, color: colors.text.secondary },
+  sortPillTextActive: { color: colors.primary, fontWeight: '600' },
   searchRow: { paddingHorizontal: layout.screenPadding, paddingVertical: spacing.sm },
   searchInput: { backgroundColor: colors.white, borderRadius: 12, borderWidth: 1, borderColor: colors.border.light, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, ...typography.bodyRegular },
   filterChip: { backgroundColor: colors.gray[100], paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: 16, marginRight: spacing.xs },

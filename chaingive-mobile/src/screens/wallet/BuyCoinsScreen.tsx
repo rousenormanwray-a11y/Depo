@@ -8,11 +8,13 @@ import {
   Alert,
   FlatList,
   RefreshControl,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import * as Haptics from 'expo-haptics';
 
 import { RootState } from '../../store/store';
 import { locationService, NearbyAgent } from '../../services/locationService';
@@ -23,6 +25,17 @@ import Modal from '../../components/common/Modal';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, layout } from '../../theme/spacing';
+import { shadows } from '../../theme/shadows';
+import {
+  ConfettiCelebration,
+  PulseRing,
+  CountUpAnimation,
+  PageTransition,
+  LottieSuccess,
+  FloatingHearts,
+} from '../../components/animations';
+
+const { width: screenWidth } = Dimensions.get('window');
 
 type PaymentMethod = 'CASH' | 'BANK_TRANSFER' | 'MOBILE_MONEY';
 
@@ -38,6 +51,13 @@ const BuyCoinsScreen: React.FC = () => {
   const [amount, setAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CASH');
   const [requesting, setRequesting] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [purchasedCoins, setPurchasedCoins] = useState(0);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [showHearts, setShowHearts] = useState(false);
+  const [purchasedCoins, setPurchasedCoins] = useState(0);
 
   const suggestedAmounts = [1000, 2000, 5000, 10000];
 
@@ -63,8 +83,26 @@ const BuyCoinsScreen: React.FC = () => {
 
   const handleRefresh = async () => {
     setRefreshing(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     await fetchNearbyAgents();
     setRefreshing(false);
+  };
+
+  const handleAgentConfirmation = (coins: number) => {
+    // This would be called when agent confirms payment
+    setPurchasedCoins(coins);
+    
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    
+    setShowSuccess(true);
+    
+    setTimeout(() => {
+      setShowConfetti(true);
+    }, 1000);
+    
+    setTimeout(() => {
+      setShowHearts(true);
+    }, 1500);
   };
 
   const handleSelectAgent = (agent: NearbyAgent) => {
@@ -368,6 +406,33 @@ const BuyCoinsScreen: React.FC = () => {
           </View>
         )}
       </Modal>
+
+      {/* Premium Animations */}
+      <LottieSuccess
+        visible={showSuccess}
+        onAnimationFinish={() => setShowSuccess(false)}
+      />
+
+      <ConfettiCelebration
+        visible={showConfetti}
+        message="💰 Coins Received!"
+        submessage={`${purchasedCoins} coins added to your balance`}
+        onComplete={() => {
+          setShowConfetti(false);
+          navigation.goBack();
+        }}
+        confettiCount={200}
+      />
+
+      {showHearts && (
+        <FloatingHearts
+          count={20}
+          duration={3000}
+          startX={screenWidth / 2}
+          startY={200}
+          color={colors.gold}
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -438,6 +503,10 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
   },
+  agentContainer: {
+    marginRight: spacing.md,
+    position: 'relative',
+  },
   agentAvatar: {
     width: 56,
     height: 56,
@@ -445,8 +514,12 @@ const styles = StyleSheet.create({
     backgroundColor: `${colors.primary}20`,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: spacing.md,
     position: 'relative',
+  },
+  pulseContainer: {
+    position: 'absolute',
+    top: -5,
+    left: -5,
   },
   onlineBadge: {
     position: 'absolute',

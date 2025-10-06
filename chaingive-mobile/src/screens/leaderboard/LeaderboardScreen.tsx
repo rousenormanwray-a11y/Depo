@@ -9,6 +9,7 @@ import {
   Modal,
   TextInput,
   ActivityIndicator,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
@@ -26,8 +27,19 @@ import {
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
+import { shadows } from '../../theme/shadows';
 import { showToast } from '../../components/common/Toast';
 import Badge from '../../components/common/Badge';
+import {
+  LevelBadge,
+  CountUpAnimation,
+  StreakFlame,
+  PageTransition,
+  ConfettiCelebration,
+} from '../../components/animations';
+import GradientCard from '../../components/common/GradientCard';
+
+const { width: screenWidth } = Dimensions.get('window');
 
 const LeaderboardScreen: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -41,6 +53,7 @@ const LeaderboardScreen: React.FC = () => {
   const [showBoostModal, setShowBoostModal] = useState(false);
   const [boostType, setBoostType] = useState<'visibility' | 'multiplier' | 'position'>('multiplier');
   const [coinsToSpend, setCoinsToSpend] = useState('');
+  const [showCelebration, setShowCelebration] = useState(false);
 
   useEffect(() => {
     loadLeaderboard();
@@ -88,6 +101,10 @@ const LeaderboardScreen: React.FC = () => {
       showToast('Leaderboard boosted! 🚀', 'success');
       setShowBoostModal(false);
       setCoinsToSpend('');
+      
+      // Show celebration
+      setShowCelebration(true);
+      
       dispatch(fetchMyRank());
       loadLeaderboard();
     } catch (error: any) {
@@ -114,13 +131,25 @@ const LeaderboardScreen: React.FC = () => {
 
   const renderLeaderboardEntry = ({ item, index }: { item: any; index: number }) => {
     const isCurrentUser = item.userId === user?.id;
+    const isTopThree = item.rank <= 3;
     
     return (
-      <View style={[styles.entryCard, isCurrentUser && styles.entryCardHighlight]}>
-        <View style={styles.rankBadge}>
-          <Text style={[styles.rankText, { color: getRankColor(item.rank) }]}>
-            {getRankIcon(item.rank)}
-          </Text>
+      <View style={[styles.entryCard, isCurrentUser && styles.entryCardHighlight, isTopThree && styles.topThreeCard]}>
+        {/* Rank Badge - Use LevelBadge for top 3 */}
+        <View style={styles.rankBadgeContainer}>
+          {isTopThree ? (
+            <LevelBadge 
+              level={item.rank} 
+              size={item.rank === 1 ? 'large' : 'medium'} 
+              showIcon 
+            />
+          ) : (
+            <View style={styles.rankBadge}>
+              <Text style={[styles.rankText, { color: getRankColor(item.rank) }]}>
+                #{item.rank}
+              </Text>
+            </View>
+          )}
         </View>
         
         <View style={styles.entryInfo}>
@@ -141,14 +170,28 @@ const LeaderboardScreen: React.FC = () => {
           </View>
           <Text style={styles.entryLocation}>📍 {item.locationCity}</Text>
           <View style={styles.entryStats}>
-            <Text style={styles.entryStat}>💰 ₦{item.totalDonated.toLocaleString()}</Text>
+            <Text style={styles.entryStat}>
+              💰 <CountUpAnimation
+                from={0}
+                to={item.totalDonated}
+                duration={1000}
+                formatter={(val) => `₦${(val / 1000).toFixed(0)}K`}
+                style={styles.statValue}
+              />
+            </Text>
             <Text style={styles.entryStat}>🔄 {item.cyclesCompleted} cycles</Text>
             <Text style={styles.entryStat}>🪙 {item.charityCoinsBalance} coins</Text>
           </View>
         </View>
         
         <View style={styles.scoreContainer}>
-          <Text style={styles.scoreValue}>{item.score.toLocaleString()}</Text>
+          <CountUpAnimation
+            from={0}
+            to={item.score}
+            duration={1200}
+            formatter={(val) => Math.round(val).toLocaleString()}
+            style={styles.scoreValue}
+          />
           <Text style={styles.scoreLabel}>pts</Text>
         </View>
       </View>
@@ -330,6 +373,15 @@ const LeaderboardScreen: React.FC = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Premium Animations */}
+      <ConfettiCelebration
+        visible={showCelebration}
+        message="🚀 Leaderboard Boosted!"
+        submessage="Your visibility has been increased"
+        onComplete={() => setShowCelebration(false)}
+        confettiCount={150}
+      />
     </SafeAreaView>
   );
 };
@@ -447,6 +499,15 @@ const styles = StyleSheet.create({
   },
   rankText: {
     ...typography.h3,
+  },
+  topThreeBadge: {
+    marginRight: spacing.sm,
+  },
+  streakContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xxs,
+    marginLeft: spacing.sm,
   },
   entryInfo: {
     flex: 1,

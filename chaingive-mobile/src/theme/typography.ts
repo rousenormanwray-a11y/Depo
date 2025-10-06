@@ -78,11 +78,25 @@ export const typography = {
     fontWeight: '400' as TextStyle['fontWeight'],
   },
   
+  bodyBold: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontFamily: 'Inter-Bold',
+    fontWeight: '700' as TextStyle['fontWeight'],
+  },
+  
   bodySmall: {
     fontSize: 12,
     lineHeight: 16,
     fontFamily: 'Inter-Regular',
     fontWeight: '400' as TextStyle['fontWeight'],
+  },
+  
+  bodySmallBold: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontFamily: 'Inter-Bold',
+    fontWeight: '700' as TextStyle['fontWeight'],
   },
   
   caption: {

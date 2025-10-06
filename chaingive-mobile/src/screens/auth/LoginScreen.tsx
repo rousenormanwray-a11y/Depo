@@ -25,6 +25,7 @@ import { spacing, layout } from '../../theme/spacing';
 import { useFormValidation, validators } from '../../utils/validation';
 import { showToast } from '../../components/common/Toast';
 import * as Haptics from 'expo-haptics';
+import { LottieSuccess, LottieError, PageTransition } from '../../components/animations';
 
 const LoginScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -34,6 +35,8 @@ const LoginScreen: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+  const [showErrorAnimation, setShowErrorAnimation] = useState(false);
 
   const { errors, validateAll } = useFormValidation();
   const errorHandler = ErrorHandler.getInstance();
@@ -54,11 +57,18 @@ const LoginScreen: React.FC = () => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       await dispatch(loginUser({ email, password })).unwrap();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      // Navigation handled by AppNavigator
+      
+      // Show success animation
+      setShowSuccessAnimation(true);
+      
+      // Navigation handled by AppNavigator after animation
     } catch (error: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       const appError = errorHandler.handleAuthError(error);
       showToast(appError.message, 'error');
+      
+      // Show error animation
+      setShowErrorAnimation(true);
     }
   };
 
@@ -163,6 +173,17 @@ const LoginScreen: React.FC = () => {
       </KeyboardAvoidingView>
       
       <LoadingSpinner visible={loading} message="Signing you in..." />
+      
+      {/* Premium Animations */}
+      <LottieSuccess
+        visible={showSuccessAnimation}
+        onAnimationFinish={() => setShowSuccessAnimation(false)}
+      />
+      
+      <LottieError
+        visible={showErrorAnimation}
+        onAnimationFinish={() => setShowErrorAnimation(false)}
+      />
     </SafeAreaView>
   );
 };
