@@ -100,6 +100,7 @@ const MarketplaceScreen: React.FC = () => {
           <Text style={styles.sortLabel}>Sort:</Text>
           {['newest','price_asc','price_desc','rating_desc'].map((s) => (
             <TouchableOpacity key={s} style={[styles.sortPill, sort === s && styles.sortPillActive]} onPress={() => { dispatch(setSort(s as any)); dispatch(fetchMarketplaceItems({ page: 1 })); }}>
+              <Icon name={s === 'newest' ? 'schedule' : s === 'price_asc' ? 'arrow-upward' : s === 'price_desc' ? 'arrow-downward' : 'star-rate'} size={14} color={sort === s ? colors.primary : colors.text.secondary} />
               <Text style={[styles.sortPillText, sort === s && styles.sortPillTextActive]}>{s.replace('_',' ').toUpperCase()}</Text>
             </TouchableOpacity>
           ))}
@@ -158,7 +159,7 @@ const styles = StyleSheet.create({
   inStockTextActive: { color: colors.primary, fontWeight: '600' },
   sortRow: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm },
   sortLabel: { ...typography.caption, color: colors.text.secondary, marginRight: spacing.xs },
-  sortPill: { borderWidth: 1, borderColor: colors.border.light, borderRadius: 16, paddingHorizontal: spacing.sm, paddingVertical: 4, marginRight: spacing.xs, backgroundColor: colors.white },
+  sortPill: { borderWidth: 1, borderColor: colors.border.light, borderRadius: 16, paddingHorizontal: spacing.sm, paddingVertical: 4, marginRight: spacing.xs, backgroundColor: colors.white, flexDirection: 'row', alignItems: 'center', gap: 4 },
   sortPillActive: { borderColor: colors.primary, backgroundColor: `${colors.primary}12` },
   sortPillText: { ...typography.caption, color: colors.text.secondary },
   sortPillTextActive: { color: colors.primary, fontWeight: '600' },
