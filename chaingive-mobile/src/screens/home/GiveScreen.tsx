@@ -8,8 +8,8 @@ import { RootState } from '../../store/store';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, layout } from '../../theme/spacing';
-import { useDispatch, useSelector } from 'react-redux';
-import { AppDispatch, RootState } from '../../store/store';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '../../store/store';
 import { giveDonation } from '../../store/slices/donationSlice';
 import InlineError from '../../components/common/InlineError';
 

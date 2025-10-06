@@ -23,7 +23,7 @@ const iconFor = (type: string) => {
 const TransactionHistoryScreen: React.FC = () => {
   const navigation = useNavigation();
   const dispatch = useDispatch<AppDispatch>();
-  const { transactions, isLoadingTransactions } = useSelector((s: RootState) => s.wallet);
+  const { transactions, isLoadingTransactions, page, hasMore } = useSelector((s: RootState) => s.wallet);
 
   useEffect(() => {
     dispatch(fetchTransactions({ page: 1, limit: 50 }));
@@ -80,6 +80,12 @@ const TransactionHistoryScreen: React.FC = () => {
             );
           }}
           refreshControl={<RefreshControl refreshing={isLoadingTransactions} onRefresh={() => dispatch(fetchTransactions({ page: 1, limit: 50 }))} />}
+          onEndReachedThreshold={0.2}
+          onEndReached={() => {
+            if (!isLoadingTransactions && hasMore) {
+              dispatch(fetchTransactions({ page: page + 1, limit: 50 }));
+            }
+          }}
           ListEmptyComponent={!isLoadingTransactions ? <Text style={styles.empty}>No transactions yet.</Text> : null}
         />
       )}

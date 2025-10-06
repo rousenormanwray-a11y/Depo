@@ -7,6 +7,8 @@ interface WalletState {
   error: string | null;
   transactions: Transaction[];
   isLoadingTransactions: boolean;
+  page: number;
+  hasMore: boolean;
 }
 
 const initialState: WalletState = {
@@ -14,6 +16,8 @@ const initialState: WalletState = {
   error: null,
   transactions: [],
   isLoadingTransactions: false,
+  page: 1,
+  hasMore: true,
 };
 
 export const fetchTransactions = createAsyncThunk(
@@ -81,7 +85,15 @@ const walletSlice = createSlice({
           : Array.isArray(data?.data)
           ? data.data
           : [];
-        state.transactions = items as Transaction[];
+        const page = (action.meta.arg as any)?.page ?? 1;
+        const limit = (action.meta.arg as any)?.limit ?? 50;
+        if (page > 1) {
+          state.transactions = [...state.transactions, ...(items as Transaction[])];
+        } else {
+          state.transactions = items as Transaction[];
+        }
+        state.page = page;
+        state.hasMore = items.length >= limit;
       })
       .addCase(fetchTransactions.rejected, (state, action) => {
         state.isLoadingTransactions = false;
