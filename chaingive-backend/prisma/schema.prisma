@@ -48,6 +48,9 @@ model User {
   recipientMatches      Match[] @relation("MatchRecipient")
   redemptions           Redemption[]
   verifiedBy            KycRecord[] @relation("VerifiedBy")
+  coinSales             CoinSaleToUser[]
+  leaderboard           Leaderboard?
+  leaderboardBoosts     LeaderboardBoost[]
 
   @@index([phoneNumber])
   @@index([email])
@@ -211,6 +214,14 @@ model Agent {
   id                 String    @id @default(uuid())
   userId             String    @unique @map("user_id")
   agentCode          String    @unique @map("agent_code")
+  
+  // Coin Inventory
+  coinBalance        Int       @default(0) @map("coin_balance")
+  totalCoinsStocked  Int       @default(0) @map("total_coins_stocked")
+  totalCoinsSold     Int       @default(0) @map("total_coins_sold")
+  lifetimeRevenue    Decimal   @default(0.00) @map("lifetime_revenue") @db.Decimal(12, 2)
+  
+  // Legacy fields
   totalVerifications Int       @default(0) @map("total_verifications")
   totalCommissions   Decimal   @default(0.00) @map("total_commissions") @db.Decimal(12, 2)
   rating             Decimal   @default(5.00) @db.Decimal(3, 2)
@@ -222,10 +233,13 @@ model Agent {
   updatedAt          DateTime  @updatedAt @map("updated_at")
 
   // Relations
-  user User @relation(fields: [userId], references: [id])
+  user            User                      @relation(fields: [userId], references: [id])
+  coinPurchases   CoinPurchaseFromAdmin[]
+  coinSales       CoinSaleToUser[]
 
   @@index([userId])
   @@index([agentCode])
+  @@index([coinBalance])
   @@map("agents")
 }
 
@@ -300,4 +314,127 @@ model BlockchainLog {
   @@index([transactionId])
   @@index([txHash])
   @@map("blockchain_logs")
+}
+
+// Crypto Wallet Addresses (Admin-managed)
+model CryptoWallet {
+  id            String   @id @default(uuid())
+  currency      String              // BTC, USDT, ETH
+  network       String              // TRC20, ERC20, Bitcoin
+  address       String   @unique
+  qrCodeUrl     String?  @map("qr_code_url")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdBy     String   @map("created_by")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@index([currency])
+  @@index([isActive])
+  @@map("crypto_wallets")
+}
+
+// Agent Coin Purchases from Admin (Crypto Payments)
+model CoinPurchaseFromAdmin {
+  id                  String    @id @default(uuid())
+  agentId             String    @map("agent_id")
+  quantity            Int
+  pricePerCoin        Decimal   @map("price_per_coin") @db.Decimal(10, 4)
+  totalAmount         Decimal   @map("total_amount") @db.Decimal(12, 4)
+  cryptocurrency      String
+  cryptoNetwork       String    @map("crypto_network")
+  paymentAddress      String    @map("payment_address")
+  txHash              String?   @map("tx_hash")
+  txProofUrl          String?   @map("tx_proof_url")
+  status              String    @default("pending") // pending, verifying, confirmed, rejected
+  adminApprovedBy     String?   @map("admin_approved_by")
+  approvedAt          DateTime? @map("approved_at")
+  rejectionReason     String?   @map("rejection_reason")
+  notes               String?
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  agent Agent @relation(fields: [agentId], references: [id])
+
+  @@index([agentId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("coin_purchases_from_admin")
+}
+
+// Agent Coin Sales to Users
+model CoinSaleToUser {
+  id              String   @id @default(uuid())
+  agentId         String   @map("agent_id")
+  userId          String   @map("user_id")
+  quantity        Int
+  pricePerCoin    Decimal  @map("price_per_coin") @db.Decimal(10, 2)
+  totalAmount     Decimal  @map("total_amount") @db.Decimal(12, 2)
+  paymentMethod   String   @map("payment_method") // cash, bank_transfer, opay, palmpay
+  paymentProof    String?  @map("payment_proof")
+  agentCommission Decimal  @map("agent_commission") @db.Decimal(12, 2)
+  platformRevenue Decimal  @map("platform_revenue") @db.Decimal(12, 2)
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  // Relations
+  agent Agent @relation(fields: [agentId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@index([agentId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("coin_sales_to_users")
+}
+
+// Leaderboard System
+model Leaderboard {
+  id                String   @id @default(uuid())
+  userId            String   @unique @map("user_id")
+  totalDonations    Decimal  @default(0) @map("total_donations") @db.Decimal(12, 2)
+  cyclesCompleted   Int      @default(0) @map("cycles_completed")
+  coinsEarned       Int      @default(0) @map("coins_earned")
+  avgCompletionDays Int      @default(0) @map("avg_completion_days")
+  
+  // Boost modifiers
+  visibilityBoost   Int      @default(0) @map("visibility_boost")
+  multiplierBoost   Decimal  @default(1.0) @map("multiplier_boost") @db.Decimal(3, 2)
+  positionBoost     Int      @default(0) @map("position_boost")
+  
+  // Calculated score
+  totalScore        Decimal  @default(0) @map("total_score") @db.Decimal(12, 2)
+  rank              Int?
+  
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user   User              @relation(fields: [userId], references: [id])
+  boosts LeaderboardBoost[]
+
+  @@index([totalScore])
+  @@index([rank])
+  @@map("leaderboards")
+}
+
+// Leaderboard Boosts
+model LeaderboardBoost {
+  id            String    @id @default(uuid())
+  userId        String    @map("user_id")
+  leaderboardId String    @map("leaderboard_id")
+  boostType     String    @map("boost_type") // visibility, multiplier, position
+  coinsSpent    Int       @map("coins_spent")
+  boostValue    Decimal   @map("boost_value") @db.Decimal(10, 2)
+  duration      Int?      // Duration in days (null = permanent)
+  expiresAt     DateTime? @map("expires_at")
+  isActive      Boolean   @default(true) @map("is_active")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  user        User        @relation(fields: [userId], references: [id])
+  leaderboard Leaderboard @relation(fields: [leaderboardId], references: [id])
+
+  @@index([userId])
+  @@index([leaderboardId])
+  @@index([isActive])
+  @@index([expiresAt])
+  @@map("leaderboard_boosts")
 }

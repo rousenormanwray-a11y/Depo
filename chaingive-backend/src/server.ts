@@ -16,6 +16,8 @@ import donationRoutes from './routes/donation.routes';
 import cycleRoutes from './routes/cycle.routes';
 import marketplaceRoutes from './routes/marketplace.routes';
 import agentRoutes from './routes/agent.routes';
+import agentCoinRoutes from './routes/agentCoin.routes';
+import adminCoinRoutes from './routes/adminCoin.routes';
 import matchRoutes from './routes/match.routes';
 
 // Load environment variables
@@ -56,6 +58,8 @@ app.use(`/${API_VERSION}/donations`, donationRoutes);
 app.use(`/${API_VERSION}/cycles`, cycleRoutes);
 app.use(`/${API_VERSION}/marketplace`, marketplaceRoutes);
 app.use(`/${API_VERSION}/agents`, agentRoutes);
+app.use(`/${API_VERSION}/agents`, agentCoinRoutes); // Agent coin management
+app.use(`/${API_VERSION}/admin`, adminCoinRoutes); // Admin coin management
 app.use(`/${API_VERSION}/matches`, matchRoutes);
 
 // Error handling
