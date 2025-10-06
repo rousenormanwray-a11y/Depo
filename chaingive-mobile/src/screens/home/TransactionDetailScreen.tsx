@@ -2,6 +2,9 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../../store/store';
+import { fetchTransactionById } from '../../store/slices/walletSlice';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
@@ -12,6 +15,12 @@ interface RouteParams { transactionId: string }
 const TransactionDetailScreen: React.FC = () => {
   const route = useRoute();
   const { transactionId } = route.params as RouteParams;
+  const dispatch = useDispatch<AppDispatch>();
+  const { selectedTransaction } = useSelector((s: RootState) => s.wallet);
+
+  React.useEffect(() => {
+    dispatch(fetchTransactionById(transactionId));
+  }, [dispatch, transactionId]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -24,21 +33,21 @@ const TransactionDetailScreen: React.FC = () => {
         <View style={styles.row}>
           <View style={styles.rowItem}>
             <Text style={styles.rowLabel}>Type</Text>
-            <Text style={styles.rowValue}>Deposit / Withdrawal / Donation / Redemption</Text>
+            <Text style={styles.rowValue}>{selectedTransaction?.type || '—'}</Text>
           </View>
           <View style={styles.rowItem}>
             <Text style={styles.rowLabel}>Status</Text>
-            <Text style={styles.rowValue}>Completed</Text>
+            <Text style={styles.rowValue}>{selectedTransaction?.status || '—'}</Text>
           </View>
         </View>
         <View style={styles.row}>
           <View style={styles.rowItem}>
             <Text style={styles.rowLabel}>Amount</Text>
-            <Text style={styles.rowValue}>₦0</Text>
+            <Text style={styles.rowValue}>{selectedTransaction ? `₦${Number(selectedTransaction.amount).toLocaleString()}` : '—'}</Text>
           </View>
           <View style={styles.rowItem}>
             <Text style={styles.rowLabel}>Date</Text>
-            <Text style={styles.rowValue}>—</Text>
+            <Text style={styles.rowValue}>{selectedTransaction?.createdAt || '—'}</Text>
           </View>
         </View>
         <Text style={[styles.label, { marginTop: spacing.md }]}>Blockchain</Text>
