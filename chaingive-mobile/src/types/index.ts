@@ -10,6 +10,10 @@ export interface User {
   trustScore: number;
   isAgent: boolean;
   isVerified: boolean;
+  // Aggregated wallet fields for convenient access in UI
+  // Source of truth may live in Wallet; these are mirrored snapshots
+  balance?: number;
+  charityCoins?: number;
   createdAt: string;
   updatedAt: string;
 }

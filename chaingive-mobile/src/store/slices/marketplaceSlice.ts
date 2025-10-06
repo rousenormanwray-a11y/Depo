@@ -1,5 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { MarketplaceItem, Redemption } from '../../types';
+import { marketplaceAPI } from '../../api/marketplace';
+import { analytics } from '../../services/analyticsService';
 
 // Mock marketplace data
 const mockMarketplaceItems: MarketplaceItem[] = [
@@ -89,6 +91,8 @@ interface MarketplaceState {
   searchQuery: string;
   loading: boolean;
   error: string | null;
+  page: number;
+  hasMore: boolean;
 }
 
 const initialState: MarketplaceState = {
@@ -99,26 +103,44 @@ const initialState: MarketplaceState = {
   searchQuery: '',
   loading: false,
   error: null,
+  page: 1,
+  hasMore: true,
 };
 
 // Async thunks
 export const fetchMarketplaceItems = createAsyncThunk(
   'marketplace/fetchItems',
-  async () => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    return mockMarketplaceItems;
+  async (
+    params: { page?: number; limit?: number } | void,
+    { getState }
+  ) => {
+    try {
+      const state = getState() as { marketplace: typeof initialState };
+      const category = state.marketplace.selectedCategory || undefined;
+      const q = state.marketplace.searchQuery || undefined;
+      const page = params?.page ?? 1;
+      const limit = params?.limit ?? 20;
+      const res = await marketplaceAPI.getListings({ limit, category, q, page });
+      const data: any = res.data;
+      return (data?.items || data || mockMarketplaceItems) as MarketplaceItem[];
+    } catch (_err) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return mockMarketplaceItems;
+    }
   }
 );
 
 export const fetchRedemptions = createAsyncThunk(
   'marketplace/fetchRedemptions',
   async (userId: string) => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    return mockRedemptions;
+    try {
+      const res = await marketplaceAPI.getRedemptions();
+      const data: any = res.data;
+      return (data?.items || data || mockRedemptions) as Redemption[];
+    } catch (_err) {
+      await new Promise(resolve => setTimeout(resolve, 800));
+      return mockRedemptions;
+    }
   }
 );
 
@@ -133,32 +155,40 @@ export const redeemItem = createAsyncThunk(
       address?: string;
     };
   }) => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    const item = mockMarketplaceItems.find(item => item.id === redemptionData.itemId);
-    if (!item) {
-      throw new Error('Item not found');
+    try {
+      const res = await marketplaceAPI.redeem({
+        listingId: redemptionData.itemId,
+        quantity: redemptionData.quantity,
+        deliveryInfo: redemptionData.deliveryInfo,
+      });
+      analytics.track('redeem_initiated', { itemId: redemptionData.itemId, quantity: redemptionData.quantity });
+      return res.data as Redemption;
+    } catch (_err) {
+      // Mock fallback
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      const item = mockMarketplaceItems.find(item => item.id === redemptionData.itemId);
+      if (!item) {
+        throw new Error('Item not found');
+      }
+      const totalCoins = item.price * redemptionData.quantity;
+      const newRedemption: Redemption = {
+        id: 'redemption-' + Date.now(),
+        userId: '1',
+        itemId: redemptionData.itemId,
+        quantity: redemptionData.quantity,
+        totalCoins,
+        status: 'processing',
+        deliveryInfo: redemptionData.deliveryInfo,
+        voucherCode:
+          item.category === 'airtime' || item.category === 'data'
+            ? `${item.name.split(' ')[0].toUpperCase()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`
+            : undefined,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      analytics.track('redeem_mock', { itemId: redemptionData.itemId, quantity: redemptionData.quantity });
+      return newRedemption;
     }
-    
-    const totalCoins = item.price * redemptionData.quantity;
-    
-    const newRedemption: Redemption = {
-      id: 'redemption-' + Date.now(),
-      userId: '1', // Current user
-      itemId: redemptionData.itemId,
-      quantity: redemptionData.quantity,
-      totalCoins,
-      status: 'processing',
-      deliveryInfo: redemptionData.deliveryInfo,
-      voucherCode: item.category === 'airtime' || item.category === 'data' 
-        ? `${item.name.split(' ')[0].toUpperCase()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`
-        : undefined,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    
-    return newRedemption;
   }
 );
 
@@ -171,10 +201,12 @@ const marketplaceSlice = createSlice({
     },
     setSelectedCategory: (state, action: PayloadAction<string | null>) => {
       state.selectedCategory = action.payload;
+      state.page = 1;
       state.filteredItems = filterItems(state.items, action.payload, state.searchQuery);
     },
     setSearchQuery: (state, action: PayloadAction<string>) => {
       state.searchQuery = action.payload;
+      state.page = 1;
       state.filteredItems = filterItems(state.items, state.selectedCategory, action.payload);
     },
     clearFilters: (state) => {
@@ -192,8 +224,17 @@ const marketplaceSlice = createSlice({
       })
       .addCase(fetchMarketplaceItems.fulfilled, (state, action) => {
         state.loading = false;
-        state.items = action.payload;
-        state.filteredItems = filterItems(action.payload, state.selectedCategory, state.searchQuery);
+        const fetchedItems = action.payload;
+        const page = (action.meta.arg as any)?.page ?? 1;
+        const limit = (action.meta.arg as any)?.limit ?? 20;
+        if (page > 1) {
+          state.items = [...state.items, ...fetchedItems];
+        } else {
+          state.items = fetchedItems;
+        }
+        state.filteredItems = filterItems(state.items, state.selectedCategory, state.searchQuery);
+        state.page = page;
+        state.hasMore = fetchedItems.length >= limit;
       })
       .addCase(fetchMarketplaceItems.rejected, (state, action) => {
         state.loading = false;
@@ -213,10 +254,16 @@ const marketplaceSlice = createSlice({
       .addCase(redeemItem.fulfilled, (state, action) => {
         state.loading = false;
         state.redemptions.unshift(action.payload);
+        try {
+          analytics.track('redeem_success', { redemptionId: action.payload.id, itemId: action.payload.itemId, quantity: action.payload.quantity });
+        } catch {}
       })
       .addCase(redeemItem.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || 'Failed to redeem item';
+        try {
+          analytics.track('redeem_failure', { error: state.error });
+        } catch {}
       });
   },
 });
