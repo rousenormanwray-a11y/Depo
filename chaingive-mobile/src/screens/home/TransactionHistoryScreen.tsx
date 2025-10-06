@@ -8,6 +8,7 @@ import { typography } from '../../theme/typography';
 import { spacing, layout } from '../../theme/spacing';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../store/store';
+import Skeleton from '../../components/common/Skeleton';
 import { fetchTransactions } from '../../store/slices/walletSlice';
 
 const iconFor = (type: string) => {
@@ -38,30 +39,45 @@ const TransactionHistoryScreen: React.FC = () => {
         <View style={{ width: 24 }} />
       </View>
 
-      <FlatList
-        data={transactions as any}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
-        renderItem={({ item }) => {
-          const icon = iconFor(item.type);
-          return (
-            <View style={styles.item}>
-              <View style={[styles.itemIcon, { backgroundColor: `${icon.color}20` }]}>
-                <Icon name={icon.name} size={20} color={icon.color} />
+      {isLoadingTransactions ? (
+        <View style={styles.list}>
+          {[...Array(6)].map((_, i) => (
+            <View key={i} style={styles.item}>
+              <View style={[styles.itemIcon, { backgroundColor: `${colors.gray[200]}20` }]} />
+              <View style={[styles.itemDetails, { flex: 1 }]}> 
+                <Skeleton height={16} />
+                <Skeleton height={12} style={{ marginTop: spacing.xs, width: '40%' }} />
               </View>
-              <View style={styles.itemDetails}>
-                <Text style={styles.itemTitle}>{String(item.type).replace('_', ' ')}</Text>
-                <Text style={styles.itemDate}>{item.createdAt || ''}</Text>
-              </View>
-              <Text style={[styles.itemAmount, item.type === 'deposit' ? styles.plus : styles.minus]}>
-                {item.type === 'redemption' ? `- ${item.amount} CC` : `${item.type === 'deposit' ? '+' : '-'}₦${Number(item.amount).toLocaleString()}`}
-              </Text>
+              <Skeleton height={16} width={80} />
             </View>
-          );
-        }}
-        refreshControl={<RefreshControl refreshing={isLoadingTransactions} onRefresh={() => dispatch(fetchTransactions({ page: 1, limit: 50 }))} />}
-        ListEmptyComponent={!isLoadingTransactions ? <Text style={styles.empty}>No transactions yet.</Text> : null}
-      />
+          ))}
+        </View>
+      ) : (
+        <FlatList
+          data={transactions as any}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.list}
+          renderItem={({ item }) => {
+            const icon = iconFor(item.type);
+            return (
+              <View style={styles.item}>
+                <View style={[styles.itemIcon, { backgroundColor: `${icon.color}20` }]}>
+                  <Icon name={icon.name} size={20} color={icon.color} />
+                </View>
+                <View style={styles.itemDetails}>
+                  <Text style={styles.itemTitle}>{String(item.type).replace('_', ' ')}</Text>
+                  <Text style={styles.itemDate}>{item.createdAt || ''}</Text>
+                </View>
+                <Text style={[styles.itemAmount, item.type === 'deposit' ? styles.plus : styles.minus]}>
+                  {item.type === 'redemption' ? `- ${item.amount} CC` : `${item.type === 'deposit' ? '+' : '-'}₦${Number(item.amount).toLocaleString()}`}
+                </Text>
+              </View>
+            );
+          }}
+          refreshControl={<RefreshControl refreshing={isLoadingTransactions} onRefresh={() => dispatch(fetchTransactions({ page: 1, limit: 50 }))} />}
+          ListEmptyComponent={!isLoadingTransactions ? <Text style={styles.empty}>No transactions yet.</Text> : null}
+        />
+      )}
     </SafeAreaView>
   );
 };

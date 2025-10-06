@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
@@ -11,6 +11,8 @@ import { MarketplaceItem } from '../../types';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, layout } from '../../theme/spacing';
+import Skeleton from '../../components/common/Skeleton';
+import { TextInput } from 'react-native-gesture-handler';
 
 const categories = ['all', 'airtime', 'data', 'vouchers', 'services'] as const;
 
@@ -20,10 +22,19 @@ const MarketplaceScreen: React.FC = () => {
   const navigation = useNavigation();
   const dispatch = useDispatch<AppDispatch>();
   const { filteredItems, selectedCategory, loading } = useSelector((s: RootState) => s.marketplace);
+  const [query, setQuery] = useState('');
   const { user } = useSelector((s: RootState) => s.auth);
 
   useEffect(() => { dispatch(fetchMarketplaceItems()); }, [dispatch]);
   useEffect(() => { dispatch(fetchMarketplaceItems()); }, [dispatch, selectedCategory]);
+
+  useEffect(() => {
+    const id = setTimeout(() => {
+      dispatch(setSearchQuery(query));
+      dispatch(fetchMarketplaceItems());
+    }, 300);
+    return () => clearTimeout(id);
+  }, [dispatch, query]);
 
   const renderItem = ({ item }: { item: MarketplaceItem }) => (
     <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('ItemDetail', { itemId: item.id })}>
@@ -51,6 +62,15 @@ const MarketplaceScreen: React.FC = () => {
         </View>
       </View>
 
+      <View style={styles.searchRow}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search items or vendors"
+          value={query}
+          onChangeText={setQuery}
+        />
+      </View>
+
       <View style={styles.filters}>
         {categories.map((cat) => (
           <TouchableOpacity
@@ -65,7 +85,18 @@ const MarketplaceScreen: React.FC = () => {
         ))}
       </View>
 
-      <FlatList
+      {loading ? (
+        <View style={styles.skeletonGrid}>
+          {[...Array(6)].map((_, i) => (
+            <View key={i} style={[styles.card, { width: '48%' }]}> 
+              <Skeleton height={90} />
+              <Skeleton height={16} style={{ marginTop: spacing.xs }} />
+              <Skeleton height={14} style={{ marginTop: spacing.xs, width: '60%' }} />
+            </View>
+          ))}
+        </View>
+      ) : (
+        <FlatList
         data={filteredItems}
         keyExtractor={(i) => i.id}
         contentContainerStyle={styles.list}
@@ -75,6 +106,7 @@ const MarketplaceScreen: React.FC = () => {
         refreshing={loading}
         onRefresh={() => dispatch(fetchMarketplaceItems())}
       />
+      )}
     </SafeAreaView>
   );
 };
@@ -86,11 +118,14 @@ const styles = StyleSheet.create({
   balanceBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primary, borderRadius: 16, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
   balanceText: { ...typography.caption, color: colors.white, marginLeft: spacing.xs },
   filters: { flexDirection: 'row', paddingHorizontal: layout.screenPadding, paddingVertical: spacing.sm },
+  searchRow: { paddingHorizontal: layout.screenPadding, paddingVertical: spacing.sm },
+  searchInput: { backgroundColor: colors.white, borderRadius: 12, borderWidth: 1, borderColor: colors.border.light, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, ...typography.bodyRegular },
   filterChip: { backgroundColor: colors.gray[100], paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: 16, marginRight: spacing.xs },
   filterSelected: { backgroundColor: colors.primary },
   filterText: { ...typography.caption, color: colors.text.secondary },
   filterTextSelected: { color: colors.white, fontWeight: '600' },
   list: { padding: layout.screenPadding },
+  skeletonGrid: { padding: layout.screenPadding, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   card: { backgroundColor: colors.white, borderRadius: 12, padding: spacing.sm, marginBottom: spacing.sm, width: '48%', shadowColor: colors.black, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 3.84, elevation: 5 },
   image: { width: '100%', height: 90, borderRadius: 8, backgroundColor: colors.gray[100], marginBottom: spacing.xs },
   name: { ...typography.bodyRegular, color: colors.text.primary },
