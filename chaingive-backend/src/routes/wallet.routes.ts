@@ -3,6 +3,7 @@ import * as walletController from '../controllers/wallet.controller';
 import { authenticate } from '../middleware/auth';
 import { validate } from '../middleware/validation';
 import * as walletValidation from '../validations/wallet.validation';
+import { rateLimitMiddleware, withdrawalLimiter } from '../middleware/advancedRateLimiter';
 
 const router = Router();
 

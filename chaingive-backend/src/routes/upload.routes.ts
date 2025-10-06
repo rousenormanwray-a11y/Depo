@@ -2,6 +2,7 @@ import { Router } from 'express';
 import * as uploadController from '../controllers/upload.controller';
 import { authenticate, requireTier } from '../middleware/auth';
 import { uploadSingle, uploadMultiple } from '../middleware/upload';
+import { rateLimitMiddleware, uploadLimiter } from '../middleware/advancedRateLimiter';
 
 const router = Router();
 
@@ -15,6 +16,7 @@ router.use(authenticate);
  */
 router.post(
   '/payment-proof',
+  rateLimitMiddleware(uploadLimiter),
   uploadSingle('file'),
   uploadController.uploadPaymentProof
 );
@@ -26,6 +28,7 @@ router.post(
  */
 router.post(
   '/kyc',
+  rateLimitMiddleware(uploadLimiter),
   uploadSingle('file'),
   uploadController.uploadKYCDocument
 );
@@ -37,6 +40,7 @@ router.post(
  */
 router.post(
   '/profile-picture',
+  rateLimitMiddleware(uploadLimiter),
   uploadSingle('file'),
   uploadController.uploadProfilePicture
 );
@@ -48,6 +52,7 @@ router.post(
  */
 router.post(
   '/marketplace-image',
+  rateLimitMiddleware(uploadLimiter),
   requireTier(2),
   uploadSingle('file'),
   uploadController.uploadMarketplaceImage
@@ -60,6 +65,7 @@ router.post(
  */
 router.post(
   '/multiple',
+  rateLimitMiddleware(uploadLimiter),
   uploadMultiple('files', 5),
   uploadController.uploadMultipleFiles
 );

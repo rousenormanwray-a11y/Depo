@@ -2,6 +2,7 @@ import { Router } from 'express';
 import * as authController from '../controllers/auth.controller';
 import { validate } from '../middleware/validation';
 import * as authValidation from '../validations/auth.validation';
+import { rateLimitMiddleware, loginLimiter, registerLimiter, otpLimiter } from '../middleware/advancedRateLimiter';
 
 const router = Router();
 

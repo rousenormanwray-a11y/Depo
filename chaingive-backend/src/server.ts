@@ -6,8 +6,10 @@ import dotenv from 'dotenv';
 import { errorHandler } from './middleware/errorHandler';
 import { notFoundHandler } from './middleware/notFoundHandler';
 import { rateLimiter } from './middleware/rateLimiter';
+import { sentryRequestHandler, sentryTracingHandler, sentryErrorHandler } from './middleware/sentryHandler';
 import logger from './utils/logger';
 import { startScheduledJobs } from './jobs';
+import { initializeSentry } from './services/sentry.service';
 
 // Routes
 import authRoutes from './routes/auth.routes';
@@ -27,9 +29,16 @@ import uploadRoutes from './routes/upload.routes';
 // Load environment variables
 dotenv.config();
 
+// Initialize Sentry (must be before Express app)
+initializeSentry();
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 const API_VERSION = process.env.API_VERSION || 'v1';
+
+// Sentry request handler (must be first middleware)
+app.use(sentryRequestHandler);
+app.use(sentryTracingHandler);
 
 // Middleware
 app.use(helmet()); // Security headers
@@ -72,7 +81,8 @@ app.use(`/${API_VERSION}/upload`, uploadRoutes);
 // Serve uploaded files statically
 app.use('/uploads', express.static('uploads'));
 
-// Error handling
+// Error handling (Sentry must be before other error handlers)
+app.use(sentryErrorHandler);
 app.use(notFoundHandler);
 app.use(errorHandler);
 

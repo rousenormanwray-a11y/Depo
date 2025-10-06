@@ -3,6 +3,7 @@ import * as donationController from '../controllers/donation.controller';
 import { authenticate } from '../middleware/auth';
 import { validate } from '../middleware/validation';
 import * as donationValidation from '../validations/donation.validation';
+import { rateLimitMiddleware, donationLimiter } from '../middleware/advancedRateLimiter';
 
 const router = Router();
 
