@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import * as Haptics from 'expo-haptics';
 
 import { AppDispatch, RootState } from '../../store/store';
 import {
@@ -27,6 +28,15 @@ import VerificationRequestCard from '../../components/agent/VerificationRequestC
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, layout } from '../../theme/spacing';
+import {
+  CountUpAnimation,
+  ConfettiCelebration,
+  PageTransition,
+  PulseRing,
+  LottieSuccess,
+  FloatingHearts,
+} from '../../components/animations';
+import EnhancedBadge from '../../components/common/EnhancedBadge';
 
 const { width: screenWidth } = Dimensions.get('window');
 const cardWidth = (screenWidth - (spacing.md * 3)) / 2;
@@ -40,6 +50,8 @@ const AgentDashboardScreen: React.FC = () => {
   );
 
   const [refreshing, setRefreshing] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -57,6 +69,7 @@ const AgentDashboardScreen: React.FC = () => {
 
   const handleRefresh = async () => {
     if (user) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setRefreshing(true);
       await dispatch(fetchAgentData(user.id));
       setRefreshing(false);
@@ -65,6 +78,7 @@ const AgentDashboardScreen: React.FC = () => {
 
   const handleToggleStatus = () => {
     if (agent) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       const newStatus = !agent.isActive;
       Alert.alert(
         'Change Status',
@@ -73,7 +87,12 @@ const AgentDashboardScreen: React.FC = () => {
           { text: 'Cancel', style: 'cancel' },
           {
             text: 'Confirm',
-            onPress: () => dispatch(updateAgentStatus(newStatus)),
+            onPress: () => {
+              dispatch(updateAgentStatus(newStatus));
+              if (newStatus) {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              }
+            },
           },
         ]
       );
@@ -97,6 +116,11 @@ const AgentDashboardScreen: React.FC = () => {
                   notes: 'Approved by agent',
                 })
               ).unwrap();
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              setShowSuccess(true);
+              setShowCelebration(true);
+              setTimeout(() => setShowSuccess(false), 2000);
+              setTimeout(() => setShowCelebration(false), 3000);
               Alert.alert('Success', 'Verification request approved');
             } catch (error) {
               Alert.alert('Error', 'Failed to approve request');
@@ -159,20 +183,21 @@ const AgentDashboardScreen: React.FC = () => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.contentContainer}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            colors={[colors.primary]}
-            tintColor={colors.primary}
-          />
-        }
-      >
+    <PageTransition type="slideUp">
+      <SafeAreaView style={styles.container}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.contentContainer}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={[colors.primary]}
+              tintColor={colors.primary}
+            />
+          }
+        >
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.titleContainer}>
