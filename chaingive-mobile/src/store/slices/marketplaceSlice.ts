@@ -254,10 +254,16 @@ const marketplaceSlice = createSlice({
       .addCase(redeemItem.fulfilled, (state, action) => {
         state.loading = false;
         state.redemptions.unshift(action.payload);
+        try {
+          analytics.track('redeem_success', { redemptionId: action.payload.id, itemId: action.payload.itemId, quantity: action.payload.quantity });
+        } catch {}
       })
       .addCase(redeemItem.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || 'Failed to redeem item';
+        try {
+          analytics.track('redeem_failure', { error: state.error });
+        } catch {}
       });
   },
 });
