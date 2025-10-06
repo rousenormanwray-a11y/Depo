@@ -7,6 +7,9 @@ import GiveScreen from '../screens/home/GiveScreen';
 import DepositScreen from '../screens/home/DepositScreen';
 import WithdrawScreen from '../screens/home/WithdrawScreen';
 import TransactionHistoryScreen from '../screens/home/TransactionHistoryScreen';
+import TransactionDetailScreen from '../screens/home/TransactionDetailScreen';
+import CycleDetailScreen from '../screens/donations/CycleDetailScreen';
+import CycleHistoryScreen from '../screens/donations/CycleHistoryScreen';
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();
 
@@ -23,6 +26,9 @@ const HomeNavigator: React.FC = () => {
       <Stack.Screen name="DepositScreen" component={DepositScreen} />
       <Stack.Screen name="WithdrawScreen" component={WithdrawScreen} />
       <Stack.Screen name="TransactionHistory" component={TransactionHistoryScreen} />
+      <Stack.Screen name="TransactionDetail" component={TransactionDetailScreen} />
+      <Stack.Screen name="CycleDetail" component={CycleDetailScreen} />
+      <Stack.Screen name="CycleHistory" component={CycleHistoryScreen} />
     </Stack.Navigator>
   );
 };
