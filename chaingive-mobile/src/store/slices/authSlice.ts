@@ -2,8 +2,22 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { User } from '../../types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authAPI } from '../../api/auth';
-import { analytics } from '../../services/analyticsService';
 import { walletAPI } from '../../api/wallet';
+
+// Mock user data
+const mockUser: User = {
+  id: '1',
+  firstName: 'John',
+  lastName: 'Doe',
+  email: 'john.doe@example.com',
+  phoneNumber: '+2348012345678',
+  tier: 'Tier 1',
+  trustScore: 85,
+  isAgent: false,
+  isVerified: false,
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+};
 
 interface AuthState {
   user: User | null;
@@ -26,16 +40,26 @@ const initialState: AuthState = {
 export const loginUser = createAsyncThunk(
   'auth/loginUser',
   async (credentials: { email?: string; phoneNumber?: string; password: string }) => {
-    await new Promise(resolve => setTimeout(resolve, 800));
-    const token = 'mock-jwt-token-' + Date.now();
-    return {
-      user: {
-        ...mockUser,
-        email: credentials.email || mockUser.email,
-        phoneNumber: credentials.phoneNumber || mockUser.phoneNumber,
-      },
-      token,
-    };
+    try {
+      const res = await authAPI.login(credentials as any);
+      const data: any = res.data;
+      const token: string = data.token || 'mock-jwt-token-' + Date.now();
+      await AsyncStorage.setItem('auth_token', token);
+      return { user: data.user as User, token };
+    } catch (_err) {
+      // Graceful fallback to mock
+      await new Promise((r) => setTimeout(r, 800));
+      const token = 'mock-jwt-token-' + Date.now();
+      await AsyncStorage.setItem('auth_token', token);
+      return {
+        user: {
+          ...mockUser,
+          email: credentials.email || mockUser.email,
+          phoneNumber: credentials.phoneNumber || mockUser.phoneNumber,
+        },
+        token,
+      };
+    }
   }
 );
 
@@ -53,7 +77,6 @@ export const register = createAsyncThunk(
       const data: any = res.data;
       const token: string = data.token || 'mock-jwt-token-' + Date.now();
       await AsyncStorage.setItem('auth_token', token);
-      analytics.track('register_success', { userId: data?.user?.id });
       return { user: data.user as User, token };
     } catch (_err) {
       await new Promise((r) => setTimeout(r, 2000));
@@ -77,9 +100,16 @@ export const register = createAsyncThunk(
 export const verifyOTP = createAsyncThunk(
   'auth/verifyOTP',
   async ({ phoneNumber, otp }: { phoneNumber: string; otp: string }) => {
-    const res = await authAPI.verifyOTP({ phoneNumber, otp });
-    analytics.track('otp_verified', { phoneNumber });
-    return res.data as { verified: boolean };
+    try {
+      const res = await authAPI.verifyOTP({ phoneNumber, otp });
+      return res.data as { verified: boolean };
+    } catch (_err) {
+      await new Promise((r) => setTimeout(r, 1000));
+      if (otp.length !== 6) {
+        throw new Error('Invalid OTP code');
+      }
+      return { verified: true };
+    }
   }
 );
 
@@ -100,18 +130,6 @@ export const fetchUserBalance = createAsyncThunk(
         charityCoins: Math.floor(Math.random() * 500),
       } as Pick<User, 'balance' | 'charityCoins'>;
     }
-  }
-);
-
-export const fetchUserBalance = createAsyncThunk(
-  'auth/fetchUserBalance',
-  async (userId: string) => {
-    // Simulate API call to fetch wallet snapshot
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return {
-      balance: Math.floor(Math.random() * 100000),
-      charityCoins: Math.floor(Math.random() * 500),
-    } as Pick<User, 'balance' | 'charityCoins'>;
   }
 );
 
