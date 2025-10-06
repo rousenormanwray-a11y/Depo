@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { User } from '../../types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authAPI } from '../../api/auth';
+import { analytics } from '../../services/analyticsService';
 import { walletAPI } from '../../api/wallet';
 
 // Mock user data
@@ -45,6 +46,7 @@ export const loginUser = createAsyncThunk(
       const data: any = res.data;
       const token: string = data.token || 'mock-jwt-token-' + Date.now();
       await AsyncStorage.setItem('auth_token', token);
+      analytics.track('login_success', { userId: data?.user?.id });
       return { user: data.user as User, token };
     } catch (_err) {
       // Graceful fallback to mock
@@ -77,6 +79,7 @@ export const register = createAsyncThunk(
       const data: any = res.data;
       const token: string = data.token || 'mock-jwt-token-' + Date.now();
       await AsyncStorage.setItem('auth_token', token);
+      analytics.track('register_success', { userId: data?.user?.id });
       return { user: data.user as User, token };
     } catch (_err) {
       await new Promise((r) => setTimeout(r, 2000));
@@ -102,6 +105,7 @@ export const verifyOTP = createAsyncThunk(
   async ({ phoneNumber, otp }: { phoneNumber: string; otp: string }) => {
     try {
       const res = await authAPI.verifyOTP({ phoneNumber, otp });
+      analytics.track('otp_verified', { phoneNumber });
       return res.data as { verified: boolean };
     } catch (_err) {
       await new Promise((r) => setTimeout(r, 1000));
