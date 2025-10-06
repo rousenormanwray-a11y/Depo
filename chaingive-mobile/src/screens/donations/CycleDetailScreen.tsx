@@ -10,6 +10,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../store/store';
 import { confirmReceipt, fetchCycleById } from '../../store/slices/donationSlice';
 import { useRoute } from '@react-navigation/native';
+import CycleTimeline from '../../components/visualizations/CycleTimeline';
 
 const CycleDetailScreen: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -48,6 +49,7 @@ const CycleDetailScreen: React.FC = () => {
             <Text style={styles.meta}>Amount: ₦{Number(selectedCycle.amount).toLocaleString()}</Text>
             <Text style={styles.meta}>Status: {selectedCycle.status}</Text>
             <Text style={styles.meta}>Due: {selectedCycle.dueDate}</Text>
+            <CycleTimeline status={selectedCycle.status as any} dueDate={selectedCycle.dueDate} />
           </View>
         )}
         <TouchableOpacity style={styles.primaryBtn} onPress={() => setShowConfirm(true)} disabled={isProcessing}>
