@@ -1,35 +1,17 @@
 import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  TextInput, 
-  Alert, 
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSelector } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import * as Haptics from 'expo-haptics';
 import { RootState } from '../../store/store';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, layout } from '../../theme/spacing';
-import { useDispatch } from 'react-redux';
-import { AppDispatch } from '../../store/store';
-import { giveDonation } from '../../store/slices/donationSlice';
-import InlineError from '../../components/common/InlineError';
-import { showToast } from '../../components/common/Toast';
 
 const GiveScreen: React.FC = () => {
   const navigation = useNavigation();
-  const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
-  const { isProcessing } = useSelector((s: RootState) => s.donation);
 
   const [preference, setPreference] = useState<'algorithm' | 'manual'>('algorithm');
   const [location, setLocation] = useState('');
@@ -37,46 +19,28 @@ const GiveScreen: React.FC = () => {
 
   const obligationAmount = user?.balance ? Math.min(5000, user.balance) : 5000;
 
-  const handleConfirm = async () => {
-    try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      await dispatch(
-        giveDonation({
-          amount: obligationAmount,
-          recipientPreference: preference,
-          location: location || undefined,
-          faith: faith || undefined,
-        })
-      ).unwrap();
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      showToast('Donation initiated! 🎉', 'success');
-      navigation.goBack();
-    } catch (e: any) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      showToast(e.message || 'Failed to process donation', 'error');
-    }
+  const handleConfirm = () => {
+    Alert.alert(
+      'Confirm Donation',
+      `Donate ₦${obligationAmount.toLocaleString()} using ${preference === 'algorithm' ? 'smart matching' : 'manual selection'}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Confirm', onPress: () => Alert.alert('Success', 'Donation initiated and held in escrow.') },
+      ]
+    );
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
-      >
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Icon name="arrow-back" size={24} color={colors.text.primary} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Give Forward</Text>
-          <View style={{ width: 24 }} />
-        </View>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Icon name="arrow-back" size={24} color={colors.text.primary} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Give Forward</Text>
+        <View style={{ width: 24 }} />
+      </View>
 
-        <ScrollView 
-          style={styles.scroll} 
-          contentContainerStyle={styles.content}
-          keyboardShouldPersistTaps="handled"
-        >
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <View style={styles.card}>
           <Text style={styles.label}>You're ready to give</Text>
           <Text style={styles.amount}>₦{obligationAmount.toLocaleString()}</Text>
@@ -112,9 +76,9 @@ const GiveScreen: React.FC = () => {
       </ScrollView>
 
       <View style={styles.bottom}>
-        <Text style={styles.trust}><Icon name="verified-user" size={16} color={colors.primary} /> Your donation is secured in escrow until confirmed by recipient</Text>
-        <TouchableOpacity style={styles.primaryBtn} onPress={handleConfirm} disabled={isProcessing}>
-          <Text style={styles.primaryBtnText}>{isProcessing ? 'Processing…' : 'Confirm Donation'}</Text>
+        <Text style={styles.trust}><Icon name="shield" size={16} color={colors.primary} /> Your donation is secured in escrow until confirmed by recipient</Text>
+        <TouchableOpacity style={styles.primaryBtn} onPress={handleConfirm}>
+          <Text style={styles.primaryBtnText}>Confirm Donation</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

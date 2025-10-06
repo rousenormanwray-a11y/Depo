@@ -6,40 +6,23 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, layout } from '../../theme/spacing';
-import { useDispatch, useSelector } from 'react-redux';
-import { AppDispatch, RootState } from '../../store/store';
-import { withdrawFunds } from '../../store/slices/walletSlice';
-import InlineError from '../../components/common/InlineError';
 
 const WithdrawScreen: React.FC = () => {
   const navigation = useNavigation();
-  const dispatch = useDispatch<AppDispatch>();
-  const { isProcessing } = useSelector((s: RootState) => s.wallet);
   const [amount, setAmount] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
   const [bankCode, setBankCode] = useState('');
 
-  const handleWithdraw = async () => {
-    const amt = Number(amount);
-    if (!amount || isNaN(amt) || amt <= 0) {
-      Alert.alert('Invalid amount', 'Enter a valid positive amount.');
+  const handleWithdraw = () => {
+    if (!amount || Number(amount) <= 0) {
+      Alert.alert('Invalid amount', 'Enter a valid amount to withdraw.');
       return;
     }
-    if (!accountNumber.trim() || accountNumber.trim().length !== 10) {
-      Alert.alert('Invalid account', 'Enter a valid 10-digit account number.');
+    if (!accountNumber.trim() || !bankCode.trim()) {
+      Alert.alert('Missing info', 'Enter bank account number and bank code.');
       return;
     }
-    if (!bankCode.trim()) {
-      Alert.alert('Missing bank', 'Enter a valid bank code.');
-      return;
-    }
-    try {
-      await dispatch(withdrawFunds({ amount: amt, accountNumber: accountNumber.trim(), bankCode: bankCode.trim() })).unwrap();
-      Alert.alert('Withdrawal Requested', `₦${amt.toLocaleString()} to ${accountNumber}. Fee ₦50.`);
-      navigation.goBack();
-    } catch (e: any) {
-      Alert.alert('Withdraw Failed', e.message || 'Please try again');
-    }
+    Alert.alert('Withdrawal Requested', `₦${Number(amount).toLocaleString()} to ${accountNumber}. Fee ₦50.`);
   };
 
   return (
@@ -55,24 +38,17 @@ const WithdrawScreen: React.FC = () => {
       <View style={styles.content}>
         <Text style={styles.label}>Amount (₦)</Text>
         <TextInput style={styles.input} value={amount} onChangeText={setAmount} keyboardType="numeric" placeholder="Enter amount" />
-        {(!amount || Number(amount) <= 0) && <InlineError message="Enter a positive amount" />}
 
         <Text style={[styles.label, { marginTop: spacing.md }]}>Bank Account Number</Text>
         <TextInput style={styles.input} value={accountNumber} onChangeText={setAccountNumber} keyboardType="number-pad" placeholder="10-digit account number" maxLength={10} />
-        {(!accountNumber.trim() || accountNumber.length !== 10) && (
-          <InlineError message="Enter a valid 10-digit Nigerian account number" />
-        )}
 
         <Text style={[styles.label, { marginTop: spacing.md }]}>Bank Code</Text>
         <TextInput style={styles.input} value={bankCode} onChangeText={setBankCode} placeholder="e.g., 058" />
-        {!bankCode.trim() && (
-          <InlineError message="Bank code required (e.g., GTBank 058)" />
-        )}
 
         <Text style={styles.hint}>A ₦50 processing fee applies. Withdrawals processed within 24 hours.</Text>
 
         <TouchableOpacity style={styles.primaryBtn} onPress={handleWithdraw}>
-          <Text style={styles.primaryBtnText}>{isProcessing ? 'Processing…' : 'Request Withdrawal'}</Text>
+          <Text style={styles.primaryBtnText}>Request Withdrawal</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

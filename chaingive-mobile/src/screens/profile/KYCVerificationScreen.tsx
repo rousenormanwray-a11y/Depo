@@ -18,7 +18,7 @@ const KYCVerificationScreen: React.FC = () => {
       </View>
 
       <View style={styles.card}>
-        <Icon name="security" size={32} color={colors.primary} />
+        <Icon name="shield" size={32} color={colors.primary} />
         <Text style={styles.title}>Verify Your Identity</Text>
         <Text style={styles.subtitle}>Complete KYC to unlock higher limits and agent features.</Text>
         <TouchableOpacity style={styles.primaryBtn} onPress={handleStart}>

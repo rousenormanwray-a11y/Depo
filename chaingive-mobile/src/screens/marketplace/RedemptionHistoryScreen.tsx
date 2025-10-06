@@ -1,24 +1,14 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, layout } from '../../theme/spacing';
 import { RootState } from '../../store/store';
-import { fetchRedemptions } from '../../store/slices/marketplaceSlice';
 
 const RedemptionHistoryScreen: React.FC = () => {
-  const dispatch = useDispatch();
   const { redemptions } = useSelector((s: RootState) => s.marketplace);
-  const { user } = useSelector((s: RootState) => s.auth);
-
-  useEffect(() => {
-    if (user) {
-      // @ts-ignore - simple dispatch without AppDispatch typing here
-      dispatch(fetchRedemptions(user.id));
-    }
-  }, [dispatch, user]);
 
   return (
     <SafeAreaView style={styles.container}>

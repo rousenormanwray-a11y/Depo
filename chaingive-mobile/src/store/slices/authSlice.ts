@@ -22,20 +22,20 @@ const initialState: AuthState = {
 };
 
 // Async thunks
+// For compatibility with existing screens using loginUser
 export const loginUser = createAsyncThunk(
   'auth/loginUser',
   async (credentials: { email?: string; phoneNumber?: string; password: string }) => {
-    const res = await authAPI.login(credentials);
-    const data = res.data;
-    
-    if (!data.token || !data.user) {
-      throw new Error('Invalid response from server');
-    }
-    
-    await AsyncStorage.setItem('auth_token', data.token);
-    analytics.track('login_success', { userId: data.user.id });
-    
-    return { user: data.user as User, token: data.token };
+    await new Promise(resolve => setTimeout(resolve, 800));
+    const token = 'mock-jwt-token-' + Date.now();
+    return {
+      user: {
+        ...mockUser,
+        email: credentials.email || mockUser.email,
+        phoneNumber: credentials.phoneNumber || mockUser.phoneNumber,
+      },
+      token,
+    };
   }
 );
 
@@ -100,6 +100,18 @@ export const fetchUserBalance = createAsyncThunk(
         charityCoins: Math.floor(Math.random() * 500),
       } as Pick<User, 'balance' | 'charityCoins'>;
     }
+  }
+);
+
+export const fetchUserBalance = createAsyncThunk(
+  'auth/fetchUserBalance',
+  async (userId: string) => {
+    // Simulate API call to fetch wallet snapshot
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return {
+      balance: Math.floor(Math.random() * 100000),
+      charityCoins: Math.floor(Math.random() * 500),
+    } as Pick<User, 'balance' | 'charityCoins'>;
   }
 );
 

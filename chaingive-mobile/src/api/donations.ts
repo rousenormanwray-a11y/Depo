@@ -3,7 +3,6 @@ import { apiClient } from './client';
 export const donationsAPI = {
   getCycles: (params?: { status?: string; page?: number; limit?: number }) =>
     apiClient.get('/cycles', { params }),
-  getCycle: (cycleId: string) => apiClient.get(`/cycles/${cycleId}`),
   give: (payload: {
     amount: number;
     recipientPreference: 'algorithm' | 'manual';

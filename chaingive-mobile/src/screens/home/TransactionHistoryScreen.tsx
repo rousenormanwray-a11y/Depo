@@ -1,15 +1,17 @@
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, layout } from '../../theme/spacing';
-import { useDispatch, useSelector } from 'react-redux';
-import { AppDispatch, RootState } from '../../store/store';
-import Skeleton from '../../components/common/Skeleton';
-import { fetchTransactions } from '../../store/slices/walletSlice';
+
+const data = [
+  { id: '1', type: 'deposit', amount: 5000, date: 'Today, 2:30 PM' },
+  { id: '2', type: 'donation_sent', amount: 2000, date: 'Yesterday, 4:15 PM' },
+  { id: '3', type: 'redemption', amount: 50, date: '2 days ago' },
+];
 
 const iconFor = (type: string) => {
   switch (type) {
@@ -22,12 +24,6 @@ const iconFor = (type: string) => {
 
 const TransactionHistoryScreen: React.FC = () => {
   const navigation = useNavigation();
-  const dispatch = useDispatch<AppDispatch>();
-  const { transactions, isLoadingTransactions, page, hasMore } = useSelector((s: RootState) => s.wallet);
-
-  useEffect(() => {
-    dispatch(fetchTransactions({ page: 1, limit: 50 }));
-  }, [dispatch]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -39,56 +35,28 @@ const TransactionHistoryScreen: React.FC = () => {
         <View style={{ width: 24 }} />
       </View>
 
-      {isLoadingTransactions ? (
-        <View style={styles.list}>
-          {[...Array(6)].map((_, i) => (
-            <View key={i} style={styles.item}>
-              <View style={[styles.itemIcon, { backgroundColor: `${colors.gray[200]}20` }]} />
-              <View style={[styles.itemDetails, { flex: 1 }]}> 
-                <Skeleton height={16} />
-                <Skeleton height={12} style={{ marginTop: spacing.xs, width: '40%' }} />
+      <FlatList
+        data={data}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.list}
+        renderItem={({ item }) => {
+          const icon = iconFor(item.type);
+          return (
+            <View style={styles.item}>
+              <View style={[styles.itemIcon, { backgroundColor: `${icon.color}20` }]}>
+                <Icon name={icon.name} size={20} color={icon.color} />
               </View>
-              <Skeleton height={16} width={80} />
+              <View style={styles.itemDetails}>
+                <Text style={styles.itemTitle}>{item.type.replace('_', ' ')}</Text>
+                <Text style={styles.itemDate}>{item.date}</Text>
+              </View>
+              <Text style={[styles.itemAmount, item.type === 'deposit' ? styles.plus : styles.minus]}>
+                {item.type === 'redemption' ? `- ${item.amount} CC` : `${item.type === 'deposit' ? '+' : '-'}₦${item.amount.toLocaleString()}`}
+              </Text>
             </View>
-          ))}
-        </View>
-      ) : transactions.length === 0 ? (
-        <View style={styles.emptyWrap}>
-          <Icon name="receipt-long" size={48} color={colors.gray[300]} />
-          <Text style={styles.empty}>No transactions yet.</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={transactions as any}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.list}
-          renderItem={({ item }) => {
-            const icon = iconFor(item.type);
-            return (
-              <View style={styles.item}>
-                <View style={[styles.itemIcon, { backgroundColor: `${icon.color}20` }]}>
-                  <Icon name={icon.name} size={20} color={icon.color} />
-                </View>
-                <View style={styles.itemDetails}>
-                  <Text style={styles.itemTitle}>{String(item.type).replace('_', ' ')}</Text>
-                  <Text style={styles.itemDate}>{item.createdAt || ''}</Text>
-                </View>
-                <Text style={[styles.itemAmount, item.type === 'deposit' ? styles.plus : styles.minus]}>
-                  {item.type === 'redemption' ? `- ${item.amount} CC` : `${item.type === 'deposit' ? '+' : '-'}₦${Number(item.amount).toLocaleString()}`}
-                </Text>
-              </View>
-            );
-          }}
-          refreshControl={<RefreshControl refreshing={isLoadingTransactions} onRefresh={() => dispatch(fetchTransactions({ page: 1, limit: 50 }))} />}
-          onEndReachedThreshold={0.2}
-          onEndReached={() => {
-            if (!isLoadingTransactions && hasMore) {
-              dispatch(fetchTransactions({ page: page + 1, limit: 50 }));
-            }
-          }}
-          ListEmptyComponent={!isLoadingTransactions ? <Text style={styles.empty}>No transactions yet.</Text> : null}
-        />
-      )}
+          );
+        }}
+      />
     </SafeAreaView>
   );
 };
@@ -106,8 +74,6 @@ const styles = StyleSheet.create({
   itemAmount: { ...typography.label },
   plus: { color: colors.success },
   minus: { color: colors.primary },
-  empty: { ...typography.bodyRegular, color: colors.text.secondary, textAlign: 'center', marginTop: spacing.lg },
-  emptyWrap: { alignItems: 'center', justifyContent: 'center', padding: spacing['4xl'] },
 });
 
 export default TransactionHistoryScreen;
