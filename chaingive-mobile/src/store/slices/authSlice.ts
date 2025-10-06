@@ -151,6 +151,15 @@ export const logout = createAsyncThunk(
   }
 );
 
+export const requestPasswordReset = createAsyncThunk(
+  'auth/requestPasswordReset',
+  async (payload: { email: string }) => {
+    const res = await authAPI.forgotPassword(payload);
+    analytics.track('password_reset_requested', { email: payload.email });
+    return res.data;
+  }
+);
+
 const authSlice = createSlice({
   name: 'auth',
   initialState,

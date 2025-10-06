@@ -8,7 +8,7 @@ import ConfirmationModal from '../../components/common/ConfirmationModal';
 import Toast from '../../components/common/Toast';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../store/store';
-import { confirmReceipt, fetchCycleById } from '../../store/slices/donationSlice';
+import { confirmReceipt, fetchCycleById, fetchCycleParties } from '../../store/slices/donationSlice';
 import { useRoute } from '@react-navigation/native';
 import CycleTimeline from '../../components/visualizations/CycleTimeline';
 
@@ -16,7 +16,7 @@ const CycleDetailScreen: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const route = useRoute() as any;
   const cycleId: string | undefined = route?.params?.cycleId;
-  const { selectedCycle } = useSelector((s: RootState) => s.donation);
+  const { selectedCycle, parties } = useSelector((s: RootState) => s.donation);
   const { isProcessing } = useSelector((s: RootState) => s.donation);
   const [showConfirm, setShowConfirm] = useState(false);
   const [toast, setToast] = useState<{ visible: boolean; message: string; type?: 'success' | 'error' | 'info' }>({ visible: false, message: '' });
@@ -24,6 +24,7 @@ const CycleDetailScreen: React.FC = () => {
   React.useEffect(() => {
     if (cycleId) {
       dispatch(fetchCycleById(cycleId));
+      dispatch(fetchCycleParties(cycleId));
     }
   }, [dispatch, cycleId]);
 
@@ -50,6 +51,16 @@ const CycleDetailScreen: React.FC = () => {
             <Text style={styles.meta}>Status: {selectedCycle.status}</Text>
             <Text style={styles.meta}>Due: {selectedCycle.dueDate}</Text>
             <CycleTimeline status={selectedCycle.status as any} dueDate={selectedCycle.dueDate} />
+            {parties && (
+              <View style={{ marginTop: spacing.md }}>
+                {parties.donor && (
+                  <Text style={styles.meta}>Donor: {parties.donor.name}{parties.donor.location ? ` • ${parties.donor.location}` : ''}</Text>
+                )}
+                {parties.recipient && (
+                  <Text style={styles.meta}>Recipient: {parties.recipient.name}{parties.recipient.location ? ` • ${parties.recipient.location}` : ''}</Text>
+                )}
+              </View>
+            )}
           </View>
         )}
         <TouchableOpacity style={styles.primaryBtn} onPress={() => setShowConfirm(true)} disabled={isProcessing}>

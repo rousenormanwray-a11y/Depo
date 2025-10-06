@@ -5,16 +5,25 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, layout } from '../../theme/spacing';
+import InlineError from '../../components/common/InlineError';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '../../store/store';
+import { requestPasswordReset } from '../../store/slices/authSlice';
 
 const ForgotPasswordScreen: React.FC = () => {
+  const dispatch = useDispatch<AppDispatch>();
   const [email, setEmail] = useState('');
+  const [submitted, setSubmitted] = useState(false);
 
-  const handleReset = () => {
-    if (!email.trim()) {
-      Alert.alert('Error', 'Please enter your email');
-      return;
+  const handleReset = async () => {
+    setSubmitted(true);
+    if (!email.trim()) return;
+    try {
+      await dispatch(requestPasswordReset({ email: email.trim() })).unwrap();
+      Alert.alert('Password Reset', 'If an account exists, a reset link has been sent.');
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'Could not request reset');
     }
-    Alert.alert('Password Reset', 'If an account exists, a reset link has been sent.');
   };
 
   return (
@@ -25,7 +34,8 @@ const ForgotPasswordScreen: React.FC = () => {
       </View>
       <View style={styles.form}>
         <Text style={styles.label}>Email</Text>
-        <TextInput style={styles.input} value={email} onChangeText={setEmail} placeholder="Enter your email" autoCapitalize="none" />
+        <TextInput style={styles.input} value={email} onChangeText={setEmail} placeholder="Enter your email" autoCapitalize="none" keyboardType="email-address" />
+        {submitted && !email.trim() && <InlineError message="Email is required" />}
         <TouchableOpacity style={styles.button} onPress={handleReset}>
           <Text style={styles.buttonText}>Send Reset Link</Text>
         </TouchableOpacity>

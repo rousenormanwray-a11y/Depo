@@ -93,6 +93,8 @@ interface MarketplaceState {
   error: string | null;
   page: number;
   hasMore: boolean;
+  inStockOnly: boolean;
+  sort: 'price_asc' | 'price_desc' | 'rating_desc' | 'newest';
 }
 
 const initialState: MarketplaceState = {
@@ -105,6 +107,8 @@ const initialState: MarketplaceState = {
   error: null,
   page: 1,
   hasMore: true,
+  inStockOnly: false,
+  sort: 'newest',
 };
 
 // Async thunks
@@ -118,9 +122,11 @@ export const fetchMarketplaceItems = createAsyncThunk(
       const state = getState() as { marketplace: typeof initialState };
       const category = state.marketplace.selectedCategory || undefined;
       const q = state.marketplace.searchQuery || undefined;
+      const inStock = state.marketplace.inStockOnly || undefined;
+      const sort = state.marketplace.sort || undefined;
       const page = params?.page ?? 1;
       const limit = params?.limit ?? 20;
-      const res = await marketplaceAPI.getListings({ limit, category, q, page });
+      const res = await marketplaceAPI.getListings({ limit, category, q, page, inStock, sort });
       const data: any = res.data;
       return (data?.items || data || mockMarketplaceItems) as MarketplaceItem[];
     } catch (_err) {
@@ -212,7 +218,15 @@ const marketplaceSlice = createSlice({
     clearFilters: (state) => {
       state.selectedCategory = null;
       state.searchQuery = '';
+      state.inStockOnly = false;
+      state.sort = 'newest';
       state.filteredItems = state.items;
+    },
+    setInStockOnly: (state, action: PayloadAction<boolean>) => {
+      state.inStockOnly = action.payload;
+    },
+    setSort: (state, action: PayloadAction<MarketplaceState['sort']>) => {
+      state.sort = action.payload;
     },
   },
   extraReducers: (builder) => {
