@@ -18,10 +18,28 @@ export interface Transaction {
   metadata?: any;
 }
 
-export interface DepositData {
+export interface AgentCoinPurchaseRequest {
+  agentId: string;
   amount: number;
-  paymentMethod: 'FLUTTERWAVE' | 'PAYSTACK' | 'OPAY' | 'PALMPAY' | 'BANK_TRANSFER';
-  paymentProof?: string;
+  paymentMethod: 'CASH' | 'BANK_TRANSFER' | 'MOBILE_MONEY';
+}
+
+export interface AgentCoinPurchase {
+  id: string;
+  userId: string;
+  agentId: string;
+  amount: number;
+  status: 'PENDING' | 'ESCROW_LOCKED' | 'COMPLETED' | 'CANCELLED';
+  paymentMethod: string;
+  agentConfirmedAt?: string;
+  createdAt: string;
+  agent?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    phoneNumber: string;
+    location: string;
+  };
 }
 
 export interface WithdrawData {
@@ -80,15 +98,15 @@ class WalletService {
   }
 
   /**
-   * Initiate deposit
+   * Request to buy coins from agent
+   * This locks the agent's coins in escrow
    */
-  async initiateDeposit(data: DepositData): Promise<{
-    transaction: Transaction;
-    paymentUrl?: string;
-    reference: string;
+  async requestAgentCoinPurchase(data: AgentCoinPurchaseRequest): Promise<{
+    purchase: AgentCoinPurchase;
+    message: string;
   }> {
     try {
-      const response = await apiClient.post('/wallet/deposit', data);
+      const response = await apiClient.post('/wallet/agent-purchase/request', data);
       return response.data;
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -96,14 +114,28 @@ class WalletService {
   }
 
   /**
-   * Confirm deposit (after payment)
+   * Get pending agent coin purchases (for user)
    */
-  async confirmDeposit(reference: string): Promise<{
-    success: boolean;
-    transaction: Transaction;
+  async getPendingAgentPurchases(): Promise<{
+    purchases: AgentCoinPurchase[];
   }> {
     try {
-      const response = await apiClient.post('/wallet/deposit/confirm', { reference });
+      const response = await apiClient.get('/wallet/agent-purchase/pending');
+      return response.data;
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  }
+
+  /**
+   * Cancel agent coin purchase request (user side)
+   */
+  async cancelAgentPurchase(purchaseId: string): Promise<{
+    success: boolean;
+    message: string;
+  }> {
+    try {
+      const response = await apiClient.post(`/wallet/agent-purchase/${purchaseId}/cancel`);
       return response.data;
     } catch (error) {
       throw new Error(handleApiError(error));

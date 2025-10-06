@@ -30,11 +30,26 @@ export interface VerifyUserData {
   };
 }
 
-export interface CashDepositData {
-  phoneNumber: string;
+export interface PendingCoinPurchase {
+  id: string;
+  userId: string;
+  agentId: string;
   amount: number;
-  paymentMethod: 'CASH';
-  receiptUrl?: string;
+  status: 'PENDING' | 'ESCROW_LOCKED' | 'COMPLETED' | 'CANCELLED';
+  paymentMethod: string;
+  createdAt: string;
+  user: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    phoneNumber: string;
+  };
+}
+
+export interface ConfirmPaymentData {
+  purchaseId: string;
+  paymentReceived: boolean;
+  notes?: string;
 }
 
 /**
@@ -71,16 +86,47 @@ class AgentService {
   }
 
   /**
-   * Log a cash deposit
+   * Get pending coin purchase requests (agent side)
    */
-  async logCashDeposit(data: CashDepositData): Promise<{
+  async getPendingCoinRequests(): Promise<{
+    purchases: PendingCoinPurchase[];
+  }> {
+    try {
+      const response = await apiClient.get('/agents/coin-requests/pending');
+      return response.data;
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  }
+
+  /**
+   * Confirm payment received and release coins to user
+   */
+  async confirmPaymentAndRelease(data: ConfirmPaymentData): Promise<{
     success: boolean;
-    transaction: any;
+    purchase: PendingCoinPurchase;
     commission: number;
     message: string;
   }> {
     try {
-      const response = await apiClient.post('/agents/cash-deposit', data);
+      const response = await apiClient.post('/agents/coin-requests/confirm', data);
+      return response.data;
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  }
+
+  /**
+   * Reject coin purchase (if payment not received)
+   */
+  async rejectCoinPurchase(purchaseId: string, reason: string): Promise<{
+    success: boolean;
+    message: string;
+  }> {
+    try {
+      const response = await apiClient.post(`/agents/coin-requests/${purchaseId}/reject`, {
+        reason,
+      });
       return response.data;
     } catch (error) {
       throw new Error(handleApiError(error));
