@@ -17,4 +17,6 @@ export const authAPI = {
 
   me: () => apiClient.get('/auth/me'),
   logout: () => apiClient.post('/auth/logout'),
+  forgotPassword: (payload: { email: string }) => apiClient.post('/auth/forgot-password', payload),
+  resetPassword: (payload: { token: string; password: string }) => apiClient.post('/auth/reset-password', payload),
 };

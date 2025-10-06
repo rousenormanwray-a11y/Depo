@@ -1,320 +1,107 @@
-import React, { useState, useRef, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useDispatch, useSelector } from 'react-redux';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
-import { authService } from '../../services/authService';
-import Button from '../../components/common/Button';
+import { AppDispatch, RootState } from '../../store/store';
+import { verifyOTP } from '../../store/slices/authSlice';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, layout } from '../../theme/spacing';
 
-const OTP_LENGTH = 6;
-const RESEND_COOLDOWN = 30;
-
-interface RouteParams {
-  phoneNumber: string;
-  type?: 'registration' | 'forgot-password';
-}
+interface RouteParams { phoneNumber: string }
 
 const OTPScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { phoneNumber, type = 'registration' } = route.params as RouteParams;
+  const { phoneNumber } = (route.params as RouteParams) || { phoneNumber: '' };
+  const dispatch = useDispatch<AppDispatch>();
+  const { loading } = useSelector((state: RootState) => state.auth);
 
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
-  const [loading, setLoading] = useState(false);
-  const [resendCooldown, setResendCooldown] = useState(RESEND_COOLDOWN);
-  const [canResend, setCanResend] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [cooldown, setCooldown] = useState(0);
 
-  const inputRefs = useRef<Array<TextInput | null>>([]);
+  const handleVerify = async () => {
+    if (otp.length !== 6) {
+      Alert.alert('Invalid Code', 'Enter the 6-digit code sent to your phone.');
+      return;
+    }
+    try {
+      await dispatch(verifyOTP({ phoneNumber, otp })).unwrap();
+      Alert.alert('Verified', 'Your phone number has been verified.');
+      navigation.goBack();
+    } catch (e: any) {
+      Alert.alert('Verification Failed', e.message || 'Please try again');
+    }
+  };
 
-  useEffect(() => {
-    // Auto-focus first input
-    inputRefs.current[0]?.focus();
-
-    // Start cooldown timer
+  const handleResend = () => {
+    if (cooldown > 0) return;
+    setCooldown(30);
     const interval = setInterval(() => {
-      setResendCooldown((prev) => {
-        if (prev <= 1) {
-          setCanResend(true);
-          clearInterval(interval);
-          return 0;
-        }
-        return prev - 1;
+      setCooldown((c) => {
+        if (c <= 1) { clearInterval(interval); return 0; }
+        return c - 1;
       });
     }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const handleOtpChange = (index: number, value: string) => {
-    // Only allow numbers
-    if (value && !/^\d+$/.test(value)) {
-      return;
-    }
-
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
-
-    // Auto-focus next input
-    if (value && index < OTP_LENGTH - 1) {
-      inputRefs.current[index + 1]?.focus();
-    }
-
-    // Auto-submit when all digits are entered
-    if (newOtp.every((digit) => digit !== '')) {
-      handleVerifyOtp(newOtp.join(''));
-    }
-  };
-
-  const handleKeyPress = (index: number, key: string) => {
-    if (key === 'Backspace' && !otp[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    }
-  };
-
-  const handleVerifyOtp = async (otpCode?: string) => {
-    const code = otpCode || otp.join('');
-    
-    if (code.length !== OTP_LENGTH) {
-      Alert.alert('Error', 'Please enter all 6 digits');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      await authService.verifyOTP({ phoneNumber, otp: code });
-      
-      Alert.alert('Success', 'Phone number verified successfully!', [
-        {
-          text: 'OK',
-          onPress: () => {
-            if (type === 'forgot-password') {
-              navigation.navigate('ResetPassword', { phoneNumber, otp: code });
-            } else {
-              navigation.navigate('MainTabs');
-            }
-          },
-        },
-      ]);
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Invalid OTP code');
-      setOtp(['', '', '', '', '', '']);
-      inputRefs.current[0]?.focus();
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleResendOtp = async () => {
-    if (!canResend) return;
-
-    try {
-      await authService.resendOTP(phoneNumber);
-      Alert.alert('Success', 'A new OTP has been sent to your phone number');
-      
-      // Reset cooldown
-      setCanResend(false);
-      setResendCooldown(RESEND_COOLDOWN);
-      
-      const interval = setInterval(() => {
-        setResendCooldown((prev) => {
-          if (prev <= 1) {
-            setCanResend(true);
-            clearInterval(interval);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to resend OTP');
-    }
+    Alert.alert('OTP Sent', 'A new verification code was sent.');
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        style={styles.keyboardAvoid}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
-        <View style={styles.content}>
-          {/* Header */}
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Icon name="arrow-back" size={24} color={colors.text.primary} />
-          </TouchableOpacity>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Icon name="arrow-back" size={24} color={colors.text.primary} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Verify OTP</Text>
+        <View style={{ width: 24 }} />
+      </View>
 
-          <View style={styles.header}>
-            <Icon name="lock" size={64} color={colors.primary} />
-            <Text style={styles.title}>Verify Your Number</Text>
-            <Text style={styles.subtitle}>
-              We've sent a 6-digit code to{'\n'}
-              <Text style={styles.phoneNumber}>{phoneNumber}</Text>
-            </Text>
-          </View>
+      <View style={styles.content}>
+        <Text style={styles.title}>Enter Verification Code</Text>
+        <Text style={styles.subtitle}>We sent a 6-digit code to {phoneNumber || 'your phone'}.</Text>
 
-          {/* OTP Input */}
-          <View style={styles.otpContainer}>
-            {otp.map((digit, index) => (
-              <TextInput
-                key={index}
-                ref={(ref) => (inputRefs.current[index] = ref)}
-                style={[
-                  styles.otpInput,
-                  digit && styles.otpInputFilled,
-                ]}
-                value={digit}
-                onChangeText={(value) => handleOtpChange(index, value)}
-                onKeyPress={({ nativeEvent }) => handleKeyPress(index, nativeEvent.key)}
-                keyboardType="number-pad"
-                maxLength={1}
-                selectTextOnFocus
-              />
-            ))}
-          </View>
+        <TextInput
+          style={styles.otpInput}
+          value={otp}
+          onChangeText={setOtp}
+          keyboardType="number-pad"
+          maxLength={6}
+          placeholder="______"
+        />
 
-          {/* Resend OTP */}
-          <View style={styles.resendContainer}>
-            <Text style={styles.resendText}>Didn't receive the code? </Text>
-            <TouchableOpacity
-              onPress={handleResendOtp}
-              disabled={!canResend}
-            >
-              <Text
-                style={[
-                  styles.resendLink,
-                  !canResend && styles.resendLinkDisabled,
-                ]}
-              >
-                {canResend ? 'Resend OTP' : `Resend in ${resendCooldown}s`}
-              </Text>
-            </TouchableOpacity>
-          </View>
+        <TouchableOpacity style={[styles.button, loading && styles.buttonDisabled]} onPress={handleVerify} disabled={loading}>
+          <Text style={styles.buttonText}>{loading ? 'Verifying...' : 'Verify'}</Text>
+        </TouchableOpacity>
 
-          {/* Verify Button */}
-          <Button
-            title="Verify"
-            onPress={() => handleVerifyOtp()}
-            loading={loading}
-            disabled={otp.some((digit) => digit === '')}
-            fullWidth
-            style={styles.verifyButton}
-          />
-
-          {/* Change Number */}
-          <TouchableOpacity
-            style={styles.changeNumberButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Text style={styles.changeNumberText}>Change Phone Number</Text>
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
+        <TouchableOpacity onPress={handleResend} disabled={cooldown > 0}>
+          <Text style={styles.resendText}>
+            {cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend Code'}
+          </Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background.primary,
-  },
-  keyboardAvoid: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    padding: layout.screenPadding,
-  },
-  backButton: {
-    alignSelf: 'flex-start',
-    padding: spacing.xs,
-    marginBottom: spacing.lg,
-  },
+  container: { flex: 1, backgroundColor: colors.background.secondary },
   header: {
-    alignItems: 'center',
-    marginBottom: spacing['2xl'],
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: layout.screenPadding, paddingVertical: spacing.md, backgroundColor: colors.white,
+    borderBottomWidth: 1, borderBottomColor: colors.border.light,
   },
-  title: {
-    ...typography.h1,
-    color: colors.text.primary,
-    marginTop: spacing.lg,
-    marginBottom: spacing.sm,
-  },
-  subtitle: {
-    ...typography.bodyRegular,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  phoneNumber: {
-    ...typography.bodyRegular,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  otpContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: spacing['2xl'],
-  },
-  otpInput: {
-    width: 48,
-    height: 56,
-    borderWidth: 2,
-    borderColor: colors.border.medium,
-    borderRadius: 12,
-    ...typography.h2,
-    color: colors.text.primary,
-    textAlign: 'center',
-    backgroundColor: colors.white,
-  },
-  otpInputFilled: {
-    borderColor: colors.primary,
-  },
-  resendContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: spacing['2xl'],
-  },
-  resendText: {
-    ...typography.bodyRegular,
-    color: colors.text.secondary,
-  },
-  resendLink: {
-    ...typography.bodyRegular,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  resendLinkDisabled: {
-    color: colors.gray[400],
-  },
-  verifyButton: {
-    marginBottom: spacing.lg,
-  },
-  changeNumberButton: {
-    alignItems: 'center',
-    padding: spacing.sm,
-  },
-  changeNumberText: {
-    ...typography.bodyRegular,
-    color: colors.text.secondary,
-  },
+  headerTitle: { ...typography.h3, color: colors.text.primary },
+  content: { flex: 1, padding: layout.screenPadding, alignItems: 'center', justifyContent: 'center' },
+  title: { ...typography.h1, color: colors.text.primary, marginBottom: spacing.xs },
+  subtitle: { ...typography.bodyRegular, color: colors.text.secondary, marginBottom: spacing.lg, textAlign: 'center' },
+  otpInput: { borderWidth: 1, borderColor: colors.border.medium, borderRadius: 8, padding: spacing.md, width: 180, textAlign: 'center', backgroundColor: colors.white, ...typography.h2, letterSpacing: 8 },
+  button: { backgroundColor: colors.primary, borderRadius: 12, padding: spacing.md, alignItems: 'center', width: '100%', marginTop: spacing.lg },
+  buttonDisabled: { backgroundColor: colors.gray[400] },
+  buttonText: { ...typography.button, color: colors.white },
+  resendText: { ...typography.bodyRegular, color: colors.primary, marginTop: spacing.md },
 });
 
 export default OTPScreen;

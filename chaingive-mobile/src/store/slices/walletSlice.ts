@@ -9,6 +9,7 @@ interface WalletState {
   isLoadingTransactions: boolean;
   page: number;
   hasMore: boolean;
+  selectedTransaction: Transaction | null;
 }
 
 const initialState: WalletState = {
@@ -18,6 +19,7 @@ const initialState: WalletState = {
   isLoadingTransactions: false,
   page: 1,
   hasMore: true,
+  selectedTransaction: null,
 };
 
 export const fetchTransactions = createAsyncThunk(
@@ -57,6 +59,14 @@ export const withdrawFunds = createAsyncThunk(
     } catch (e: any) {
       return Promise.reject(new Error(e.message || 'Withdraw failed'));
     }
+  }
+);
+
+export const fetchTransactionById = createAsyncThunk(
+  'wallet/fetchTransactionById',
+  async (id: string) => {
+    const res = await walletAPI.getTransaction(id);
+    return res.data as Transaction;
   }
 );
 
@@ -120,6 +130,9 @@ const walletSlice = createSlice({
       .addCase(withdrawFunds.rejected, (state, action) => {
         state.isProcessing = false;
         state.error = action.error.message || 'Withdraw failed';
+      })
+      .addCase(fetchTransactionById.fulfilled, (state, action) => {
+        state.selectedTransaction = action.payload;
       });
   },
 });

@@ -64,8 +64,8 @@ const TransactionHistoryScreen: React.FC = () => {
           contentContainerStyle={styles.list}
           renderItem={({ item }) => {
             const icon = iconFor(item.type);
-            return (
-              <View style={styles.item}>
+          return (
+            <TouchableOpacity style={styles.item} onPress={() => navigation.navigate('TransactionDetail', { transactionId: item.id })}>
                 <View style={[styles.itemIcon, { backgroundColor: `${icon.color}20` }]}>
                   <Icon name={icon.name} size={20} color={icon.color} />
                 </View>
@@ -76,7 +76,7 @@ const TransactionHistoryScreen: React.FC = () => {
                 <Text style={[styles.itemAmount, item.type === 'deposit' ? styles.plus : styles.minus]}>
                   {item.type === 'redemption' ? `- ${item.amount} CC` : `${item.type === 'deposit' ? '+' : '-'}₦${Number(item.amount).toLocaleString()}`}
                 </Text>
-              </View>
+            </TouchableOpacity>
             );
           }}
           refreshControl={<RefreshControl refreshing={isLoadingTransactions} onRefresh={() => dispatch(fetchTransactions({ page: 1, limit: 50 }))} />}

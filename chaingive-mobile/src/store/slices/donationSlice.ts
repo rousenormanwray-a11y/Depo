@@ -9,6 +9,7 @@ interface DonationState {
   cycles: DonationCycle[];
   isLoadingCycles: boolean;
   selectedCycle: DonationCycle | null;
+  parties?: { donor?: { name: string; location?: string }; recipient?: { name: string; location?: string } } | null;
 }
 
 const initialState: DonationState = {
@@ -17,6 +18,7 @@ const initialState: DonationState = {
   cycles: [],
   isLoadingCycles: false,
   selectedCycle: null,
+  parties: null,
 };
 
 export const giveDonation = createAsyncThunk(
@@ -64,6 +66,14 @@ export const fetchCycleById = createAsyncThunk(
   async (cycleId: string) => {
     const res = await donationsAPI.getCycle(cycleId);
     return res.data;
+  }
+);
+
+export const fetchCycleParties = createAsyncThunk(
+  'donations/fetchCycleParties',
+  async (cycleId: string) => {
+    const res = await donationsAPI.getParties(cycleId);
+    return res.data as { donor?: { name: string; location?: string }; recipient?: { name: string; location?: string } };
   }
 );
 
@@ -127,6 +137,9 @@ const donationSlice = createSlice({
       })
       .addCase(fetchCycleById.fulfilled, (state, action: PayloadAction<DonationCycle>) => {
         state.selectedCycle = action.payload;
+      })
+      .addCase(fetchCycleParties.fulfilled, (state, action) => {
+        state.parties = action.payload;
       });
   },
 });
