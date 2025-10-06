@@ -11,6 +11,7 @@ export { default as gamificationService } from './gamificationService';
 export { default as streakService } from './streakService';
 export { default as achievementService } from './achievementService';
 export { default as adminService } from './adminService';
+export { default as pushNotificationService } from './pushNotificationService';
 
 // Export types
 export type { Notification, NotificationResponse, UnreadCountResponse } from './notificationService';
