@@ -21,7 +21,7 @@ type Category = typeof categories[number];
 const MarketplaceScreen: React.FC = () => {
   const navigation = useNavigation();
   const dispatch = useDispatch<AppDispatch>();
-  const { filteredItems, selectedCategory, loading } = useSelector((s: RootState) => s.marketplace);
+  const { filteredItems, selectedCategory, loading, page, hasMore } = useSelector((s: RootState) => s.marketplace);
   const [query, setQuery] = useState('');
   const { user } = useSelector((s: RootState) => s.auth);
 
@@ -114,7 +114,13 @@ const MarketplaceScreen: React.FC = () => {
         numColumns={2}
         columnWrapperStyle={{ justifyContent: 'space-between' }}
         refreshing={loading}
-        onRefresh={() => dispatch(fetchMarketplaceItems())}
+        onRefresh={() => dispatch(fetchMarketplaceItems({ page: 1 }))}
+        onEndReachedThreshold={0.2}
+        onEndReached={() => {
+          if (!loading && hasMore) {
+            dispatch(fetchMarketplaceItems({ page: page + 1 }));
+          }
+        }}
       />
       )}
     </SafeAreaView>
