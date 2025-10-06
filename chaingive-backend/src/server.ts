@@ -21,11 +21,14 @@ import marketplaceRoutes from './routes/marketplace.routes';
 import agentRoutes from './routes/agent.routes';
 import agentCoinRoutes from './routes/agentCoin.routes';
 import adminCoinRoutes from './routes/adminCoin.routes';
+import adminRoutes from './routes/admin.routes';
+import adminAdvancedRoutes from './routes/adminAdvanced.routes';
 import matchRoutes from './routes/match.routes';
 import leaderboardRoutes from './routes/leaderboard.routes';
 import notificationRoutes from './routes/notification.routes';
 import uploadRoutes from './routes/upload.routes';
 import referralRoutes from './routes/referral.routes';
+import disputeRoutes from './routes/dispute.routes';
 
 // Load environment variables
 dotenv.config();
@@ -74,6 +77,7 @@ app.use(`/${API_VERSION}/marketplace`, marketplaceRoutes);
 app.use(`/${API_VERSION}/agents`, agentRoutes);
 app.use(`/${API_VERSION}/agents`, agentCoinRoutes); // Agent coin management
 app.use(`/${API_VERSION}/admin/coins`, adminCoinRoutes); // Admin coin management
+app.use(`/${API_VERSION}/admin/advanced`, adminAdvancedRoutes); // Admin advanced features
 app.use(`/${API_VERSION}/admin`, adminRoutes); // Admin general management
 app.use(`/${API_VERSION}/matches`, matchRoutes);
 app.use(`/${API_VERSION}/leaderboard`, leaderboardRoutes);

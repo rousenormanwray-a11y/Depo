@@ -31,6 +31,7 @@ export const getLeaderboard = async (req: Request, res: Response, next: NextFunc
             id: true,
             firstName: true,
             lastName: true,
+            role: true, // Include role for tag display
             locationCity: true,
             locationState: true,
             charityCoinsBalance: true,

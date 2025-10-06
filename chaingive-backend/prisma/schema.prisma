@@ -63,6 +63,8 @@ model User {
   disputesMediated      Dispute[] @relation("DisputeMediator")
   disputeMessages       DisputeMessage[]
   disputeEvidence       DisputeEvidence[]
+  adminActions          AdminAction[] @relation("AdminActions")
+  adminActionTargets    AdminAction[] @relation("AdminActionTarget")
 
   @@index([phoneNumber])
   @@index([email])
