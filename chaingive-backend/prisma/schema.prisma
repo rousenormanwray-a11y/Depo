@@ -873,8 +873,3 @@ model GamificationStats {
 // ============================================
 
 // Add these relations to your existing User model:
-/*
-model User {
-  // ... existing fields ...
-  
-  // Gamification Relations
