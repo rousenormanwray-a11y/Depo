@@ -7,6 +7,7 @@ import { errorHandler } from './middleware/errorHandler';
 import { notFoundHandler } from './middleware/notFoundHandler';
 import { rateLimiter } from './middleware/rateLimiter';
 import logger from './utils/logger';
+import { startScheduledJobs } from './jobs';
 
 // Routes
 import authRoutes from './routes/auth.routes';
@@ -19,6 +20,7 @@ import agentRoutes from './routes/agent.routes';
 import agentCoinRoutes from './routes/agentCoin.routes';
 import adminCoinRoutes from './routes/adminCoin.routes';
 import matchRoutes from './routes/match.routes';
+import leaderboardRoutes from './routes/leaderboard.routes';
 
 // Load environment variables
 dotenv.config();
@@ -61,6 +63,7 @@ app.use(`/${API_VERSION}/agents`, agentRoutes);
 app.use(`/${API_VERSION}/agents`, agentCoinRoutes); // Agent coin management
 app.use(`/${API_VERSION}/admin`, adminCoinRoutes); // Admin coin management
 app.use(`/${API_VERSION}/matches`, matchRoutes);
+app.use(`/${API_VERSION}/leaderboard`, leaderboardRoutes);
 
 // Error handling
 app.use(notFoundHandler);
@@ -72,6 +75,12 @@ app.listen(PORT, () => {
   logger.info(`📝 Environment: ${process.env.NODE_ENV}`);
   logger.info(`🔗 API Version: ${API_VERSION}`);
   logger.info(`🌍 Health check: http://localhost:${PORT}/health`);
+  
+  // Start background jobs
+  if (process.env.NODE_ENV !== 'test') {
+    startScheduledJobs();
+    logger.info('⏰ Background jobs scheduled');
+  }
 });
 
 export default app;

@@ -4,6 +4,7 @@ import prisma from '../utils/prisma';
 import { AppError } from '../middleware/errorHandler';
 import logger from '../utils/logger';
 import { findBestMatch } from '../services/matching.service';
+import { updateLeaderboardAfterCycle } from '../services/leaderboard.service';
 
 /**
  * Give donation
@@ -172,6 +173,11 @@ export const confirmReceipt = async (req: AuthRequest, res: Response, next: Next
         where: { id: transactionId },
         data: { status: 'completed', completedAt: new Date() },
       });
+
+      // Update leaderboard for donor (they completed a donation)
+      if (transaction.fromUserId) {
+        await updateLeaderboardAfterCycle(transaction.fromUserId);
+      }
 
       logger.info(`Receipt confirmed: ${transactionId}`);
 
