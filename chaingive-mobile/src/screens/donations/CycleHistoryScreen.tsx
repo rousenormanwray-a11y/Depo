@@ -1,24 +1,17 @@
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useDispatch, useSelector } from 'react-redux';
-import { AppDispatch, RootState } from '../../store/store';
-import { fetchCycles, confirmReceipt } from '../../store/slices/donationSlice';
-import Badge from '../../components/common/Badge';
-import { useNavigation } from '@react-navigation/native';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, layout } from '../../theme/spacing';
 
+const mockCycles = [
+  { id: 'cycle-1', status: 'completed', amount: 5000, due: 'Aug 12, 2025' },
+  { id: 'cycle-2', status: 'pending', amount: 3000, due: 'Sep 03, 2025' },
+  { id: 'cycle-3', status: 'confirmed', amount: 2000, due: 'Sep 25, 2025' },
+];
+
 const CycleHistoryScreen: React.FC = () => {
-  const dispatch = useDispatch<AppDispatch>();
-  const { cycles, isLoadingCycles } = useSelector((s: RootState) => s.donation);
-  const navigation = useNavigation();
-
-  useEffect(() => {
-    dispatch(fetchCycles({ page: 1, limit: 50 }));
-  }, [dispatch]);
-
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -26,27 +19,15 @@ const CycleHistoryScreen: React.FC = () => {
       </View>
 
       <FlatList
-        data={cycles as any}
+        data={mockCycles}
         keyExtractor={(i) => i.id}
         contentContainerStyle={styles.list}
         renderItem={({ item }) => (
-          <TouchableOpacity style={styles.item} onPress={() => navigation.navigate('CycleDetail', { cycleId: item.id })}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.itemTitle}>{item.id}</Text>
-              <Text style={styles.itemMeta}>₦{Number(item.amount).toLocaleString()} • Due {item.dueDate}</Text>
-              <View style={{ marginTop: spacing.xs }}>
-                <Badge text={item.status} variant={item.status === 'completed' ? 'completed' : item.status === 'pending' ? 'pending' : 'active'} />
-              </View>
-            </View>
-            {item.status === 'confirmed' && (
-              <TouchableOpacity style={styles.confirmBtn} onPress={() => dispatch(confirmReceipt({ transactionId: item.id, confirm: true }))}>
-                <Text style={styles.confirmBtnText}>Confirm</Text>
-              </TouchableOpacity>
-            )}
-          </TouchableOpacity>
+          <View style={styles.item}>
+            <Text style={styles.itemTitle}>{item.id}</Text>
+            <Text style={styles.itemMeta}>₦{item.amount.toLocaleString()} • {item.status} • Due {item.due}</Text>
+          </View>
         )}
-        ListEmptyComponent={!isLoadingCycles ? <Text style={styles.empty}>No cycles yet.</Text> : null}
-        refreshControl={<RefreshControl refreshing={isLoadingCycles} onRefresh={() => dispatch(fetchCycles({ page: 1, limit: 50 }))} />}
       />
     </SafeAreaView>
   );
@@ -60,9 +41,6 @@ const styles = StyleSheet.create({
   item: { backgroundColor: colors.white, borderRadius: 12, padding: spacing.md, marginBottom: spacing.sm },
   itemTitle: { ...typography.bodyRegular, color: colors.text.primary },
   itemMeta: { ...typography.caption, color: colors.text.secondary, marginTop: spacing.xs },
-  empty: { ...typography.bodyRegular, color: colors.text.secondary, textAlign: 'center', marginTop: spacing.lg },
-  confirmBtn: { backgroundColor: colors.primary, borderRadius: 8, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, alignSelf: 'center' },
-  confirmBtnText: { ...typography.caption, color: colors.white, fontWeight: '600' },
 });
 
 export default CycleHistoryScreen;
