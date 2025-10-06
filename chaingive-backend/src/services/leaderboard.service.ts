@@ -1,10 +1,11 @@
 import prisma from '../utils/prisma';
 import logger from '../utils/logger';
+import { calculateSecondDonationBonus } from './forceRecycle.service';
 
 /**
- * Calculate leaderboard score for a user
+ * Calculate leaderboard score for a user (ENHANCED VERSION)
  */
-export function calculateLeaderboardScore(userData: any, boosts: any): number {
+export async function calculateLeaderboardScore(userData: any, boosts: any, userId: string): Promise<number> {
   // Base score components (weighted)
   const donationScore = Number(userData.totalDonated || 0) * 0.4;
   const cycleScore = (userData.totalCyclesCompleted || 0) * 100 * 0.3;
@@ -17,12 +18,39 @@ export function calculateLeaderboardScore(userData: any, boosts: any): number {
 
   const baseScore = donationScore + cycleScore + coinScore + speedBonus;
 
-  // Apply active boosts
+  // === NEW BONUSES ===
+  
+  // 1. SECOND DONATION BONUS (500 points per 2nd donation completed)
+  const secondDonationBonus = await calculateSecondDonationBonus(userId);
+  
+  // 2. REFERRAL BONUS (300 points per successful referral)
+  const completedReferrals = await prisma.referral.count({
+    where: {
+      referrerId: userId,
+      status: 'completed',
+    },
+  });
+  const referralBonus = completedReferrals * 300;
+  
+  // 3. ACTIVE REFERRAL BONUS (100 points per active referred user)
+  const activeReferrals = await prisma.referral.count({
+    where: {
+      referrerId: userId,
+      status: { in: ['registered', 'first_cycle', 'completed'] },
+    },
+  });
+  const activeReferralBonus = activeReferrals * 100;
+
+  // Total bonus points
+  const bonusPoints = secondDonationBonus + referralBonus + activeReferralBonus;
+
+  // Apply active boosts (from coin purchases)
   const multiplier = Number(boosts?.multiplierBoost || 1.0);
   const visibility = Number(boosts?.visibilityBoost || 0);
   const position = Number(boosts?.positionBoost || 0);
 
-  return (baseScore * multiplier) + visibility + position;
+  // Final score = (base + bonuses) * multiplier + visibility + position
+  return ((baseScore + bonusPoints) * multiplier) + visibility + position;
 }
 
 /**
@@ -212,15 +240,16 @@ export async function updateLeaderboardAfterCycle(userId: string): Promise<void>
     const visibilityBoost = currentBoosts.find(b => b.boostType === 'visibility')?.boostValue || 0;
     const positionBoost = currentBoosts.find(b => b.boostType === 'position')?.boostValue || 0;
 
-    const newScore = calculateLeaderboardScore(
-      {
-        totalDonated: user.totalDonated,
-        totalCyclesCompleted: user.totalCyclesCompleted,
-        charityCoinsBalance: user.charityCoinsBalance,
-        avgCompletionDays,
-      },
-      { multiplierBoost, visibilityBoost, positionBoost }
-    );
+      const newScore = await calculateLeaderboardScore(
+        {
+          totalDonated: user.totalDonated,
+          totalCyclesCompleted: user.totalCyclesCompleted,
+          charityCoinsBalance: user.charityCoinsBalance,
+          avgCompletionDays,
+        },
+        { multiplierBoost, visibilityBoost, positionBoost },
+        user.id
+      );
 
     await prisma.leaderboard.upsert({
       where: { userId: user.id },

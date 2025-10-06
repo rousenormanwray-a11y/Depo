@@ -15,18 +15,25 @@ export const escrowQueue = new Bull('escrow-release', redisConfig);
 export const matchQueue = new Bull('match-expiration', redisConfig);
 export const cycleQueue = new Bull('cycle-reminders', redisConfig);
 export const leaderboardQueue = new Bull('leaderboard-update', redisConfig);
+export const reportQueue = new Bull('scheduled-reports', redisConfig);
 
 // Import job processors
 import { processEscrowRelease } from './escrow-release.job';
 import { processMatchExpiration } from './match-expiration.job';
 import { processCycleReminders } from './cycle-reminders.job';
 import { processLeaderboardUpdate } from './leaderboard-update.job';
+import { processDailyReport } from './daily-report.job';
+import { processWeeklyReport } from './weekly-report.job';
+import { processMonthlyDigest } from './monthly-digest.job';
 
 // Register job processors
 escrowQueue.process(processEscrowRelease);
 matchQueue.process(processMatchExpiration);
 cycleQueue.process(processCycleReminders);
 leaderboardQueue.process(processLeaderboardUpdate);
+reportQueue.process(processDailyReport);
+reportQueue.process(processWeeklyReport);
+reportQueue.process(processMonthlyDigest);
 
 // Error handling
 escrowQueue.on('failed', (job, err) => {
@@ -45,6 +52,10 @@ leaderboardQueue.on('failed', (job, err) => {
   logger.error(`Leaderboard job ${job.id} failed:`, err);
 });
 
+reportQueue.on('failed', (job, err) => {
+  logger.error(`Report job ${job.id} failed:`, err);
+});
+
 // Success logging
 escrowQueue.on('completed', (job) => {
   logger.info(`Escrow job ${job.id} completed`);
@@ -60,6 +71,10 @@ cycleQueue.on('completed', (job) => {
 
 leaderboardQueue.on('completed', (job) => {
   logger.info(`Leaderboard job ${job.id} completed`);
+});
+
+reportQueue.on('completed', (job) => {
+  logger.info(`Report job ${job.id} completed`);
 });
 
 // Schedule recurring jobs
@@ -104,7 +119,45 @@ export function startScheduledJobs() {
     }
   );
 
+  // Daily report - every morning at 8 AM
+  reportQueue.add(
+    'daily-report',
+    {},
+    {
+      repeat: { cron: '0 8 * * *' }, // 8 AM daily
+      jobId: 'daily-report',
+    }
+  );
+
+  // Weekly report - every Monday at 9 AM
+  reportQueue.add(
+    'weekly-report',
+    {},
+    {
+      repeat: { cron: '0 9 * * 1' }, // 9 AM every Monday
+      jobId: 'weekly-report',
+    }
+  );
+
+  // Monthly digest - 1st of each month at 10 AM
+  reportQueue.add(
+    'monthly-digest',
+    {},
+    {
+      repeat: { cron: '0 10 1 * *' }, // 10 AM on 1st of month
+      jobId: 'monthly-digest',
+    }
+  );
+
   logger.info('✅ Scheduled jobs started');
 }
 
-export { processEscrowRelease, processMatchExpiration, processCycleReminders, processLeaderboardUpdate };
+export { 
+  processEscrowRelease, 
+  processMatchExpiration, 
+  processCycleReminders, 
+  processLeaderboardUpdate,
+  processDailyReport,
+  processWeeklyReport,
+  processMonthlyDigest,
+};

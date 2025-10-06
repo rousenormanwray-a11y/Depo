@@ -56,6 +56,13 @@ model User {
   coinSales             CoinSaleToUser[]
   leaderboard           Leaderboard?
   leaderboardBoosts     LeaderboardBoost[]
+  referralsGiven        Referral[] @relation("Referrer")
+  referralsReceived     Referral[] @relation("Referred")
+  disputesReported      Dispute[] @relation("DisputeReporter")
+  disputesResponded     Dispute[] @relation("DisputeRespondent")
+  disputesMediated      Dispute[] @relation("DisputeMediator")
+  disputeMessages       DisputeMessage[]
+  disputeEvidence       DisputeEvidence[]
 
   @@index([phoneNumber])
   @@index([email])
@@ -154,6 +161,12 @@ model Cycle {
   fulfilledAt          DateTime? @map("fulfilled_at")
   daysToFulfill        Int?      @map("days_to_fulfill")
   charityCoinsEarned   Int       @default(0) @map("charity_coins_earned")
+  
+  // Force Recycle Fields
+  cycleNumber          Int       @default(1) @map("cycle_number")
+  isSecondDonation     Boolean   @default(false) @map("is_second_donation")
+  qualifiesForReceipt  Boolean   @default(true) @map("qualifies_for_receipt")
+  
   createdAt            DateTime  @default(now()) @map("created_at")
   updatedAt            DateTime  @updatedAt @map("updated_at")
 
@@ -164,6 +177,8 @@ model Cycle {
   @@index([userId])
   @@index([status])
   @@index([dueDate])
+  @@index([cycleNumber])
+  @@index([qualifiesForReceipt])
   @@map("cycles")
 }
 

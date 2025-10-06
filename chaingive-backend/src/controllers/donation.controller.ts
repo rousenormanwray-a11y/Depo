@@ -6,6 +6,7 @@ import logger from '../utils/logger';
 import { findBestMatch } from '../services/matching.service';
 import { updateLeaderboardAfterCycle } from '../services/leaderboard.service';
 import { sendTemplateNotification } from '../services/notification.service';
+import { markSecondDonation } from '../services/forceRecycle.service';
 
 /**
  * Give donation
@@ -185,6 +186,18 @@ export const confirmReceipt = async (req: AuthRequest, res: Response, next: Next
 
       // Update leaderboard for donor (they completed a donation)
       if (transaction.fromUserId) {
+        // Mark as second donation if applicable (for leaderboard boost)
+        const cycle = await prisma.cycle.findFirst({
+          where: {
+            userId: transaction.fromUserId,
+            givenTransactionId: transaction.id,
+          },
+        });
+        
+        if (cycle) {
+          await markSecondDonation(transaction.fromUserId, cycle.id);
+        }
+
         await updateLeaderboardAfterCycle(transaction.fromUserId);
       }
 

@@ -25,6 +25,7 @@ import matchRoutes from './routes/match.routes';
 import leaderboardRoutes from './routes/leaderboard.routes';
 import notificationRoutes from './routes/notification.routes';
 import uploadRoutes from './routes/upload.routes';
+import referralRoutes from './routes/referral.routes';
 
 // Load environment variables
 dotenv.config();
@@ -72,11 +73,14 @@ app.use(`/${API_VERSION}/cycles`, cycleRoutes);
 app.use(`/${API_VERSION}/marketplace`, marketplaceRoutes);
 app.use(`/${API_VERSION}/agents`, agentRoutes);
 app.use(`/${API_VERSION}/agents`, agentCoinRoutes); // Agent coin management
-app.use(`/${API_VERSION}/admin`, adminCoinRoutes); // Admin coin management
+app.use(`/${API_VERSION}/admin/coins`, adminCoinRoutes); // Admin coin management
+app.use(`/${API_VERSION}/admin`, adminRoutes); // Admin general management
 app.use(`/${API_VERSION}/matches`, matchRoutes);
 app.use(`/${API_VERSION}/leaderboard`, leaderboardRoutes);
 app.use(`/${API_VERSION}/notifications`, notificationRoutes);
 app.use(`/${API_VERSION}/upload`, uploadRoutes);
+app.use(`/${API_VERSION}/referrals`, referralRoutes);
+app.use(`/${API_VERSION}/disputes`, disputeRoutes);
 
 // Serve uploaded files statically
 app.use('/uploads', express.static('uploads'));
