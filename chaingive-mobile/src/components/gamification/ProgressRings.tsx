@@ -1,23 +1,8 @@
 import React, { useEffect, useRef } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Animated,
-  TouchableOpacity,
-} from 'react-native';
+import { View, Text, StyleSheet, Animated } from 'react-native';
+import Svg, { Circle, G } from 'react-native-svg';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
-import Icon from 'react-native-vector-icons/MaterialIcons';
-import * as Haptics from 'expo-haptics';
-
-interface Ring {
-  label: string;
-  progress: number;
-  goal: number;
-  color: string;
-  icon: string;
-  unit?: string;
-}
 
 interface ProgressRingsProps {
   giveProgress: number;
@@ -26,283 +11,230 @@ interface ProgressRingsProps {
   earnGoal: number;
   engageProgress: number;
   engageGoal: number;
-  allRingsClosed?: boolean;
-  onPress?: () => void;
+  size?: number;
 }
 
-const ProgressRings: React.FC<ProgressRingsProps> = ({
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+
+export default function ProgressRings({
   giveProgress,
   giveGoal,
   earnProgress,
   earnGoal,
   engageProgress,
   engageGoal,
-  allRingsClosed = false,
-  onPress,
-}) => {
-  const rings: Ring[] = [
-    {
-      label: 'Give',
-      progress: giveProgress,
-      goal: giveGoal,
-      color: colors.error,
-      icon: 'favorite',
-      unit: 'donation',
-    },
-    {
-      label: 'Earn',
-      progress: earnProgress,
-      goal: earnGoal,
-      color: colors.warning,
-      icon: 'monetization-on',
-      unit: 'coins',
-    },
-    {
-      label: 'Engage',
-      progress: engageProgress,
-      goal: engageGoal,
-      color: colors.info,
-      icon: 'touch-app',
-      unit: 'action',
-    },
-  ];
-
-  const handlePress = () => {
-    if (onPress) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      onPress();
-    }
-  };
-
-  return (
-    <TouchableOpacity 
-      style={styles.container} 
-      onPress={handlePress}
-      activeOpacity={0.9}
-      disabled={!onPress}
-    >
-      <View style={styles.header}>
-        <Text style={styles.title}>Today's Progress</Text>
-        {allRingsClosed && (
-          <View style={styles.perfectBadge}>
-            <Icon name="stars" size={16} color={colors.warning} />
-            <Text style={styles.perfectText}>Perfect Day!</Text>
-          </View>
-        )}
-      </View>
-
-      <View style={styles.ringsContainer}>
-        {rings.map((ring, index) => (
-          <RingView
-            key={ring.label}
-            ring={ring}
-            index={index}
-          />
-        ))}
-      </View>
-
-      {allRingsClosed && (
-        <View style={styles.celebrationBanner}>
-          <Text style={styles.celebrationText}>
-            🎉 All rings closed! Keep it up!
-          </Text>
-        </View>
-      )}
-    </TouchableOpacity>
-  );
-};
-
-// ============================================
-// INDIVIDUAL RING COMPONENT
-// ============================================
-
-interface RingViewProps {
-  ring: Ring;
-  index: number;
-}
-
-const RingView: React.FC<RingViewProps> = ({ ring, index }) => {
-  const animatedProgress = useRef(new Animated.Value(0)).current;
-  const percentage = Math.min((ring.progress / ring.goal) * 100, 100);
-  const isClosed = ring.progress >= ring.goal;
-
+  size = 250,
+}: ProgressRingsProps) {
+  const center = size / 2;
+  const strokeWidth = 12;
+  
+  // Ring radii
+  const outerRadius = center - strokeWidth;
+  const middleRadius = center - strokeWidth * 3;
+  const innerRadius = center - strokeWidth * 5;
+  
+  // Calculate circumferences
+  const outerCircumference = 2 * Math.PI * outerRadius;
+  const middleCircumference = 2 * Math.PI * middleRadius;
+  const innerCircumference = 2 * Math.PI * innerRadius;
+  
+  // Calculate percentages
+  const givePercentage = Math.min((giveProgress / giveGoal) * 100, 100);
+  const earnPercentage = Math.min((earnProgress / earnGoal) * 100, 100);
+  const engagePercentage = Math.min((engageProgress / engageGoal) * 100, 100);
+  
+  // Animated values
+  const giveAnim = useRef(new Animated.Value(0)).current;
+  const earnAnim = useRef(new Animated.Value(0)).current;
+  const engageAnim = useRef(new Animated.Value(0)).current;
+  
   useEffect(() => {
-    Animated.spring(animatedProgress, {
-      toValue: percentage,
-      useNativeDriver: false,
-      delay: index * 150,
+    Animated.timing(giveAnim, {
+      toValue: givePercentage,
+      duration: 1000,
+      useNativeDriver: true,
     }).start();
-  }, [percentage]);
-
+    
+    Animated.timing(earnAnim, {
+      toValue: earnPercentage,
+      duration: 1000,
+      delay: 200,
+      useNativeDriver: true,
+    }).start();
+    
+    Animated.timing(engageAnim, {
+      toValue: engagePercentage,
+      duration: 1000,
+      delay: 400,
+      useNativeDriver: true,
+    }).start();
+  }, [givePercentage, earnPercentage, engagePercentage]);
+  
+  const getStrokeDashoffset = (percentage: number, circumference: number) => {
+    return circumference - (circumference * percentage) / 100;
+  };
+  
   return (
-    <View style={styles.ringContainer}>
-      {/* Ring Circle */}
-      <View style={styles.ringWrapper}>
-        <View style={[styles.ringBg, { borderColor: ring.color + '20' }]}>
-          <Animated.View
-            style={[
-              styles.ringProgress,
-              {
-                borderColor: ring.color,
-                transform: [
-                  {
-                    rotate: animatedProgress.interpolate({
-                      inputRange: [0, 100],
-                      outputRange: ['0deg', '360deg'],
-                    }),
-                  },
-                ],
-              },
-            ]}
+    <View style={[styles.container, { width: size, height: size }]}>
+      <Svg width={size} height={size}>
+        <G rotation="-90" origin={`${center}, ${center}`}>
+          {/* Outer Ring - Give (Red) */}
+          <Circle
+            cx={center}
+            cy={center}
+            r={outerRadius}
+            stroke="#f0f0f0"
+            strokeWidth={strokeWidth}
+            fill="none"
+          />
+          <Circle
+            cx={center}
+            cy={center}
+            r={outerRadius}
+            stroke={givePercentage >= 100 ? '#48BB78' : '#E53E3E'}
+            strokeWidth={strokeWidth}
+            strokeDasharray={outerCircumference}
+            strokeDashoffset={getStrokeDashoffset(givePercentage, outerCircumference)}
+            strokeLinecap="round"
+            fill="none"
           />
           
-          <View style={styles.ringCenter}>
-            <Icon 
-              name={ring.icon} 
-              size={24} 
-              color={isClosed ? ring.color : colors.textSecondary} 
-            />
-            {isClosed && (
-              <View style={[styles.checkmark, { backgroundColor: ring.color }]}>
-                <Icon name="check" size={12} color={colors.white} />
-              </View>
-            )}
-          </View>
-        </View>
+          {/* Middle Ring - Earn (Gold) */}
+          <Circle
+            cx={center}
+            cy={center}
+            r={middleRadius}
+            stroke="#f0f0f0"
+            strokeWidth={strokeWidth}
+            fill="none"
+          />
+          <Circle
+            cx={center}
+            cy={center}
+            r={middleRadius}
+            stroke={earnPercentage >= 100 ? '#48BB78' : '#FFD700'}
+            strokeWidth={strokeWidth}
+            strokeDasharray={middleCircumference}
+            strokeDashoffset={getStrokeDashoffset(earnPercentage, middleCircumference)}
+            strokeLinecap="round"
+            fill="none"
+          />
+          
+          {/* Inner Ring - Engage (Blue) */}
+          <Circle
+            cx={center}
+            cy={center}
+            r={innerRadius}
+            stroke="#f0f0f0"
+            strokeWidth={strokeWidth}
+            fill="none"
+          />
+          <Circle
+            cx={center}
+            cy={center}
+            r={innerRadius}
+            stroke={engagePercentage >= 100 ? '#48BB78' : '#4299E1'}
+            strokeWidth={strokeWidth}
+            strokeDasharray={innerCircumference}
+            strokeDashoffset={getStrokeDashoffset(engagePercentage, innerCircumference)}
+            strokeLinecap="round"
+            fill="none"
+          />
+        </G>
+      </Svg>
+      
+      {/* Center Content */}
+      <View style={styles.centerContent}>
+        {givePercentage >= 100 && earnPercentage >= 100 && engagePercentage >= 100 ? (
+          <>
+            <MaterialCommunityIcons name="check-circle" size={48} color="#48BB78" />
+            <Text style={styles.perfectDayText}>Perfect Day!</Text>
+          </>
+        ) : (
+          <>
+            <Text style={styles.totalPercentage}>
+              {Math.round((givePercentage + earnPercentage + engagePercentage) / 3)}%
+            </Text>
+            <Text style={styles.totalLabel}>Complete</Text>
+          </>
+        )}
       </View>
-
-      {/* Ring Info */}
-      <Text style={styles.ringLabel}>{ring.label}</Text>
-      <Text style={[styles.ringStats, isClosed && { color: ring.color }]}>
-        {ring.progress}/{ring.goal}
-      </Text>
-      {ring.unit && (
-        <Text style={styles.ringUnit}>
-          {ring.unit}{ring.goal > 1 ? 's' : ''}
-        </Text>
-      )}
     </View>
   );
-};
+}
 
-// ============================================
-// STYLES
-// ============================================
+export function ProgressRingLegend() {
+  return (
+    <View style={styles.legendContainer}>
+      <View style={styles.legendItem}>
+        <View style={[styles.legendDot, { backgroundColor: '#E53E3E' }]} />
+        <MaterialCommunityIcons name="gift-outline" size={20} color="#E53E3E" style={styles.legendIcon} />
+        <Text style={styles.legendText}>Give</Text>
+      </View>
+      
+      <View style={styles.legendItem}>
+        <View style={[styles.legendDot, { backgroundColor: '#FFD700' }]} />
+        <MaterialCommunityIcons name="coin" size={20} color="#FFD700" style={styles.legendIcon} />
+        <Text style={styles.legendText}>Earn</Text>
+      </View>
+      
+      <View style={styles.legendItem}>
+        <View style={[styles.legendDot, { backgroundColor: '#4299E1' }]} />
+        <MaterialCommunityIcons name="hand-wave-outline" size={20} color="#4299E1" style={styles.legendIcon} />
+        <Text style={styles.legendText}>Engage</Text>
+      </View>
+    </View>
+  );
+}
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
   },
-  title: {
+  centerContent: {
+    position: 'absolute',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  totalPercentage: {
+    fontSize: 40,
+    fontWeight: 'bold',
+    color: colors.text,
+  },
+  totalLabel: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginTop: 4,
+  },
+  perfectDayText: {
     fontSize: 18,
     fontWeight: '600',
-    color: colors.text,
+    color: '#48BB78',
+    marginTop: 8,
   },
-  perfectBadge: {
+  legendContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 24,
+    marginTop: 20,
+  },
+  legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.warning + '10',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    gap: 6,
   },
-  perfectText: {
+  legendDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  legendIcon: {
     marginLeft: 4,
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.warning,
   },
-  ringsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-  },
-  ringContainer: {
-    alignItems: 'center',
-  },
-  ringWrapper: {
-    width: 80,
-    height: 80,
-    marginBottom: 8,
-  },
-  ringBg: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    borderWidth: 6,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-  },
-  ringProgress: {
-    position: 'absolute',
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    borderWidth: 6,
-    borderTopColor: 'transparent',
-    borderRightColor: 'transparent',
-  },
-  ringCenter: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    backgroundColor: colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-  },
-  checkmark: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  ringLabel: {
+  legendText: {
     fontSize: 14,
     fontWeight: '600',
     color: colors.text,
-    marginBottom: 4,
-  },
-  ringStats: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    fontWeight: '500',
-  },
-  ringUnit: {
-    fontSize: 10,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  celebrationBanner: {
-    marginTop: 16,
-    padding: 12,
-    backgroundColor: colors.success + '10',
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  celebrationText: {
-    fontSize: 14,
-    color: colors.success,
-    fontWeight: '600',
   },
 });
-
-export default ProgressRings;
