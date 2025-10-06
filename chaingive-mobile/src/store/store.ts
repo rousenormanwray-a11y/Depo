@@ -8,12 +8,14 @@ import agentReducer from './slices/agentSlice';
 import marketplaceReducer from './slices/marketplaceSlice';
 import walletReducer from './slices/walletSlice';
 import donationReducer from './slices/donationSlice';
+import notificationReducer from './slices/notificationSlice';
+import gamificationReducer from './slices/gamificationSlice';
 
 // Persist config
 const persistConfig = {
   key: 'root',
   storage: AsyncStorage,
-  whitelist: ['auth'], // Only persist auth state
+  whitelist: ['auth', 'gamification'], // Persist auth and gamification state
 };
 
 // Root reducer
@@ -24,6 +26,8 @@ const rootReducer = combineReducers({
   marketplace: marketplaceReducer,
   wallet: walletReducer,
   donation: donationReducer,
+  notifications: notificationReducer,
+  gamification: gamificationReducer,
 });
 
 // Persisted reducer
