@@ -48,6 +48,9 @@ const DepositScreen: React.FC = () => {
 
         <Text style={[styles.label, { marginTop: spacing.md }]}>Payment Method</Text>
         <TextInput style={styles.input} value={method} onChangeText={setMethod} placeholder="Flutterwave / Paystack / Bank Transfer" />
+        {!method.trim() && (
+          <Text style={styles.hint}>Choose a payment method like Flutterwave or Paystack</Text>
+        )}
 
         <TouchableOpacity style={styles.primaryBtn} onPress={handleDeposit}>
           <Text style={styles.primaryBtnText}>{isProcessing ? 'Processing…' : 'Continue'}</Text>
@@ -64,6 +67,7 @@ const styles = StyleSheet.create({
   content: { padding: layout.screenPadding },
   label: { ...typography.label, color: colors.text.primary, marginBottom: spacing.xs },
   input: { borderWidth: 1, borderColor: colors.border.medium, borderRadius: 8, padding: spacing.sm, backgroundColor: colors.white, ...typography.bodyRegular },
+  hint: { ...typography.caption, color: colors.text.secondary, marginTop: spacing.xs },
   primaryBtn: { marginTop: spacing.lg, backgroundColor: colors.primary, borderRadius: 12, padding: spacing.md, alignItems: 'center' },
   primaryBtnText: { ...typography.button, color: colors.white },
 });
