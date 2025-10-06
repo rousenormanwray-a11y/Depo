@@ -47,16 +47,27 @@ export async function processCycleReminders(job: Job) {
           7
         );
 
-        // Send SMS reminder
-        const { sendCycleReminderSMS } = await import('../services/sms.service');
-        await sendCycleReminderSMS(
-          cycle.user.phoneNumber,
+      // Send SMS reminder
+      const { sendCycleReminderSMS } = await import('../services/sms.service');
+      await sendCycleReminderSMS(
+        cycle.user.phoneNumber,
+        cycle.user.firstName,
+        Number(cycle.amount),
+        7
+      );
+
+      // Send email reminder if available
+      if (cycle.user.email) {
+        const { sendCycleReminderEmail } = await import('../services/email.service');
+        await sendCycleReminderEmail(
+          cycle.user.email,
           cycle.user.firstName,
           Number(cycle.amount),
           7
         );
+      }
 
-        logger.info(`Reminder sent for cycle ${cycle.id} to user ${cycle.user.id}`);
+      logger.info(`Reminder sent for cycle ${cycle.id} to user ${cycle.user.id}`);
       } catch (error) {
         logger.error(`Failed to send reminder for cycle ${cycle.id}:`, error);
       }
