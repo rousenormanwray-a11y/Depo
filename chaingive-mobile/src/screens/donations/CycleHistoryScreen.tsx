@@ -4,6 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../store/store';
 import { fetchCycles, confirmReceipt } from '../../store/slices/donationSlice';
+import Badge from '../../components/common/Badge';
+import { useNavigation } from '@react-navigation/native';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, layout } from '../../theme/spacing';
@@ -11,6 +13,7 @@ import { spacing, layout } from '../../theme/spacing';
 const CycleHistoryScreen: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { cycles, isLoadingCycles } = useSelector((s: RootState) => s.donation);
+  const navigation = useNavigation();
 
   useEffect(() => {
     dispatch(fetchCycles({ page: 1, limit: 50 }));
@@ -27,17 +30,20 @@ const CycleHistoryScreen: React.FC = () => {
         keyExtractor={(i) => i.id}
         contentContainerStyle={styles.list}
         renderItem={({ item }) => (
-          <View style={styles.item}>
+          <TouchableOpacity style={styles.item} onPress={() => navigation.navigate('CycleDetail', { cycleId: item.id })}>
             <View style={{ flex: 1 }}>
               <Text style={styles.itemTitle}>{item.id}</Text>
-              <Text style={styles.itemMeta}>₦{Number(item.amount).toLocaleString()} • {item.status} • Due {item.dueDate}</Text>
+              <Text style={styles.itemMeta}>₦{Number(item.amount).toLocaleString()} • Due {item.dueDate}</Text>
+              <View style={{ marginTop: spacing.xs }}>
+                <Badge text={item.status} variant={item.status === 'completed' ? 'completed' : item.status === 'pending' ? 'pending' : 'active'} />
+              </View>
             </View>
             {item.status === 'confirmed' && (
               <TouchableOpacity style={styles.confirmBtn} onPress={() => dispatch(confirmReceipt({ transactionId: item.id, confirm: true }))}>
                 <Text style={styles.confirmBtnText}>Confirm</Text>
               </TouchableOpacity>
             )}
-          </View>
+          </TouchableOpacity>
         )}
         ListEmptyComponent={!isLoadingCycles ? <Text style={styles.empty}>No cycles yet.</Text> : null}
         refreshControl={<RefreshControl refreshing={isLoadingCycles} onRefresh={() => dispatch(fetchCycles({ page: 1, limit: 50 }))} />}

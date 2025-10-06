@@ -33,6 +33,10 @@ const MarketplaceScreen: React.FC = () => {
       dispatch(setSearchQuery(query));
       dispatch(fetchMarketplaceItems());
     }, 300);
+    if (query.length === 0) {
+      dispatch(setSearchQuery(''));
+      dispatch(fetchMarketplaceItems());
+    }
     return () => clearTimeout(id);
   }, [dispatch, query]);
 
