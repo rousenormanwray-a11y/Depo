@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -20,35 +21,16 @@ import GradientCard from '../../components/common/GradientCard';
 import EnhancedBadge from '../../components/common/EnhancedBadge';
 import { AnimatedNumber } from '../../components/animated';
 import { CardSkeleton, ListSkeleton } from '../../components/skeletons';
+import { adminService } from '../../services';
+import type { AdminMetric, AdminQuickStat, AdminActivity } from '../../services/adminService';
 
 const { width: screenWidth } = Dimensions.get('window');
 const cardWidth = (screenWidth - (spacing.md * 3)) / 2;
 
-interface MetricCard {
-  label: string;
-  value: number;
-  icon: string;
-  color: string;
-  change: string;
-  trend: 'up' | 'down' | 'neutral';
-}
-
-interface QuickStat {
-  label: string;
-  value: number;
-  icon: string;
-  urgent?: boolean;
-  action: () => void;
-}
-
-interface ActivityItem {
-  id: string;
-  type: 'user_registered' | 'large_transaction' | 'agent_verified' | 'dispute_filed' | 'kyc_pending';
-  message: string;
-  time: string;
-  icon: string;
-  urgent?: boolean;
-}
+// Use types from adminService
+type MetricCard = AdminMetric & { color: string };
+type QuickStat = AdminQuickStat & { urgent?: boolean; action: () => void };
+type ActivityItem = AdminActivity & { icon: string; urgent?: boolean };
 
 const AdminDashboardScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -62,92 +44,62 @@ const AdminDashboardScreen: React.FC = () => {
   }, []);
 
   const loadDashboardData = async () => {
-    // TODO: Replace with actual API call
-    setTimeout(() => {
-      setMetrics([
-        {
-          label: 'Total Users',
-          value: 15234,
-          icon: 'people',
-          color: colors.primary,
-          change: '+12.5%',
-          trend: 'up',
-        },
-        {
-          label: 'Total Volume',
-          value: 8450000,
-          icon: 'account-balance-wallet',
-          color: colors.success,
-          change: '+8.3%',
-          trend: 'up',
-        },
-        {
-          label: 'Active Cycles',
-          value: 342,
-          icon: 'refresh',
-          color: colors.info,
-          change: '+15',
-          trend: 'up',
-        },
-        {
-          label: 'Success Rate',
-          value: 96.5,
-          icon: 'trending-up',
-          color: colors.gold,
-          change: '+2.1%',
-          trend: 'up',
-        },
-      ]);
+    try {
+      const dashboardData = await adminService.getDashboard();
+      
+      // Map metrics with colors
+      const metricsWithColors: MetricCard[] = dashboardData.metrics.map((metric, index) => {
+        const colorMap = [colors.primary, colors.success, colors.info, colors.gold];
+        return {
+          ...metric,
+          color: colorMap[index % colorMap.length],
+        };
+      });
 
-      setQuickStats([
-        { label: 'Pending KYC', value: 23, icon: 'badge', urgent: true, action: () => {} },
-        { label: 'Open Disputes', value: 7, icon: 'gavel', urgent: true, action: () => {} },
-        { label: 'Failed Txns', value: 12, icon: 'error', urgent: true, action: () => {} },
-        { label: 'Active Agents', value: 156, icon: 'work', action: () => {} },
-      ]);
+      // Map quick stats with actions
+      const quickStatsWithActions: QuickStat[] = dashboardData.quickStats.map((stat) => ({
+        ...stat,
+        label: stat.title,
+        urgent: ['Pending KYC', 'Open Disputes', 'Failed Txns'].includes(stat.title),
+        action: () => handleQuickStatPress(stat.title),
+      }));
 
-      setRecentActivity([
-        {
-          id: '1',
-          type: 'user_registered',
-          message: 'New user registered: John Doe',
-          time: '2 min ago',
-          icon: 'person-add',
-        },
-        {
-          id: '2',
-          type: 'large_transaction',
-          message: 'Large transaction: ₦500,000',
-          time: '5 min ago',
-          icon: 'warning',
-          urgent: true,
-        },
-        {
-          id: '3',
-          type: 'agent_verified',
-          message: 'Agent verified: Sarah Agent',
-          time: '10 min ago',
-          icon: 'verified',
-        },
-        {
-          id: '4',
-          type: 'dispute_filed',
-          message: 'New dispute filed by User #4523',
-          time: '15 min ago',
-          icon: 'gavel',
-          urgent: true,
-        },
-        {
-          id: '5',
-          type: 'kyc_pending',
-          message: '5 new KYC submissions',
-          time: '30 min ago',
-          icon: 'badge',
-        },
-      ]);
+      // Map activity items with icons and urgency
+      const activityWithMetadata: ActivityItem[] = dashboardData.recentActivity.map((activity) => {
+        const iconMap: Record<string, string> = {
+          user: 'person-add',
+          donation: 'favorite',
+          transaction: 'account-balance-wallet',
+          verification: 'verified',
+          marketplace: 'shopping-bag',
+        };
+        
+        return {
+          ...activity,
+          icon: iconMap[activity.type] || 'info',
+          urgent: activity.status === 'pending',
+        };
+      });
 
+      setMetrics(metricsWithColors);
+      setQuickStats(quickStatsWithActions);
+      setRecentActivity(activityWithMetadata);
       setLoading(false);
-    }, 1500);
+    } catch (error) {
+      console.error('Failed to load admin dashboard:', error);
+      Alert.alert(
+        'Error',
+        'Failed to load dashboard data. Please try again.',
+        [{ text: 'OK' }]
+      );
+      setLoading(false);
+    }
+  };
+
+  const handleQuickStatPress = (title: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    // Navigate to relevant admin screen based on title
+    console.log('Quick stat pressed:', title);
   };
 
   const handleRefresh = async () => {
