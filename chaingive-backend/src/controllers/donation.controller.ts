@@ -5,6 +5,7 @@ import { AppError } from '../middleware/errorHandler';
 import logger from '../utils/logger';
 import { findBestMatch } from '../services/matching.service';
 import { updateLeaderboardAfterCycle } from '../services/leaderboard.service';
+import { sendTemplateNotification } from '../services/notification.service';
 
 /**
  * Give donation
@@ -119,6 +120,14 @@ export const giveDonation = async (req: AuthRequest, res: Response, next: NextFu
 
     logger.info(`Donation initiated: ${transaction.id} from ${userId} to ${finalRecipientId}`);
 
+    // Send notification to recipient
+    await sendTemplateNotification(
+      finalRecipientId,
+      'DONATION_RECEIVED',
+      amount,
+      req.user!.firstName
+    );
+
     res.status(201).json({
       success: true,
       data: {
@@ -177,6 +186,15 @@ export const confirmReceipt = async (req: AuthRequest, res: Response, next: Next
       // Update leaderboard for donor (they completed a donation)
       if (transaction.fromUserId) {
         await updateLeaderboardAfterCycle(transaction.fromUserId);
+      }
+
+      // Notify donor
+      if (transaction.fromUserId) {
+        await sendTemplateNotification(
+          transaction.fromUserId,
+          'DONATION_CONFIRMED',
+          Number(transaction.amount)
+        );
       }
 
       logger.info(`Receipt confirmed: ${transactionId}`);

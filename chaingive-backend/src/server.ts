@@ -21,6 +21,7 @@ import agentCoinRoutes from './routes/agentCoin.routes';
 import adminCoinRoutes from './routes/adminCoin.routes';
 import matchRoutes from './routes/match.routes';
 import leaderboardRoutes from './routes/leaderboard.routes';
+import notificationRoutes from './routes/notification.routes';
 
 // Load environment variables
 dotenv.config();
@@ -64,6 +65,7 @@ app.use(`/${API_VERSION}/agents`, agentCoinRoutes); // Agent coin management
 app.use(`/${API_VERSION}/admin`, adminCoinRoutes); // Admin coin management
 app.use(`/${API_VERSION}/matches`, matchRoutes);
 app.use(`/${API_VERSION}/leaderboard`, leaderboardRoutes);
+app.use(`/${API_VERSION}/notifications`, notificationRoutes);
 
 // Error handling
 app.use(notFoundHandler);

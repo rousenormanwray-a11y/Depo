@@ -2,6 +2,7 @@ import { Job } from 'bull';
 import prisma from '../utils/prisma';
 import logger from '../utils/logger';
 import { addDays } from '../utils/date';
+import { sendTemplateNotification } from '../services/notification.service';
 
 /**
  * Send cycle due reminders
@@ -38,18 +39,22 @@ export async function processCycleReminders(job: Job) {
 
     for (const cycle of upcomingCycles) {
       try {
-        // TODO: Send push notification
-        // await sendPushNotification(
-        //   cycle.user.id,
-        //   'Cycle Due Soon',
-        //   `Your donation of ₦${cycle.amount} is due in 7 days. Ready to give forward?`
-        // );
+        // Send push notification
+        await sendTemplateNotification(
+          cycle.user.id,
+          'CYCLE_DUE_SOON',
+          Number(cycle.amount),
+          7
+        );
 
-        // TODO: Send SMS reminder
-        // await sendSMS(
-        //   cycle.user.phoneNumber,
-        //   `Hi ${cycle.user.firstName}, your ChainGive cycle is due in 7 days. Open the app to give forward!`
-        // );
+        // Send SMS reminder
+        const { sendCycleReminderSMS } = await import('../services/sms.service');
+        await sendCycleReminderSMS(
+          cycle.user.phoneNumber,
+          cycle.user.firstName,
+          Number(cycle.amount),
+          7
+        );
 
         logger.info(`Reminder sent for cycle ${cycle.id} to user ${cycle.user.id}`);
       } catch (error) {

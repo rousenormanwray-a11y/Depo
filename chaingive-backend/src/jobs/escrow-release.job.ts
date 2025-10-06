@@ -1,6 +1,7 @@
 import { Job } from 'bull';
 import prisma from '../utils/prisma';
 import logger from '../utils/logger';
+import { sendTemplateNotification } from '../services/notification.service';
 
 /**
  * Process escrow releases (48-hour holds)
@@ -97,17 +98,17 @@ async function releaseEscrow(escrow: any) {
 
   logger.info(`Escrow ${escrow.id} released successfully`);
 
-  // TODO: Send push notification
-  // await sendPushNotification(
-  //   transaction.toUserId,
-  //   'Funds Released!',
-  //   `₦${escrow.amount} is now in your wallet. Time to pay it forward!`
-  // );
+  // Send push notification to recipient
+  await sendTemplateNotification(
+    transaction.toUserId,
+    'ESCROW_RELEASED',
+    Number(escrow.amount)
+  );
 
-  // TODO: Notify donor about coins earned
-  // await sendPushNotification(
-  //   transaction.fromUserId,
-  //   'Charity Coins Earned!',
-  //   `You earned 50 Charity Coins for your donation!`
-  // );
+  // Notify donor about coins earned
+  await sendTemplateNotification(
+    transaction.fromUserId,
+    'COINS_EARNED',
+    50
+  );
 }

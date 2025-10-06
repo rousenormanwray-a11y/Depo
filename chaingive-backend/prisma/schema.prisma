@@ -33,6 +33,11 @@ model User {
   locationCity          String?   @map("location_city")
   locationState         String?   @map("location_state")
   locationCountry       String    @default("NG") @map("location_country")
+  
+  // Push Notifications
+  fcmToken              String?   @map("fcm_token")
+  devicePlatform        String?   @map("device_platform") // 'ios' or 'android'
+  
   createdAt             DateTime  @default(now()) @map("created_at")
   updatedAt             DateTime  @updatedAt @map("updated_at")
   lastLoginAt           DateTime? @map("last_login_at")
