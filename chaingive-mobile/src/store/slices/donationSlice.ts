@@ -94,10 +94,16 @@ const donationSlice = createSlice({
       })
       .addCase(confirmReceipt.fulfilled, (state) => {
         state.isProcessing = false;
+        try {
+          analytics.track('donation_receipt_confirm_success');
+        } catch {}
       })
       .addCase(confirmReceipt.rejected, (state, action) => {
         state.isProcessing = false;
         state.error = action.error.message || 'Failed to confirm receipt';
+        try {
+          analytics.track('donation_receipt_confirm_failure', { error: state.error });
+        } catch {}
       })
       .addCase(fetchCycles.pending, (state) => {
         state.isLoadingCycles = true;
