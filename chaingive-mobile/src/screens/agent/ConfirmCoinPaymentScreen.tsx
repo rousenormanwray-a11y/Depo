@@ -287,7 +287,8 @@ const ConfirmCoinPaymentScreen: React.FC = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <PageTransition type="slideUp">
+      <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -586,6 +587,23 @@ const styles = StyleSheet.create({
     color: colors.warning,
     marginLeft: spacing.sm,
     flex: 1,
+  },
+  confirmButton: {
+    marginBottom: spacing.sm,
+  },
+  rejectInfo: {
+    ...typography.bodyRegular,
+    color: colors.text.secondary,
+    marginBottom: spacing.md,
+  },
+  rejectSubmitButton: {
+    marginTop: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+});
+
+export default ConfirmCoinPaymentScreen;
+lex: 1,
   },
   confirmButton: {
     marginBottom: spacing.sm,

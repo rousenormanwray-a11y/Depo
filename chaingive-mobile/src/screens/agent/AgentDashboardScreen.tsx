@@ -328,7 +328,24 @@ const AgentDashboardScreen: React.FC = () => {
           )}
         </View>
       </ScrollView>
+
+      {/* Success Animation */}
+      {showSuccess && (
+        <LottieSuccess
+          size={200}
+          onComplete={() => setShowSuccess(false)}
+        />
+      )}
+
+      {/* Celebration */}
+      {showCelebration && (
+        <>
+          <ConfettiCelebration />
+          <FloatingHearts count={15} />
+        </>
+      )}
     </SafeAreaView>
+  </PageTransition>
   );
 };
 
