@@ -29,6 +29,7 @@ import notificationRoutes from './routes/notification.routes';
 import uploadRoutes from './routes/upload.routes';
 import referralRoutes from './routes/referral.routes';
 import disputeRoutes from './routes/dispute.routes';
+import coinPurchaseRoutes from './routes/coinPurchase.routes';
 
 // Load environment variables
 dotenv.config();
@@ -85,6 +86,7 @@ app.use(`/${API_VERSION}/notifications`, notificationRoutes);
 app.use(`/${API_VERSION}/upload`, uploadRoutes);
 app.use(`/${API_VERSION}/referrals`, referralRoutes);
 app.use(`/${API_VERSION}/disputes`, disputeRoutes);
+app.use(`/${API_VERSION}/coins/purchase`, coinPurchaseRoutes);
 
 // Serve uploaded files statically
 app.use('/uploads', express.static('uploads'));

@@ -16,6 +16,7 @@ export const matchQueue = new Bull('match-expiration', redisConfig);
 export const cycleQueue = new Bull('cycle-reminders', redisConfig);
 export const leaderboardQueue = new Bull('leaderboard-update', redisConfig);
 export const reportQueue = new Bull('scheduled-reports', redisConfig);
+export const coinEscrowQueue = new Bull('coin-escrow-expiration', redisConfig);
 
 // Import job processors
 import { processEscrowRelease } from './escrow-release.job';
@@ -25,6 +26,7 @@ import { processLeaderboardUpdate } from './leaderboard-update.job';
 import { processDailyReport } from './daily-report.job';
 import { processWeeklyReport } from './weekly-report.job';
 import { processMonthlyDigest } from './monthly-digest.job';
+import { processCoinEscrowExpiration } from './coin-escrow-expiration.job';
 
 // Register job processors
 escrowQueue.process(processEscrowRelease);
@@ -34,6 +36,7 @@ leaderboardQueue.process(processLeaderboardUpdate);
 reportQueue.process(processDailyReport);
 reportQueue.process(processWeeklyReport);
 reportQueue.process(processMonthlyDigest);
+coinEscrowQueue.process(processCoinEscrowExpiration);
 
 // Error handling
 escrowQueue.on('failed', (job, err) => {
@@ -56,6 +59,10 @@ reportQueue.on('failed', (job, err) => {
   logger.error(`Report job ${job.id} failed:`, err);
 });
 
+coinEscrowQueue.on('failed', (job, err) => {
+  logger.error(`Coin escrow job ${job.id} failed:`, err);
+});
+
 // Success logging
 escrowQueue.on('completed', (job) => {
   logger.info(`Escrow job ${job.id} completed`);
@@ -75,6 +82,10 @@ leaderboardQueue.on('completed', (job) => {
 
 reportQueue.on('completed', (job) => {
   logger.info(`Report job ${job.id} completed`);
+});
+
+coinEscrowQueue.on('completed', (job) => {
+  logger.info(`Coin escrow job ${job.id} completed`);
 });
 
 // Schedule recurring jobs
@@ -146,6 +157,16 @@ export function startScheduledJobs() {
     {
       repeat: { cron: '0 10 1 * *' }, // 10 AM on 1st of month
       jobId: 'monthly-digest',
+    }
+  );
+
+  // Coin escrow expiration - every 10 minutes
+  coinEscrowQueue.add(
+    'coin-escrow-expiration',
+    {},
+    {
+      repeat: { cron: '*/10 * * * *' }, // Every 10 minutes
+      jobId: 'coin-escrow-expiration',
     }
   );
 
