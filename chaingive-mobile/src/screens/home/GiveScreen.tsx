@@ -11,6 +11,7 @@ import { spacing, layout } from '../../theme/spacing';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../store/store';
 import { giveDonation } from '../../store/slices/donationSlice';
+import InlineError from '../../components/common/InlineError';
 
 const GiveScreen: React.FC = () => {
   const navigation = useNavigation();

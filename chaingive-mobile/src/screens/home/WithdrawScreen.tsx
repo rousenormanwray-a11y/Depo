@@ -9,6 +9,7 @@ import { spacing, layout } from '../../theme/spacing';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../store/store';
 import { withdrawFunds } from '../../store/slices/walletSlice';
+import InlineError from '../../components/common/InlineError';
 
 const WithdrawScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -54,17 +55,18 @@ const WithdrawScreen: React.FC = () => {
       <View style={styles.content}>
         <Text style={styles.label}>Amount (₦)</Text>
         <TextInput style={styles.input} value={amount} onChangeText={setAmount} keyboardType="numeric" placeholder="Enter amount" />
+        {(!amount || Number(amount) <= 0) && <InlineError message="Enter a positive amount" />}
 
         <Text style={[styles.label, { marginTop: spacing.md }]}>Bank Account Number</Text>
         <TextInput style={styles.input} value={accountNumber} onChangeText={setAccountNumber} keyboardType="number-pad" placeholder="10-digit account number" maxLength={10} />
         {(!accountNumber.trim() || accountNumber.length !== 10) && (
-          <Text style={styles.hint}>Enter a valid 10-digit Nigerian account number</Text>
+          <InlineError message="Enter a valid 10-digit Nigerian account number" />
         )}
 
         <Text style={[styles.label, { marginTop: spacing.md }]}>Bank Code</Text>
         <TextInput style={styles.input} value={bankCode} onChangeText={setBankCode} placeholder="e.g., 058" />
         {!bankCode.trim() && (
-          <Text style={styles.hint}>Bank code required (e.g., GTBank 058)</Text>
+          <InlineError message="Bank code required (e.g., GTBank 058)" />
         )}
 
         <Text style={styles.hint}>A ₦50 processing fee applies. Withdrawals processed within 24 hours.</Text>
