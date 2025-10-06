@@ -68,6 +68,14 @@ model User {
   disputeEvidence      DisputeEvidence[]
   adminActions         AdminAction[]      @relation("AdminActions")
   adminActionTargets   AdminAction[]      @relation("AdminActionTarget")
+
+  @@index([phoneNumber])
+  @@index([email])
+  @@index([role])
+  @@index([trustScore])
+  @@map("users")
+}
+
 // Wallet Management
 model Wallet {
   id                 String   @id @default(uuid())

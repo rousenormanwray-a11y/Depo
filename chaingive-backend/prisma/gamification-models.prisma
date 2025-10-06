@@ -1,11 +1,70 @@
 // ============================================
-// GAMIFICATION SYSTEM - DATABASE MODELS
+// GAMIFICATION SYSTEM - ADMIN CONTROLLED
+// ============================================
+// Add these models to your main schema.prisma
+
+// ============================================
+// ADMIN CONFIGURATION
 // ============================================
 
-// Add these to your existing schema.prisma file
+model GamificationConfig {
+  id          String   @id @default(uuid())
+  
+  // Mission Configuration
+  missionsEnabled       Boolean  @default(true)
+  missionBonusReward    Int      @default(50)
+  weekendMultiplier     Float    @default(1.5)
+  
+  // Streak Configuration
+  streakEnabled         Boolean  @default(true)
+  streakRewards         Json     @default("{\"1\":10,\"2\":15,\"3\":20,\"4\":25,\"5\":30,\"6\":40,\"7\":50,\"14\":100,\"30\":250,\"60\":500,\"90\":1000}")
+  
+  // Progress Rings Configuration
+  ringsEnabled          Boolean  @default(true)
+  ringPerfectDayBonus   Int      @default(100)
+  giveGoal              Int      @default(1)
+  earnGoal              Int      @default(50)
+  engageGoal            Int      @default(3)
+  
+  // Weekly Challenge Configuration
+  challengesEnabled     Boolean  @default(true)
+  
+  // Achievement Configuration
+  achievementsEnabled   Boolean  @default(true)
+  
+  // Metadata
+  updatedAt   DateTime  @updatedAt
+  updatedBy   String?   // Admin user ID
+  
+  @@map("gamification_config")
+}
+
+model MissionTemplate {
+  id          String   @id @default(uuid())
+  
+  type        String   // donate, buy_coins, refer, leaderboard, marketplace, profile_update, kyc_submit
+  name        String
+  description String
+  reward      Int      // Coins awarded
+  icon        String   @default("check-circle")
+  
+  // Scheduling
+  isActive    Boolean  @default(true)
+  priority    Int      @default(0)
+  daysOfWeek  Json     @default("[0,1,2,3,4,5,6]") // Array of days (0=Sunday, 6=Saturday)
+  
+  // Metadata
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  updatedBy   String?  // Admin user ID
+  
+  @@index([type])
+  @@index([isActive])
+  @@map("mission_templates")
+}
 
 // ============================================
-// 1. DAILY MISSIONS
+// USER DATA
 // ============================================
 
 model DailyMission {
@@ -13,22 +72,30 @@ model DailyMission {
   userId    String
   date      DateTime @default(now())
   
-  // Missions (rotate daily)
-  mission1Type    String   // "donate", "buy_coins", "refer", "leaderboard", "marketplace"
+  // Mission 1
+  mission1Type    String
+  mission1Name    String
+  mission1Desc    String
   mission1Done    Boolean  @default(false)
   mission1Reward  Int      @default(50)
   
+  // Mission 2
   mission2Type    String
+  mission2Name    String
+  mission2Desc    String
   mission2Done    Boolean  @default(false)
   mission2Reward  Int      @default(30)
   
+  // Mission 3
   mission3Type    String
+  mission3Name    String
+  mission3Desc    String
   mission3Done    Boolean  @default(false)
   mission3Reward  Int      @default(20)
   
   // Completion
   allCompleted    Boolean  @default(false)
-  bonusReward     Int      @default(50)  // Bonus for completing all 3
+  bonusReward     Int      @default(50)
   totalCoinsEarned Int     @default(0)
   
   // Timestamps
@@ -44,10 +111,6 @@ model DailyMission {
   @@map("daily_missions")
 }
 
-// ============================================
-// 2. DAILY STREAK
-// ============================================
-
 model DailyStreak {
   id              String    @id @default(uuid())
   userId          String    @unique
@@ -61,8 +124,8 @@ model DailyStreak {
   totalCoinsEarned Int      @default(0)
   streakLevel     String    @default("bronze")  // bronze, silver, gold, platinum, diamond
   
-  // Milestones
-  streakMilestones Json     @default("[]")  // [7, 14, 30, 60, 90, 180, 365]
+  // Milestones achieved
+  milestones      Json      @default("[]")  // [7, 14, 30, 60, 90]
   
   // Timestamps
   createdAt       DateTime  @default(now())
@@ -74,27 +137,23 @@ model DailyStreak {
   @@map("daily_streaks")
 }
 
-// ============================================
-// 3. PROGRESS RINGS (Daily Goals)
-// ============================================
-
 model DailyProgress {
   id        String   @id @default(uuid())
   userId    String
   date      DateTime @default(now())
   
   // Ring 1: GIVE (Make donations)
-  giveGoal      Int      @default(1)      // Target: 1 donation
+  giveGoal      Int      @default(1)
   giveProgress  Int      @default(0)
   giveClosed    Boolean  @default(false)
   
   // Ring 2: EARN (Buy coins or refer)
-  earnGoal      Int      @default(50)     // Target: Buy 50 coins OR refer 1 person
+  earnGoal      Int      @default(50)
   earnProgress  Int      @default(0)
   earnClosed    Boolean  @default(false)
   
   // Ring 3: ENGAGE (App interactions)
-  engageGoal    Int      @default(3)      // Target: 3 interactions
+  engageGoal    Int      @default(3)
   engageProgress Int     @default(0)
   engageClosed  Boolean  @default(false)
   
@@ -116,31 +175,28 @@ model DailyProgress {
   @@map("daily_progress")
 }
 
-// ============================================
-// 4. WEEKLY CHALLENGES
-// ============================================
-
 model WeeklyChallenge {
   id            String   @id @default(uuid())
   
   // Challenge details
   name          String
   description   String
-  type          String   // "donations", "coin_purchases", "referrals", "leaderboard"
+  type          String   // donations, coin_purchases, referrals, leaderboard
   
   // Goals
-  targetValue   Int      // e.g., 5 donations, 500 coins, 3 referrals
+  targetValue   Int
   rewardCoins   Int      @default(500)
-  rewardType    String?  // "coins", "badge", "boost", "multiplier"
+  rewardType    String?  // coins, badge, boost, multiplier
   rewardValue   String?  // JSON for complex rewards
   
   // Schedule
   startDate     DateTime
   endDate       DateTime
-  weekNumber    Int      // Week of year
+  weekNumber    Int
   
   // Status
   isActive      Boolean  @default(true)
+  createdBy     String?  // Admin user ID
   
   // Timestamps
   createdAt     DateTime @default(now())
@@ -182,38 +238,36 @@ model WeeklyChallengeProgress {
   @@map("weekly_challenge_progress")
 }
 
-// ============================================
-// 5. ACHIEVEMENTS / BADGES
-// ============================================
-
 model Achievement {
   id            String   @id @default(uuid())
   
   // Achievement details
-  code          String   @unique  // "bronze_giver", "silver_giver", etc.
+  code          String   @unique
   name          String
   description   String
-  category      String   // "donations", "coins", "referrals", "streaks", "social"
+  category      String   // donations, coins, referrals, streaks, social
   
   // Requirements
-  requirementType  String  // "donation_count", "coin_purchase_total", "referral_count", "streak_days"
-  requirementValue Int     // The threshold to unlock
+  requirementType  String  // donation_count, coin_purchase_total, referral_count, streak_days
+  requirementValue Int
   
   // Rewards
   rewardCoins   Int      @default(0)
-  rewardBadge   String?  // Icon/image name
-  tier          String   // "bronze", "silver", "gold", "platinum", "diamond"
+  rewardBadge   String?
+  tier          String   // bronze, silver, gold, platinum, diamond
   
   // Display
   icon          String
   color         String   @default("#FFD700")
-  isSecret      Boolean  @default(false)  // Hidden until unlocked
+  isSecret      Boolean  @default(false)
   
   // Status
   isActive      Boolean  @default(true)
+  createdBy     String?  // Admin user ID
   
   // Timestamps
   createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
   
   // Relations
   unlocked      UserAchievement[]
@@ -231,10 +285,10 @@ model UserAchievement {
   // Unlock details
   unlockedAt    DateTime @default(now())
   progress      Int      @default(0)
-  maxProgress   Int      // Same as Achievement.requirementValue
+  maxProgress   Int
   
   // Display
-  isNew         Boolean  @default(true)  // For "NEW!" badge
+  isNew         Boolean  @default(true)
   viewedAt      DateTime?
   
   // Relations
@@ -247,23 +301,19 @@ model UserAchievement {
   @@map("user_achievements")
 }
 
-// ============================================
-// 6. GAMIFICATION STATS (Summary)
-// ============================================
-
 model GamificationStats {
   id        String   @id @default(uuid())
   userId    String   @unique
   
   // Overall stats
-  totalCoinsEarned    Int  @default(0)
-  totalMissionsCompleted Int @default(0)
-  totalPerfectDays    Int  @default(0)  // Days with all rings closed
-  totalAchievements   Int  @default(0)
+  totalCoinsEarned        Int  @default(0)
+  totalMissionsCompleted  Int  @default(0)
+  totalPerfectDays        Int  @default(0)
+  totalAchievements       Int  @default(0)
   
   // Current week
-  weeklyMissionsCompleted Int @default(0)
-  weeklyPerfectDays   Int  @default(0)
+  weeklyMissionsCompleted Int  @default(0)
+  weeklyPerfectDays       Int  @default(0)
   
   // Levels (optional for future)
   level         Int      @default(1)
@@ -279,22 +329,3 @@ model GamificationStats {
   
   @@map("gamification_stats")
 }
-
-// ============================================
-// UPDATE EXISTING USER MODEL
-// ============================================
-
-// Add these relations to your existing User model:
-/*
-model User {
-  // ... existing fields ...
-  
-  // Gamification Relations
-  dailyMissions       DailyMission[]          @relation("UserDailyMissions")
-  dailyStreak         DailyStreak?            @relation("UserStreak")
-  dailyProgress       DailyProgress[]         @relation("UserDailyProgress")
-  weeklyChallenges    WeeklyChallengeProgress[] @relation("UserWeeklyChallenges")
-  achievements        UserAchievement[]       @relation("UserAchievements")
-  gamificationStats   GamificationStats?      @relation("UserGamificationStats")
-}
-*/
