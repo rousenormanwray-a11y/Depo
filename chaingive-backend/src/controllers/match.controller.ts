@@ -2,6 +2,8 @@ import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import prisma from '../utils/prisma';
 import { AppError } from '../middleware/errorHandler';
+import logger from '../utils/logger';
+import { sendTemplateNotification } from '../services/notification.service';
 
 /**
  * Get pending matches for user
@@ -63,17 +65,42 @@ export const acceptMatch = async (req: AuthRequest, res: Response, next: NextFun
       throw new AppError('Match has expired', 400, 'MATCH_EXPIRED');
     }
 
-    await prisma.match.update({
+    const updatedMatch = await prisma.match.update({
       where: { id },
       data: {
         status: 'accepted',
         acceptedAt: new Date(),
       },
+      include: {
+        donor: {
+          select: {
+            id: true,
+            firstName: true,
+            phoneNumber: true,
+          },
+        },
+        recipient: {
+          select: {
+            firstName: true,
+          },
+        },
+      },
     });
+
+    // Notify donor that match was accepted
+    await sendTemplateNotification(
+      match.donorId,
+      'MATCH_ACCEPTED',
+      Number(match.amount),
+      updatedMatch.recipient.firstName
+    );
+
+    logger.info(`Match ${id} accepted by user ${userId}`);
 
     res.status(200).json({
       success: true,
       message: 'Match accepted. Awaiting donor transfer.',
+      data: updatedMatch,
     });
   } catch (error) {
     next(error);
@@ -101,17 +128,34 @@ export const rejectMatch = async (req: AuthRequest, res: Response, next: NextFun
       throw new AppError('Match not found', 404, 'MATCH_NOT_FOUND');
     }
 
-    await prisma.match.update({
+    const updatedMatch = await prisma.match.update({
       where: { id },
       data: {
         status: 'rejected',
         rejectionReason: reason,
       },
+      include: {
+        donor: {
+          select: {
+            id: true,
+          },
+        },
+      },
     });
+
+    // Notify donor that match was rejected
+    await sendTemplateNotification(
+      match.donorId,
+      'MATCH_REJECTED',
+      0
+    );
+
+    logger.info(`Match ${id} rejected by user ${userId}. Reason: ${reason || 'Not provided'}`);
 
     res.status(200).json({
       success: true,
       message: 'Match rejected',
+      data: updatedMatch,
     });
   } catch (error) {
     next(error);

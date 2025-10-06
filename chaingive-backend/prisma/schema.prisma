@@ -12,45 +12,62 @@ datasource db {
 
 // User Management
 model User {
-  id                    String    @id @default(uuid())
-  phoneNumber           String    @unique @map("phone_number")
-  email                 String?   @unique
-  passwordHash          String    @map("password_hash")
-  firstName             String    @map("first_name")
-  lastName              String    @map("last_name")
-  role                  String    @default("beginner") // beginner, agent, power_partner, csc_council
-  tier                  Int       @default(1) // 1, 2, 3
-  trustScore            Decimal   @default(5.00) @map("trust_score") @db.Decimal(3, 2)
-  totalCyclesCompleted  Int       @default(0) @map("total_cycles_completed")
-  totalDonated          Decimal   @default(0) @map("total_donated") @db.Decimal(12, 2)
-  totalReceived         Decimal   @default(0) @map("total_received") @db.Decimal(12, 2)
-  charityCoinsBalance   Int       @default(0) @map("charity_coins_balance")
-  kycStatus             String    @default("pending") @map("kyc_status") // pending, approved, rejected
-  isActive              Boolean   @default(true) @map("is_active")
-  isBanned              Boolean   @default(false) @map("is_banned")
-  banReason             String?   @map("ban_reason")
-  preferredLanguage     String    @default("en") @map("preferred_language") // en, pidgin, yo, ha, ig
-  locationCity          String?   @map("location_city")
-  locationState         String?   @map("location_state")
-  locationCountry       String    @default("NG") @map("location_country")
-  createdAt             DateTime  @default(now()) @map("created_at")
-  updatedAt             DateTime  @updatedAt @map("updated_at")
-  lastLoginAt           DateTime? @map("last_login_at")
+  id                   String  @id @default(uuid())
+  phoneNumber          String  @unique @map("phone_number")
+  email                String? @unique
+  passwordHash         String  @map("password_hash")
+  firstName            String  @map("first_name")
+  lastName             String  @map("last_name")
+  role                 String  @default("beginner") // beginner, agent, power_partner, csc_council
+  tier                 Int     @default(1) // 1, 2, 3
+  trustScore           Decimal @default(5.00) @map("trust_score") @db.Decimal(3, 2)
+  totalCyclesCompleted Int     @default(0) @map("total_cycles_completed")
+  totalDonated         Decimal @default(0) @map("total_donated") @db.Decimal(12, 2)
+  totalReceived        Decimal @default(0) @map("total_received") @db.Decimal(12, 2)
+  charityCoinsBalance  Int     @default(0) @map("charity_coins_balance")
+  kycStatus            String  @default("pending") @map("kyc_status") // pending, approved, rejected
+  isActive             Boolean @default(true) @map("is_active")
+  isBanned             Boolean @default(false) @map("is_banned")
+  banReason            String? @map("ban_reason")
+  preferredLanguage    String  @default("en") @map("preferred_language") // en, pidgin, yo, ha, ig
+  locationCity         String? @map("location_city")
+  locationState        String? @map("location_state")
+  locationCountry      String  @default("NG") @map("location_country")
+
+  // Push Notifications
+  fcmToken       String? @map("fcm_token")
+  devicePlatform String? @map("device_platform") // 'ios' or 'android'
+
+  // Profile
+  profilePictureUrl String? @map("profile_picture_url")
+
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  lastLoginAt DateTime? @map("last_login_at")
 
   // Relations
-  wallet                Wallet?
-  kycRecords            KycRecord[]
-  agent                 Agent?
-  sentTransactions      Transaction[] @relation("TransactionFrom")
-  receivedTransactions  Transaction[] @relation("TransactionTo")
-  cycles                Cycle[]
-  donorMatches          Match[] @relation("MatchDonor")
-  recipientMatches      Match[] @relation("MatchRecipient")
-  redemptions           Redemption[]
-  verifiedBy            KycRecord[] @relation("VerifiedBy")
-  coinSales             CoinSaleToUser[]
-  leaderboard           Leaderboard?
-  leaderboardBoosts     LeaderboardBoost[]
+  wallet               Wallet?
+  kycRecords           KycRecord[]
+  agent                Agent?
+  sentTransactions     Transaction[]      @relation("TransactionFrom")
+  receivedTransactions Transaction[]      @relation("TransactionTo")
+  cycles               Cycle[]
+  donorMatches         Match[]            @relation("MatchDonor")
+  recipientMatches     Match[]            @relation("MatchRecipient")
+  redemptions          Redemption[]
+  verifiedBy           KycRecord[]        @relation("VerifiedBy")
+  coinSales            CoinSaleToUser[]
+  leaderboard          Leaderboard?
+  leaderboardBoosts    LeaderboardBoost[]
+  referralsGiven       Referral[]         @relation("Referrer")
+  referralsReceived    Referral[]         @relation("Referred")
+  disputesReported     Dispute[]          @relation("DisputeReporter")
+  disputesResponded    Dispute[]          @relation("DisputeRespondent")
+  disputesMediated     Dispute[]          @relation("DisputeMediator")
+  disputeMessages      DisputeMessage[]
+  disputeEvidence      DisputeEvidence[]
+  adminActions         AdminAction[]      @relation("AdminActions")
+  adminActionTargets   AdminAction[]      @relation("AdminActionTarget")
 
   @@index([phoneNumber])
   @@index([email])
@@ -61,15 +78,15 @@ model User {
 
 // Wallet Management
 model Wallet {
-  id                  String   @id @default(uuid())
-  userId              String   @unique @map("user_id")
-  fiatBalance         Decimal  @default(0.00) @map("fiat_balance") @db.Decimal(12, 2)
-  receivableBalance   Decimal  @default(0.00) @map("receivable_balance") @db.Decimal(12, 2)
-  pendingObligations  Decimal  @default(0.00) @map("pending_obligations") @db.Decimal(12, 2)
-  totalInflows        Decimal  @default(0.00) @map("total_inflows") @db.Decimal(12, 2)
-  totalOutflows       Decimal  @default(0.00) @map("total_outflows") @db.Decimal(12, 2)
-  createdAt           DateTime @default(now()) @map("created_at")
-  updatedAt           DateTime @updatedAt @map("updated_at")
+  id                 String   @id @default(uuid())
+  userId             String   @unique @map("user_id")
+  fiatBalance        Decimal  @default(0.00) @map("fiat_balance") @db.Decimal(12, 2)
+  receivableBalance  Decimal  @default(0.00) @map("receivable_balance") @db.Decimal(12, 2)
+  pendingObligations Decimal  @default(0.00) @map("pending_obligations") @db.Decimal(12, 2)
+  totalInflows       Decimal  @default(0.00) @map("total_inflows") @db.Decimal(12, 2)
+  totalOutflows      Decimal  @default(0.00) @map("total_outflows") @db.Decimal(12, 2)
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
 
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -80,23 +97,23 @@ model Wallet {
 
 // Transaction Management
 model Transaction {
-  id                  String    @id @default(uuid())
-  transactionRef      String    @unique @map("transaction_ref")
-  type                String    // deposit, withdrawal, donation_sent, donation_received, marketplace_redemption
-  fromUserId          String?   @map("from_user_id")
-  toUserId            String?   @map("to_user_id")
-  amount              Decimal   @db.Decimal(12, 2)
-  fee                 Decimal   @default(0.00) @db.Decimal(12, 2)
-  netAmount           Decimal   @map("net_amount") @db.Decimal(12, 2)
-  status              String    @default("pending") // pending, in_transit, completed, failed, refunded
-  paymentMethod       String?   @map("payment_method") // bank_transfer, opay, palmpay, flutterwave, paystack
-  paymentProviderRef  String?   @map("payment_provider_ref")
-  cycleId             String?   @map("cycle_id")
-  metadata            Json?
-  blockchainTxHash    String?   @map("blockchain_tx_hash")
-  createdAt           DateTime  @default(now()) @map("created_at")
-  updatedAt           DateTime  @updatedAt @map("updated_at")
-  completedAt         DateTime? @map("completed_at")
+  id                 String    @id @default(uuid())
+  transactionRef     String    @unique @map("transaction_ref")
+  type               String // deposit, withdrawal, donation_sent, donation_received, marketplace_redemption
+  fromUserId         String?   @map("from_user_id")
+  toUserId           String?   @map("to_user_id")
+  amount             Decimal   @db.Decimal(12, 2)
+  fee                Decimal   @default(0.00) @db.Decimal(12, 2)
+  netAmount          Decimal   @map("net_amount") @db.Decimal(12, 2)
+  status             String    @default("pending") // pending, in_transit, completed, failed, refunded
+  paymentMethod      String?   @map("payment_method") // bank_transfer, opay, palmpay, flutterwave, paystack
+  paymentProviderRef String?   @map("payment_provider_ref")
+  cycleId            String?   @map("cycle_id")
+  metadata           Json?
+  blockchainTxHash   String?   @map("blockchain_tx_hash")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+  completedAt        DateTime? @map("completed_at")
 
   // Relations
   fromUser      User?          @relation("TransactionFrom", fields: [fromUserId], references: [id])
@@ -104,6 +121,7 @@ model Transaction {
   cycle         Cycle?         @relation(fields: [cycleId], references: [id])
   escrows       Escrow[]
   blockchainLog BlockchainLog?
+  Dispute       Dispute[]
 
   @@index([transactionRef])
   @@index([fromUserId])
@@ -136,21 +154,27 @@ model Escrow {
 
 // Donation Cycles
 model Cycle {
-  id                   String    @id @default(uuid())
-  userId               String    @map("user_id")
-  amount               Decimal   @db.Decimal(12, 2)
-  status               String    @default("pending") // pending, in_transit, received, obligated, fulfilled, defaulted
-  receivedFromUserId   String?   @map("received_from_user_id")
-  givenToUserId        String?   @map("given_to_user_id")
-  receivedTransactionId String?  @map("received_transaction_id")
-  givenTransactionId   String?   @map("given_transaction_id")
-  dueDate              DateTime? @map("due_date")
-  receivedAt           DateTime? @map("received_at")
-  fulfilledAt          DateTime? @map("fulfilled_at")
-  daysToFulfill        Int?      @map("days_to_fulfill")
-  charityCoinsEarned   Int       @default(0) @map("charity_coins_earned")
-  createdAt            DateTime  @default(now()) @map("created_at")
-  updatedAt            DateTime  @updatedAt @map("updated_at")
+  id                    String    @id @default(uuid())
+  userId                String    @map("user_id")
+  amount                Decimal   @db.Decimal(12, 2)
+  status                String    @default("pending") // pending, in_transit, received, obligated, fulfilled, defaulted
+  receivedFromUserId    String?   @map("received_from_user_id")
+  givenToUserId         String?   @map("given_to_user_id")
+  receivedTransactionId String?   @map("received_transaction_id")
+  givenTransactionId    String?   @map("given_transaction_id")
+  dueDate               DateTime? @map("due_date")
+  receivedAt            DateTime? @map("received_at")
+  fulfilledAt           DateTime? @map("fulfilled_at")
+  daysToFulfill         Int?      @map("days_to_fulfill")
+  charityCoinsEarned    Int       @default(0) @map("charity_coins_earned")
+
+  // Force Recycle Fields
+  cycleNumber         Int     @default(1) @map("cycle_number")
+  isSecondDonation    Boolean @default(false) @map("is_second_donation")
+  qualifiesForReceipt Boolean @default(true) @map("qualifies_for_receipt")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
   user         User          @relation(fields: [userId], references: [id])
@@ -159,6 +183,8 @@ model Cycle {
   @@index([userId])
   @@index([status])
   @@index([dueDate])
+  @@index([cycleNumber])
+  @@index([qualifiesForReceipt])
   @@map("cycles")
 }
 
@@ -189,15 +215,15 @@ model Match {
 
 // KYC Management
 model KycRecord {
-  id                String    @id @default(uuid())
-  userId            String    @map("user_id")
-  verificationType  String    @map("verification_type") // phone, email, bvn, nin, agent, selfie
-  verificationData  Json?     @map("verification_data")
-  status            String    @default("pending") // pending, approved, rejected
-  verifiedByUserId  String?   @map("verified_by_user_id")
-  verifiedAt        DateTime? @map("verified_at")
-  rejectionReason   String?   @map("rejection_reason")
-  createdAt         DateTime  @default(now()) @map("created_at")
+  id               String    @id @default(uuid())
+  userId           String    @map("user_id")
+  verificationType String    @map("verification_type") // phone, email, bvn, nin, agent, selfie
+  verificationData Json?     @map("verification_data")
+  status           String    @default("pending") // pending, approved, rejected
+  verifiedByUserId String?   @map("verified_by_user_id")
+  verifiedAt       DateTime? @map("verified_at")
+  rejectionReason  String?   @map("rejection_reason")
+  createdAt        DateTime  @default(now()) @map("created_at")
 
   // Relations
   user       User  @relation(fields: [userId], references: [id])
@@ -211,16 +237,16 @@ model KycRecord {
 
 // Agent Management
 model Agent {
-  id                 String    @id @default(uuid())
-  userId             String    @unique @map("user_id")
-  agentCode          String    @unique @map("agent_code")
-  
+  id        String @id @default(uuid())
+  userId    String @unique @map("user_id")
+  agentCode String @unique @map("agent_code")
+
   // Coin Inventory
-  coinBalance        Int       @default(0) @map("coin_balance")
-  totalCoinsStocked  Int       @default(0) @map("total_coins_stocked")
-  totalCoinsSold     Int       @default(0) @map("total_coins_sold")
-  lifetimeRevenue    Decimal   @default(0.00) @map("lifetime_revenue") @db.Decimal(12, 2)
-  
+  coinBalance       Int     @default(0) @map("coin_balance")
+  totalCoinsStocked Int     @default(0) @map("total_coins_stocked")
+  totalCoinsSold    Int     @default(0) @map("total_coins_sold")
+  lifetimeRevenue   Decimal @default(0.00) @map("lifetime_revenue") @db.Decimal(12, 2)
+
   // Legacy fields
   totalVerifications Int       @default(0) @map("total_verifications")
   totalCommissions   Decimal   @default(0.00) @map("total_commissions") @db.Decimal(12, 2)
@@ -233,9 +259,9 @@ model Agent {
   updatedAt          DateTime  @updatedAt @map("updated_at")
 
   // Relations
-  user            User                      @relation(fields: [userId], references: [id])
-  coinPurchases   CoinPurchaseFromAdmin[]
-  coinSales       CoinSaleToUser[]
+  user          User                    @relation(fields: [userId], references: [id])
+  coinPurchases CoinPurchaseFromAdmin[]
+  coinSales     CoinSaleToUser[]
 
   @@index([userId])
   @@index([agentCode])
@@ -245,23 +271,23 @@ model Agent {
 
 // Marketplace
 model MarketplaceListing {
-  id              String   @id @default(uuid())
-  vendorName      String   @map("vendor_name")
-  itemName        String   @map("item_name")
-  description     String?
-  category        String? // airtime, data, vouchers, services
-  coinPrice       Int      @map("coin_price")
-  realValue       Decimal  @map("real_value") @db.Decimal(12, 2)
-  stockQuantity   Int      @default(0) @map("stock_quantity")
-  isInStock       Boolean  @default(true) @map("is_in_stock")
-  paymentMethods  String[] @map("payment_methods")
-  rating          Decimal  @default(0.00) @db.Decimal(3, 2)
-  totalRatings    Int      @default(0) @map("total_ratings")
-  totalRedemptions Int     @default(0) @map("total_redemptions")
-  imageUrl        String?  @map("image_url")
-  isActive        Boolean  @default(true) @map("is_active")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  id               String   @id @default(uuid())
+  vendorName       String   @map("vendor_name")
+  itemName         String   @map("item_name")
+  description      String?
+  category         String? // airtime, data, vouchers, services
+  coinPrice        Int      @map("coin_price")
+  realValue        Decimal  @map("real_value") @db.Decimal(12, 2)
+  stockQuantity    Int      @default(0) @map("stock_quantity")
+  isInStock        Boolean  @default(true) @map("is_in_stock")
+  paymentMethods   String[] @map("payment_methods")
+  rating           Decimal  @default(0.00) @db.Decimal(3, 2)
+  totalRatings     Int      @default(0) @map("total_ratings")
+  totalRedemptions Int      @default(0) @map("total_redemptions")
+  imageUrl         String?  @map("image_url")
+  isActive         Boolean  @default(true) @map("is_active")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
   // Relations
   redemptions Redemption[]
@@ -318,15 +344,15 @@ model BlockchainLog {
 
 // Crypto Wallet Addresses (Admin-managed)
 model CryptoWallet {
-  id            String   @id @default(uuid())
-  currency      String              // BTC, USDT, ETH
-  network       String              // TRC20, ERC20, Bitcoin
-  address       String   @unique
-  qrCodeUrl     String?  @map("qr_code_url")
-  isActive      Boolean  @default(true) @map("is_active")
-  createdBy     String   @map("created_by")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id        String   @id @default(uuid())
+  currency  String // BTC, USDT, ETH
+  network   String // TRC20, ERC20, Bitcoin
+  address   String   @unique
+  qrCodeUrl String?  @map("qr_code_url")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdBy String   @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([currency])
   @@index([isActive])
@@ -335,23 +361,23 @@ model CryptoWallet {
 
 // Agent Coin Purchases from Admin (Crypto Payments)
 model CoinPurchaseFromAdmin {
-  id                  String    @id @default(uuid())
-  agentId             String    @map("agent_id")
-  quantity            Int
-  pricePerCoin        Decimal   @map("price_per_coin") @db.Decimal(10, 4)
-  totalAmount         Decimal   @map("total_amount") @db.Decimal(12, 4)
-  cryptocurrency      String
-  cryptoNetwork       String    @map("crypto_network")
-  paymentAddress      String    @map("payment_address")
-  txHash              String?   @map("tx_hash")
-  txProofUrl          String?   @map("tx_proof_url")
-  status              String    @default("pending") // pending, verifying, confirmed, rejected
-  adminApprovedBy     String?   @map("admin_approved_by")
-  approvedAt          DateTime? @map("approved_at")
-  rejectionReason     String?   @map("rejection_reason")
-  notes               String?
-  createdAt           DateTime  @default(now()) @map("created_at")
-  updatedAt           DateTime  @updatedAt @map("updated_at")
+  id              String    @id @default(uuid())
+  agentId         String    @map("agent_id")
+  quantity        Int
+  pricePerCoin    Decimal   @map("price_per_coin") @db.Decimal(10, 4)
+  totalAmount     Decimal   @map("total_amount") @db.Decimal(12, 4)
+  cryptocurrency  String
+  cryptoNetwork   String    @map("crypto_network")
+  paymentAddress  String    @map("payment_address")
+  txHash          String?   @map("tx_hash")
+  txProofUrl      String?   @map("tx_proof_url")
+  status          String    @default("pending") // pending, verifying, confirmed, rejected
+  adminApprovedBy String?   @map("admin_approved_by")
+  approvedAt      DateTime? @map("approved_at")
+  rejectionReason String?   @map("rejection_reason")
+  notes           String?
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
 
   // Relations
   agent Agent @relation(fields: [agentId], references: [id])
@@ -362,19 +388,33 @@ model CoinPurchaseFromAdmin {
   @@map("coin_purchases_from_admin")
 }
 
-// Agent Coin Sales to Users
+// Agent Coin Sales to Users - P2P Escrow System
 model CoinSaleToUser {
-  id              String   @id @default(uuid())
-  agentId         String   @map("agent_id")
-  userId          String   @map("user_id")
-  quantity        Int
-  pricePerCoin    Decimal  @map("price_per_coin") @db.Decimal(10, 2)
-  totalAmount     Decimal  @map("total_amount") @db.Decimal(12, 2)
-  paymentMethod   String   @map("payment_method") // cash, bank_transfer, opay, palmpay
-  paymentProof    String?  @map("payment_proof")
-  agentCommission Decimal  @map("agent_commission") @db.Decimal(12, 2)
-  platformRevenue Decimal  @map("platform_revenue") @db.Decimal(12, 2)
-  createdAt       DateTime @default(now()) @map("created_at")
+  id           String  @id @default(uuid())
+  agentId      String  @map("agent_id")
+  userId       String  @map("user_id")
+  quantity     Int
+  pricePerCoin Decimal @map("price_per_coin") @db.Decimal(10, 2)
+  totalPrice   Decimal @map("total_price") @db.Decimal(12, 2)
+  status       String  @default("pending") @map("status") // pending, escrowed, completed, cancelled, expired
+
+  // Escrow Fields
+  coinsLocked Boolean   @default(false) @map("coins_locked")
+  lockedAt    DateTime? @map("locked_at")
+  expiresAt   DateTime? @map("expires_at") // 30 minutes to pay
+
+  // Payment Confirmation
+  paymentMethod String?   @map("payment_method") // bank_transfer, mobile_money, cash
+  paymentProof  String?   @map("payment_proof")
+  paidAt        DateTime? @map("paid_at")
+  confirmedAt   DateTime? @map("confirmed_at")
+
+  // Revenue tracking (optional, kept for compatibility)
+  agentCommission Decimal? @map("agent_commission") @db.Decimal(12, 2)
+  platformRevenue Decimal? @map("platform_revenue") @db.Decimal(12, 2)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
   agent Agent @relation(fields: [agentId], references: [id])
@@ -382,32 +422,35 @@ model CoinSaleToUser {
 
   @@index([agentId])
   @@index([userId])
+  @@index([status])
+  @@index([coinsLocked])
+  @@index([expiresAt])
   @@index([createdAt])
   @@map("coin_sales_to_users")
 }
 
 // Leaderboard System
 model Leaderboard {
-  id                String   @id @default(uuid())
-  userId            String   @unique @map("user_id")
-  totalDonations    Decimal  @default(0) @map("total_donations") @db.Decimal(12, 2)
-  cyclesCompleted   Int      @default(0) @map("cycles_completed")
-  coinsEarned       Int      @default(0) @map("coins_earned")
-  avgCompletionDays Int      @default(0) @map("avg_completion_days")
-  
+  id                String  @id @default(uuid())
+  userId            String  @unique @map("user_id")
+  totalDonations    Decimal @default(0) @map("total_donations") @db.Decimal(12, 2)
+  cyclesCompleted   Int     @default(0) @map("cycles_completed")
+  coinsEarned       Int     @default(0) @map("coins_earned")
+  avgCompletionDays Int     @default(0) @map("avg_completion_days")
+
   // Boost modifiers
-  visibilityBoost   Int      @default(0) @map("visibility_boost")
-  multiplierBoost   Decimal  @default(1.0) @map("multiplier_boost") @db.Decimal(3, 2)
-  positionBoost     Int      @default(0) @map("position_boost")
-  
+  visibilityBoost Int     @default(0) @map("visibility_boost")
+  multiplierBoost Decimal @default(1.0) @map("multiplier_boost") @db.Decimal(3, 2)
+  positionBoost   Int     @default(0) @map("position_boost")
+
   // Calculated score
-  totalScore        Decimal  @default(0) @map("total_score") @db.Decimal(12, 2)
-  rank              Int?
-  
-  updatedAt         DateTime @updatedAt @map("updated_at")
+  totalScore Decimal @default(0) @map("total_score") @db.Decimal(12, 2)
+  rank       Int?
+
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  user   User              @relation(fields: [userId], references: [id])
+  user   User               @relation(fields: [userId], references: [id])
   boosts LeaderboardBoost[]
 
   @@index([totalScore])
@@ -423,7 +466,7 @@ model LeaderboardBoost {
   boostType     String    @map("boost_type") // visibility, multiplier, position
   coinsSpent    Int       @map("coins_spent")
   boostValue    Decimal   @map("boost_value") @db.Decimal(10, 2)
-  duration      Int?      // Duration in days (null = permanent)
+  duration      Int? // Duration in days (null = permanent)
   expiresAt     DateTime? @map("expires_at")
   isActive      Boolean   @default(true) @map("is_active")
   createdAt     DateTime  @default(now()) @map("created_at")
@@ -437,4 +480,109 @@ model LeaderboardBoost {
   @@index([isActive])
   @@index([expiresAt])
   @@map("leaderboard_boosts")
+}
+
+// Referral System
+model Referral {
+  id             String    @id @default(uuid())
+  referrerId     String    @map("referrer_id")
+  referredUserId String    @map("referred_user_id")
+  referralCode   String    @map("referral_code")
+  status         String    @default("registered") @map("status") // registered, first_cycle, completed
+  coinsEarned    Int       @default(0) @map("coins_earned")
+  registeredAt   DateTime  @default(now()) @map("registered_at")
+  firstCycleAt   DateTime? @map("first_cycle_at")
+  completedAt    DateTime? @map("completed_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  referrer     User @relation("Referrer", fields: [referrerId], references: [id])
+  referredUser User @relation("Referred", fields: [referredUserId], references: [id])
+
+  @@index([referrerId])
+  @@index([referredUserId])
+  @@index([status])
+  @@map("referrals")
+}
+
+// Dispute Resolution
+model Dispute {
+  id             String    @id @default(uuid())
+  reporterId     String    @map("reporter_id")
+  responderId    String    @map("responder_id")
+  transactionId  String    @map("transaction_id")
+  category       String    @map("category") // non_receipt, wrong_amount, fraud, other
+  description    String    @map("description")
+  status         String    @default("pending") @map("status") // pending, investigating, resolved
+  resolution     String?   @map("resolution")
+  resolutionType String?   @map("resolution_type") // refund, no_action, partial_refund
+  mediatorId     String?   @map("mediator_id")
+  resolvedAt     DateTime? @map("resolved_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  reporter    User              @relation("DisputeReporter", fields: [reporterId], references: [id])
+  responder   User              @relation("DisputeRespondent", fields: [responderId], references: [id])
+  mediator    User?             @relation("DisputeMediator", fields: [mediatorId], references: [id])
+  transaction Transaction       @relation(fields: [transactionId], references: [id])
+  messages    DisputeMessage[]
+  evidence    DisputeEvidence[]
+
+  @@index([reporterId])
+  @@index([responderId])
+  @@index([transactionId])
+  @@index([status])
+  @@map("disputes")
+}
+
+model DisputeMessage {
+  id        String   @id @default(uuid())
+  disputeId String   @map("dispute_id")
+  senderId  String   @map("sender_id")
+  message   String   @map("message")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  dispute Dispute @relation(fields: [disputeId], references: [id])
+  sender  User    @relation(fields: [senderId], references: [id])
+
+  @@index([disputeId])
+  @@map("dispute_messages")
+}
+
+model DisputeEvidence {
+  id          String   @id @default(uuid())
+  disputeId   String   @map("dispute_id")
+  uploaderId  String   @map("uploader_id")
+  fileUrl     String   @map("file_url")
+  fileType    String   @map("file_type") // image, pdf, screenshot
+  description String?  @map("description")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  dispute  Dispute @relation(fields: [disputeId], references: [id])
+  uploader User    @relation(fields: [uploaderId], references: [id])
+
+  @@index([disputeId])
+  @@map("dispute_evidence")
+}
+
+// Admin Actions Logging
+model AdminAction {
+  id        String   @id @default(uuid())
+  adminId   String   @map("admin_id")
+  action    String   @map("action") // promote_agent, send_coins, ban_user, etc.
+  targetId  String?  @map("target_id") // user/agent affected
+  details   String?  @map("details") // JSON string with details
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  admin  User  @relation("AdminActions", fields: [adminId], references: [id])
+  target User? @relation("AdminActionTarget", fields: [targetId], references: [id])
+
+  @@index([adminId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("admin_actions")
 }

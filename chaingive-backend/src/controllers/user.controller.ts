@@ -2,6 +2,8 @@ import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import prisma from '../utils/prisma';
 import { AppError } from '../middleware/errorHandler';
+import logger from '../utils/logger';
+import { getUserDonationStreak } from '../services/forceRecycle.service';
 
 /**
  * Get current user profile
@@ -12,8 +14,24 @@ export const getProfile = async (req: AuthRequest, res: Response, next: NextFunc
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      include: {
-        wallet: true,
+      select: {
+        id: true,
+        phoneNumber: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        tier: true,
+        trustScore: true,
+        totalCyclesCompleted: true,
+        totalDonated: true,
+        totalReceived: true,
+        charityCoinsBalance: true,
+        kycStatus: true,
+        locationCity: true,
+        locationState: true,
+        preferredLanguage: true,
+        createdAt: true,
       },
     });
 
@@ -23,26 +41,7 @@ export const getProfile = async (req: AuthRequest, res: Response, next: NextFunc
 
     res.status(200).json({
       success: true,
-      data: {
-        id: user.id,
-        phoneNumber: user.phoneNumber,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role,
-        tier: user.tier,
-        trustScore: user.trustScore,
-        totalCyclesCompleted: user.totalCyclesCompleted,
-        totalDonated: user.totalDonated,
-        totalReceived: user.totalReceived,
-        charityCoinsBalance: user.charityCoinsBalance,
-        kycStatus: user.kycStatus,
-        preferredLanguage: user.preferredLanguage,
-        locationCity: user.locationCity,
-        locationState: user.locationState,
-        wallet: user.wallet,
-        createdAt: user.createdAt,
-      },
+      data: user,
     });
   } catch (error) {
     next(error);
@@ -55,16 +54,35 @@ export const getProfile = async (req: AuthRequest, res: Response, next: NextFunc
 export const updateProfile = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
-    const updates = req.body;
+    const { firstName, lastName, email, locationCity, locationState, preferredLanguage } = req.body;
 
-    const user = await prisma.user.update({
+    const updatedUser = await prisma.user.update({
       where: { id: userId },
-      data: updates,
+      data: {
+        ...(firstName && { firstName }),
+        ...(lastName && { lastName }),
+        ...(email && { email }),
+        ...(locationCity && { locationCity }),
+        ...(locationState && { locationState }),
+        ...(preferredLanguage && { preferredLanguage }),
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        locationCity: true,
+        locationState: true,
+        preferredLanguage: true,
+      },
     });
+
+    logger.info(`User ${userId} updated profile`);
 
     res.status(200).json({
       success: true,
-      data: user,
+      message: 'Profile updated successfully',
+      data: updatedUser,
     });
   } catch (error) {
     next(error);
@@ -78,7 +96,7 @@ export const getStats = async (req: AuthRequest, res: Response, next: NextFuncti
   try {
     const userId = req.user!.id;
 
-    const [user, sentTransactions, receivedTransactions, cycles] = await Promise.all([
+    const [user, cycles, wallet, referrals] = await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },
         select: {
@@ -89,45 +107,51 @@ export const getStats = async (req: AuthRequest, res: Response, next: NextFuncti
           trustScore: true,
         },
       }),
-      prisma.transaction.count({
-        where: {
-          fromUserId: userId,
-          type: 'donation_sent',
-          status: 'completed',
-        },
-      }),
-      prisma.transaction.count({
-        where: {
-          toUserId: userId,
-          type: 'donation_sent',
-          status: 'completed',
-        },
-      }),
       prisma.cycle.findMany({
         where: { userId },
         select: {
           status: true,
           daysToFulfill: true,
+          isSecondDonation: true,
         },
+      }),
+      prisma.wallet.findUnique({
+        where: { userId },
+      }),
+      prisma.referral.count({
+        where: { referrerId: userId },
       }),
     ]);
 
-    const avgCompletionTime =
-      cycles
-        .filter((c) => c.daysToFulfill !== null)
-        .reduce((sum, c) => sum + (c.daysToFulfill || 0), 0) / cycles.length || 0;
+    const completedCycles = cycles.filter(c => c.status === 'fulfilled');
+    const avgCompletionDays = completedCycles.length > 0
+      ? Math.round(
+          completedCycles.reduce((sum, c) => sum + (c.daysToFulfill || 0), 0) / completedCycles.length
+        )
+      : 0;
+
+    const secondDonations = cycles.filter(c => c.isSecondDonation).length;
+
+    // Get donation streak info
+    const streakInfo = await getUserDonationStreak(userId);
 
     res.status(200).json({
       success: true,
       data: {
+        totalCyclesCompleted: user?.totalCyclesCompleted || 0,
         totalDonated: user?.totalDonated || 0,
         totalReceived: user?.totalReceived || 0,
-        totalCyclesCompleted: user?.totalCyclesCompleted || 0,
         charityCoinsBalance: user?.charityCoinsBalance || 0,
-        trustScore: user?.trustScore || 0,
-        donationsSent: sentTransactions,
-        donationsReceived: receivedTransactions,
-        avgCycleCompletionDays: Math.round(avgCompletionTime),
+        trustScore: user?.trustScore || 5.0,
+        avgCompletionDays,
+        secondDonationsCompleted: secondDonations,
+        totalReferrals: referrals,
+        wallet: {
+          fiatBalance: wallet?.fiatBalance || 0,
+          receivableBalance: wallet?.receivableBalance || 0,
+          pendingObligations: wallet?.pendingObligations || 0,
+        },
+        donationStreak: streakInfo,
       },
     });
   } catch (error) {

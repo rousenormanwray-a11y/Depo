@@ -3,6 +3,7 @@ import * as walletController from '../controllers/wallet.controller';
 import { authenticate } from '../middleware/auth';
 import { validate } from '../middleware/validation';
 import * as walletValidation from '../validations/wallet.validation';
+import { rateLimitMiddleware, withdrawalLimiter } from '../middleware/advancedRateLimiter';
 
 const router = Router();
 
@@ -42,7 +43,12 @@ router.post('/deposit', validate(walletValidation.depositSchema), walletControll
  * @desc    Initiate withdrawal
  * @access  Private
  */
-router.post('/withdraw', validate(walletValidation.withdrawSchema), walletController.initiateWithdrawal);
+router.post(
+  '/withdraw', 
+  withdrawalLimiter, 
+  validate(walletValidation.withdrawSchema), 
+  walletController.initiateWithdrawal
+);
 
 /**
  * @route   POST /v1/wallet/deposit/confirm
