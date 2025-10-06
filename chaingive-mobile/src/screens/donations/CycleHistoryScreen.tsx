@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../store/store';
@@ -40,6 +40,7 @@ const CycleHistoryScreen: React.FC = () => {
           </View>
         )}
         ListEmptyComponent={!isLoadingCycles ? <Text style={styles.empty}>No cycles yet.</Text> : null}
+        refreshControl={<RefreshControl refreshing={isLoadingCycles} onRefresh={() => dispatch(fetchCycles({ page: 1, limit: 50 }))} />}
       />
     </SafeAreaView>
   );

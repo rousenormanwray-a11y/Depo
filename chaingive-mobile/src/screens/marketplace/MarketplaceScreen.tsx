@@ -95,6 +95,12 @@ const MarketplaceScreen: React.FC = () => {
             </View>
           ))}
         </View>
+      ) : filteredItems.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Icon name="search" size={48} color={colors.gray[300]} />
+          <Text style={styles.emptyTitle}>No results</Text>
+          <Text style={styles.emptySubtitle}>Try a different search or category.</Text>
+        </View>
       ) : (
         <FlatList
         data={filteredItems}
@@ -126,6 +132,9 @@ const styles = StyleSheet.create({
   filterTextSelected: { color: colors.white, fontWeight: '600' },
   list: { padding: layout.screenPadding },
   skeletonGrid: { padding: layout.screenPadding, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  emptyState: { alignItems: 'center', justifyContent: 'center', padding: spacing['4xl'] },
+  emptyTitle: { ...typography.h3, color: colors.text.primary, marginTop: spacing.sm },
+  emptySubtitle: { ...typography.bodyRegular, color: colors.text.secondary, marginTop: spacing.xs, textAlign: 'center' },
   card: { backgroundColor: colors.white, borderRadius: 12, padding: spacing.sm, marginBottom: spacing.sm, width: '48%', shadowColor: colors.black, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 3.84, elevation: 5 },
   image: { width: '100%', height: 90, borderRadius: 8, backgroundColor: colors.gray[100], marginBottom: spacing.xs },
   name: { ...typography.bodyRegular, color: colors.text.primary },
