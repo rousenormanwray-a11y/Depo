@@ -57,9 +57,15 @@ const WithdrawScreen: React.FC = () => {
 
         <Text style={[styles.label, { marginTop: spacing.md }]}>Bank Account Number</Text>
         <TextInput style={styles.input} value={accountNumber} onChangeText={setAccountNumber} keyboardType="number-pad" placeholder="10-digit account number" maxLength={10} />
+        {(!accountNumber.trim() || accountNumber.length !== 10) && (
+          <Text style={styles.hint}>Enter a valid 10-digit Nigerian account number</Text>
+        )}
 
         <Text style={[styles.label, { marginTop: spacing.md }]}>Bank Code</Text>
         <TextInput style={styles.input} value={bankCode} onChangeText={setBankCode} placeholder="e.g., 058" />
+        {!bankCode.trim() && (
+          <Text style={styles.hint}>Bank code required (e.g., GTBank 058)</Text>
+        )}
 
         <Text style={styles.hint}>A ₦50 processing fee applies. Withdrawals processed within 24 hours.</Text>
 
