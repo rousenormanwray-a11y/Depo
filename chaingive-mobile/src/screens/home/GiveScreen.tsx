@@ -8,10 +8,15 @@ import { RootState } from '../../store/store';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, layout } from '../../theme/spacing';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../../store/store';
+import { giveDonation } from '../../store/slices/donationSlice';
 
 const GiveScreen: React.FC = () => {
   const navigation = useNavigation();
+  const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
+  const { isProcessing } = useSelector((s: RootState) => s.donation);
 
   const [preference, setPreference] = useState<'algorithm' | 'manual'>('algorithm');
   const [location, setLocation] = useState('');
@@ -19,15 +24,20 @@ const GiveScreen: React.FC = () => {
 
   const obligationAmount = user?.balance ? Math.min(5000, user.balance) : 5000;
 
-  const handleConfirm = () => {
-    Alert.alert(
-      'Confirm Donation',
-      `Donate ₦${obligationAmount.toLocaleString()} using ${preference === 'algorithm' ? 'smart matching' : 'manual selection'}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Confirm', onPress: () => Alert.alert('Success', 'Donation initiated and held in escrow.') },
-      ]
-    );
+  const handleConfirm = async () => {
+    try {
+      await dispatch(
+        giveDonation({
+          amount: obligationAmount,
+          recipientPreference: preference,
+          location: location || undefined,
+          faith: faith || undefined,
+        })
+      ).unwrap();
+      Alert.alert('Donation Initiated', 'Funds placed in escrow until recipient confirms.');
+    } catch (e: any) {
+      Alert.alert('Failed', e.message || 'Please try again');
+    }
   };
 
   return (
@@ -77,8 +87,8 @@ const GiveScreen: React.FC = () => {
 
       <View style={styles.bottom}>
         <Text style={styles.trust}><Icon name="verified-user" size={16} color={colors.primary} /> Your donation is secured in escrow until confirmed by recipient</Text>
-        <TouchableOpacity style={styles.primaryBtn} onPress={handleConfirm}>
-          <Text style={styles.primaryBtnText}>Confirm Donation</Text>
+        <TouchableOpacity style={styles.primaryBtn} onPress={handleConfirm} disabled={isProcessing}>
+          <Text style={styles.primaryBtnText}>{isProcessing ? 'Processing…' : 'Confirm Donation'}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

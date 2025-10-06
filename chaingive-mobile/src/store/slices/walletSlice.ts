@@ -1,0 +1,90 @@
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { walletAPI } from '../../api/wallet';
+
+interface WalletState {
+  isProcessing: boolean;
+  error: string | null;
+}
+
+const initialState: WalletState = {
+  isProcessing: false,
+  error: null,
+};
+
+export const fetchTransactions = createAsyncThunk(
+  'wallet/fetchTransactions',
+  async (params?: { page?: number; limit?: number }) => {
+    try {
+      const res = await walletAPI.getTransactions(params ?? { page: 1, limit: 50 });
+      return res.data;
+    } catch (e: any) {
+      return Promise.reject(new Error(e.message || 'Failed to fetch transactions'));
+    }
+  }
+);
+
+export const depositFunds = createAsyncThunk(
+  'wallet/depositFunds',
+  async (payload: { amount: number; method: string }) => {
+    try {
+      const res = await walletAPI.deposit({ amount: payload.amount, method: payload.method });
+      return res.data;
+    } catch (e: any) {
+      return Promise.reject(new Error(e.message || 'Deposit failed'));
+    }
+  }
+);
+
+export const withdrawFunds = createAsyncThunk(
+  'wallet/withdrawFunds',
+  async (payload: { amount: number; accountNumber: string; bankCode: string }) => {
+    try {
+      const res = await walletAPI.withdraw({
+        amount: payload.amount,
+        accountNumber: payload.accountNumber,
+        bankCode: payload.bankCode,
+      });
+      return res.data;
+    } catch (e: any) {
+      return Promise.reject(new Error(e.message || 'Withdraw failed'));
+    }
+  }
+);
+
+const walletSlice = createSlice({
+  name: 'wallet',
+  initialState,
+  reducers: {
+    clearWalletError: (state) => {
+      state.error = null;
+    },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(depositFunds.pending, (state) => {
+        state.isProcessing = true;
+        state.error = null;
+      })
+      .addCase(depositFunds.fulfilled, (state) => {
+        state.isProcessing = false;
+      })
+      .addCase(depositFunds.rejected, (state, action) => {
+        state.isProcessing = false;
+        state.error = action.error.message || 'Deposit failed';
+      })
+      .addCase(withdrawFunds.pending, (state) => {
+        state.isProcessing = true;
+        state.error = null;
+      })
+      .addCase(withdrawFunds.fulfilled, (state) => {
+        state.isProcessing = false;
+      })
+      .addCase(withdrawFunds.rejected, (state, action) => {
+        state.isProcessing = false;
+        state.error = action.error.message || 'Withdraw failed';
+      });
+  },
+});
+
+export const { clearWalletError } = walletSlice.actions;
+export default walletSlice.reducer;

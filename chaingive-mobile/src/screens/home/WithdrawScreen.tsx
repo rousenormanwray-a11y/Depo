@@ -6,23 +6,39 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, layout } from '../../theme/spacing';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../../store/store';
+import { withdrawFunds } from '../../store/slices/walletSlice';
 
 const WithdrawScreen: React.FC = () => {
   const navigation = useNavigation();
+  const dispatch = useDispatch<AppDispatch>();
+  const { isProcessing } = useSelector((s: RootState) => s.wallet);
   const [amount, setAmount] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
   const [bankCode, setBankCode] = useState('');
 
-  const handleWithdraw = () => {
-    if (!amount || Number(amount) <= 0) {
-      Alert.alert('Invalid amount', 'Enter a valid amount to withdraw.');
+  const handleWithdraw = async () => {
+    const amt = Number(amount);
+    if (!amount || isNaN(amt) || amt <= 0) {
+      Alert.alert('Invalid amount', 'Enter a valid positive amount.');
       return;
     }
-    if (!accountNumber.trim() || !bankCode.trim()) {
-      Alert.alert('Missing info', 'Enter bank account number and bank code.');
+    if (!accountNumber.trim() || accountNumber.trim().length !== 10) {
+      Alert.alert('Invalid account', 'Enter a valid 10-digit account number.');
       return;
     }
-    Alert.alert('Withdrawal Requested', `₦${Number(amount).toLocaleString()} to ${accountNumber}. Fee ₦50.`);
+    if (!bankCode.trim()) {
+      Alert.alert('Missing bank', 'Enter a valid bank code.');
+      return;
+    }
+    try {
+      await dispatch(withdrawFunds({ amount: amt, accountNumber: accountNumber.trim(), bankCode: bankCode.trim() })).unwrap();
+      Alert.alert('Withdrawal Requested', `₦${amt.toLocaleString()} to ${accountNumber}. Fee ₦50.`);
+      navigation.goBack();
+    } catch (e: any) {
+      Alert.alert('Withdraw Failed', e.message || 'Please try again');
+    }
   };
 
   return (
@@ -48,7 +64,7 @@ const WithdrawScreen: React.FC = () => {
         <Text style={styles.hint}>A ₦50 processing fee applies. Withdrawals processed within 24 hours.</Text>
 
         <TouchableOpacity style={styles.primaryBtn} onPress={handleWithdraw}>
-          <Text style={styles.primaryBtnText}>Request Withdrawal</Text>
+          <Text style={styles.primaryBtnText}>{isProcessing ? 'Processing…' : 'Request Withdrawal'}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

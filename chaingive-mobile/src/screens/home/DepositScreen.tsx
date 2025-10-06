@@ -6,18 +6,30 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, layout } from '../../theme/spacing';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../../store/store';
+import { depositFunds } from '../../store/slices/walletSlice';
 
 const DepositScreen: React.FC = () => {
   const navigation = useNavigation();
+  const dispatch = useDispatch<AppDispatch>();
+  const { isProcessing } = useSelector((s: RootState) => s.wallet);
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState('Flutterwave');
 
-  const handleDeposit = () => {
-    if (!amount || Number(amount) <= 0) {
-      Alert.alert('Invalid amount', 'Enter a valid amount to deposit.');
+  const handleDeposit = async () => {
+    const amt = Number(amount);
+    if (!amount || isNaN(amt) || amt <= 0) {
+      Alert.alert('Invalid amount', 'Enter a valid positive amount.');
       return;
     }
-    Alert.alert('Deposit Initiated', `₦${Number(amount).toLocaleString()} via ${method}.`);
+    try {
+      await dispatch(depositFunds({ amount: amt, method })).unwrap();
+      Alert.alert('Deposit Initiated', `₦${amt.toLocaleString()} via ${method}.`);
+      navigation.goBack();
+    } catch (e: any) {
+      Alert.alert('Deposit Failed', e.message || 'Please try again');
+    }
   };
 
   return (
@@ -38,7 +50,7 @@ const DepositScreen: React.FC = () => {
         <TextInput style={styles.input} value={method} onChangeText={setMethod} placeholder="Flutterwave / Paystack / Bank Transfer" />
 
         <TouchableOpacity style={styles.primaryBtn} onPress={handleDeposit}>
-          <Text style={styles.primaryBtnText}>Continue</Text>
+          <Text style={styles.primaryBtnText}>{isProcessing ? 'Processing…' : 'Continue'}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
