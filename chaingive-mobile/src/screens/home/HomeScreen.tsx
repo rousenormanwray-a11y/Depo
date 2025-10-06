@@ -12,12 +12,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import * as Haptics from 'expo-haptics';
 
 import { AppDispatch, RootState } from '../../store/store';
 import { fetchUserBalance } from '../../store/slices/authSlice';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, layout } from '../../theme/spacing';
+import { shadows } from '../../theme/shadows';
+import { BalanceCardSkeleton, CardSkeleton, ListSkeleton } from '../../components/skeletons';
+import { AnimatedNumber, FadeInView } from '../../components/animated';
 
 const { width: screenWidth } = Dimensions.get('window');
 const cardWidth = (screenWidth - (spacing.md * 3)) / 2;
@@ -38,6 +42,8 @@ const HomeScreen: React.FC = () => {
   const handleRefresh = async () => {
     if (user) {
       setRefreshing(true);
+      // Add haptic feedback
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       await dispatch(fetchUserBalance(user.id));
       setRefreshing(false);
     }
@@ -108,23 +114,37 @@ const HomeScreen: React.FC = () => {
         </View>
 
         {/* Balance Card */}
-        <View style={styles.balanceCard}>
-          <View style={styles.balanceHeader}>
-            <Text style={styles.balanceLabel}>Total Balance</Text>
-            <TouchableOpacity>
-              <Icon name="visibility" size={20} color={colors.white} />
-            </TouchableOpacity>
-          </View>
-          <Text style={styles.balanceAmount}>
-            {formatCurrency(user?.balance || 0)}
-          </Text>
-          <View style={styles.coinsContainer}>
-            <Icon name="stars" size={16} color={colors.white} />
-            <Text style={styles.coinsText}>
-              {user?.charityCoins || 0} Charity Coins
-            </Text>
-          </View>
-        </View>
+        {loading && !user ? (
+          <BalanceCardSkeleton />
+        ) : (
+          <FadeInView duration={400}>
+            <View style={styles.balanceCard}>
+              <View style={styles.balanceHeader}>
+                <Text style={styles.balanceLabel}>Total Balance</Text>
+                <TouchableOpacity
+                  onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+                >
+                  <Icon name="visibility" size={20} color={colors.white} />
+                </TouchableOpacity>
+              </View>
+              <AnimatedNumber
+                value={user?.balance || 0}
+                duration={1000}
+                formatter={formatCurrency}
+                style={styles.balanceAmount}
+              />
+              <View style={styles.coinsContainer}>
+                <Icon name="stars" size={16} color={colors.white} />
+                <AnimatedNumber
+                  value={user?.charityCoins || 0}
+                  duration={800}
+                  formatter={(val) => `${Math.round(val)} Charity Coins`}
+                  style={styles.coinsText}
+                />
+              </View>
+            </View>
+          </FadeInView>
+        )}
 
         {/* Quick Actions */}
         <View style={styles.quickActions}>
@@ -134,7 +154,10 @@ const HomeScreen: React.FC = () => {
               <TouchableOpacity
                 key={index}
                 style={[styles.actionCard, { width: cardWidth }]}
-                onPress={action.onPress}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  action.onPress();
+                }}
               >
                 <View style={[styles.actionIcon, { backgroundColor: `${action.color}20` }]}>
                   <Icon name={action.icon} size={24} color={action.color} />
