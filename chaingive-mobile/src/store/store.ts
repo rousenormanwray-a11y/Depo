@@ -24,6 +24,8 @@ const rootReducer = combineReducers({
   marketplace: marketplaceReducer,
   wallet: walletReducer,
   donation: donationReducer,
+  coinPurchase: coinPurchaseReducer,
+  leaderboard: leaderboardReducer,
 });
 
 // Persisted reducer

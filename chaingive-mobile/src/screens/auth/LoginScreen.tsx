@@ -17,50 +17,48 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 
 import { AppDispatch, RootState } from '../../store/store';
 import { loginUser } from '../../store/slices/authSlice';
-import ErrorHandler, { validateEmail, validateRequired } from '../../utils/errorHandler';
+import ErrorHandler from '../../utils/errorHandler';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, layout } from '../../theme/spacing';
+import { useFormValidation, validators } from '../../utils/validation';
+import { showToast } from '../../components/common/Toast';
+import * as Haptics from 'expo-haptics';
 
 const LoginScreen: React.FC = () => {
   const navigation = useNavigation();
   const dispatch = useDispatch<AppDispatch>();
-  const { loading, error } = useSelector((state: RootState) => state.auth);
+  const { loading } = useSelector((state: RootState) => state.auth);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
+  const { errors, validateAll } = useFormValidation();
   const errorHandler = ErrorHandler.getInstance();
 
-  const validateForm = (): boolean => {
-    const newErrors: { [key: string]: string } = {};
-
-    if (!validateRequired(email)) {
-      newErrors.email = 'Email is required';
-    } else if (!validateEmail(email)) {
-      newErrors.email = 'Please enter a valid email address';
-    }
-
-    if (!validateRequired(password)) {
-      newErrors.password = 'Password is required';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
   const handleLogin = async () => {
-    if (!validateForm()) return;
+    const isValid = validateAll({
+      email: { value: email, validator: validators.email },
+      password: { value: password, validator: validators.password },
+    });
+
+    if (!isValid) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      showToast('Please fix the errors', 'error');
+      return;
+    }
 
     try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       await dispatch(loginUser({ email, password })).unwrap();
-      // Navigation will be handled by AppNavigator based on auth state
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      // Navigation handled by AppNavigator
     } catch (error: any) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       const appError = errorHandler.handleAuthError(error);
-      Alert.alert('Login Failed', appError.message);
+      showToast(appError.message, 'error');
     }
   };
 

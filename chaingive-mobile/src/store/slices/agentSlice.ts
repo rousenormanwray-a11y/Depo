@@ -1,54 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { Agent, VerificationRequest } from '../../types';
-
-// Mock data for agent dashboard
-const mockAgent: Agent = {
-  id: 'agent-1',
-  userId: '1',
-  agentCode: 'CG001',
-  location: {
-    state: 'Lagos',
-    city: 'Ikeja',
-    address: '123 Allen Avenue, Ikeja, Lagos',
-  },
-  rating: 4.8,
-  totalVerifications: 45,
-  totalDeposits: 120,
-  commissionEarned: 25000,
-  isActive: true,
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-};
-
-const mockVerificationRequests: VerificationRequest[] = [
-  {
-    id: 'req-1',
-    userId: 'user-1',
-    agentId: 'agent-1',
-    type: 'tier2',
-    status: 'pending',
-    documents: {
-      selfie: 'https://example.com/selfie1.jpg',
-      idCard: 'https://example.com/id1.jpg',
-    },
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'req-2',
-    userId: 'user-2',
-    agentId: 'agent-1',
-    type: 'tier3',
-    status: 'pending',
-    documents: {
-      selfie: 'https://example.com/selfie2.jpg',
-      idCard: 'https://example.com/id2.jpg',
-      utilityBill: 'https://example.com/bill2.jpg',
-    },
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
+import { agentAPI } from '../../api/agent';
 
 interface AgentState {
   agent: Agent | null;
@@ -70,13 +22,18 @@ const initialState: AgentState = {
 export const fetchAgentData = createAsyncThunk(
   'agent/fetchData',
   async (userId: string) => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    const [dashboardRes, verificationsRes] = await Promise.all([
+      agentAPI.getDashboard(),
+      agentAPI.getPendingVerifications(),
+    ]);
+    
+    const dashboard = dashboardRes.data;
+    const verifications = verificationsRes.data;
     
     return {
-      agent: mockAgent,
-      verificationRequests: mockVerificationRequests,
-      pendingRequests: mockVerificationRequests.filter(req => req.status === 'pending'),
+      agent: dashboard.agent as Agent,
+      verificationRequests: verifications.all || [],
+      pendingRequests: verifications.pending || [],
     };
   }
 );
@@ -88,10 +45,8 @@ export const processVerificationRequest = createAsyncThunk(
     status: 'approved' | 'rejected'; 
     notes?: string;
   }) => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    return { requestId, status, notes };
+    const res = await agentAPI.processVerification({ requestId, status, notes });
+    return res.data;
   }
 );
 
@@ -103,27 +58,16 @@ export const logCashDeposit = createAsyncThunk(
     phoneNumber: string;
     notes?: string;
   }) => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const commission = depositData.amount * 0.02; // 2% commission
-    
-    return {
-      depositId: 'deposit-' + Date.now(),
-      ...depositData,
-      commission,
-      timestamp: new Date().toISOString(),
-    };
+    const res = await agentAPI.logCashDeposit(depositData);
+    return res.data;
   }
 );
 
 export const updateAgentLocation = createAsyncThunk(
   'agent/updateLocation',
   async (location: { state: string; city: string; address: string }) => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    return location;
+    const res = await agentAPI.updateLocation(location);
+    return res.data;
   }
 );
 

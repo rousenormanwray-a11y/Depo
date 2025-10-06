@@ -3,86 +3,6 @@ import { MarketplaceItem, Redemption } from '../../types';
 import { marketplaceAPI } from '../../api/marketplace';
 import { analytics } from '../../services/analyticsService';
 
-// Mock marketplace data
-const mockMarketplaceItems: MarketplaceItem[] = [
-  {
-    id: '1',
-    vendorId: 'vendor-1',
-    name: 'MTN Airtime ₦100',
-    description: 'MTN airtime recharge for ₦100',
-    category: 'airtime',
-    price: 50, // 50 Charity Coins
-    originalPrice: 100,
-    image: 'https://example.com/mtn-airtime.png',
-    inStock: true,
-    rating: 4.8,
-    reviewCount: 245,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    vendorId: 'vendor-1',
-    name: 'Airtel Data 1GB',
-    description: '1GB data bundle for Airtel',
-    category: 'data',
-    price: 75,
-    originalPrice: 350,
-    image: 'https://example.com/airtel-data.png',
-    inStock: true,
-    rating: 4.6,
-    reviewCount: 189,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: '3',
-    vendorId: 'vendor-2',
-    name: 'Netflix Gift Card ₦2,500',
-    description: 'Netflix gift card worth ₦2,500',
-    category: 'vouchers',
-    price: 1250,
-    originalPrice: 2500,
-    image: 'https://example.com/netflix-voucher.png',
-    inStock: true,
-    rating: 4.9,
-    reviewCount: 67,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: '4',
-    vendorId: 'vendor-3',
-    name: 'Grocery Delivery',
-    description: 'Free grocery delivery service',
-    category: 'services',
-    price: 25,
-    image: 'https://example.com/grocery-delivery.png',
-    inStock: true,
-    rating: 4.4,
-    reviewCount: 123,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
-
-const mockRedemptions: Redemption[] = [
-  {
-    id: 'redemption-1',
-    userId: '1',
-    itemId: '1',
-    quantity: 1,
-    totalCoins: 50,
-    status: 'completed',
-    deliveryInfo: {
-      phoneNumber: '+2348012345678',
-    },
-    voucherCode: 'MTN-ABC123',
-    createdAt: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-    updatedAt: new Date(Date.now() - 86400000).toISOString(),
-  },
-];
-
 interface MarketplaceState {
   items: MarketplaceItem[];
   filteredItems: MarketplaceItem[];
@@ -114,33 +34,26 @@ export const fetchMarketplaceItems = createAsyncThunk(
     params: { page?: number; limit?: number } | void,
     { getState }
   ) => {
-    try {
-      const state = getState() as { marketplace: typeof initialState };
-      const category = state.marketplace.selectedCategory || undefined;
-      const q = state.marketplace.searchQuery || undefined;
-      const page = params?.page ?? 1;
-      const limit = params?.limit ?? 20;
-      const res = await marketplaceAPI.getListings({ limit, category, q, page });
-      const data: any = res.data;
-      return (data?.items || data || mockMarketplaceItems) as MarketplaceItem[];
-    } catch (_err) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      return mockMarketplaceItems;
-    }
+    const state = getState() as { marketplace: typeof initialState };
+    const category = state.marketplace.selectedCategory || undefined;
+    const q = state.marketplace.searchQuery || undefined;
+    const page = params?.page ?? 1;
+    const limit = params?.limit ?? 20;
+    
+    const res = await marketplaceAPI.getListings({ limit, category, q, page });
+    const data = res.data;
+    
+    return (data?.items || data || []) as MarketplaceItem[];
   }
 );
 
 export const fetchRedemptions = createAsyncThunk(
   'marketplace/fetchRedemptions',
   async (userId: string) => {
-    try {
-      const res = await marketplaceAPI.getRedemptions();
-      const data: any = res.data;
-      return (data?.items || data || mockRedemptions) as Redemption[];
-    } catch (_err) {
-      await new Promise(resolve => setTimeout(resolve, 800));
-      return mockRedemptions;
-    }
+    const res = await marketplaceAPI.getRedemptions();
+    const data = res.data;
+    
+    return (data?.items || data || []) as Redemption[];
   }
 );
 
@@ -155,40 +68,18 @@ export const redeemItem = createAsyncThunk(
       address?: string;
     };
   }) => {
-    try {
-      const res = await marketplaceAPI.redeem({
-        listingId: redemptionData.itemId,
-        quantity: redemptionData.quantity,
-        deliveryInfo: redemptionData.deliveryInfo,
-      });
-      analytics.track('redeem_initiated', { itemId: redemptionData.itemId, quantity: redemptionData.quantity });
-      return res.data as Redemption;
-    } catch (_err) {
-      // Mock fallback
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      const item = mockMarketplaceItems.find(item => item.id === redemptionData.itemId);
-      if (!item) {
-        throw new Error('Item not found');
-      }
-      const totalCoins = item.price * redemptionData.quantity;
-      const newRedemption: Redemption = {
-        id: 'redemption-' + Date.now(),
-        userId: '1',
-        itemId: redemptionData.itemId,
-        quantity: redemptionData.quantity,
-        totalCoins,
-        status: 'processing',
-        deliveryInfo: redemptionData.deliveryInfo,
-        voucherCode:
-          item.category === 'airtime' || item.category === 'data'
-            ? `${item.name.split(' ')[0].toUpperCase()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`
-            : undefined,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      analytics.track('redeem_mock', { itemId: redemptionData.itemId, quantity: redemptionData.quantity });
-      return newRedemption;
-    }
+    const res = await marketplaceAPI.redeem({
+      listingId: redemptionData.itemId,
+      quantity: redemptionData.quantity,
+      deliveryInfo: redemptionData.deliveryInfo,
+    });
+    
+    analytics.track('redeem_initiated', { 
+      itemId: redemptionData.itemId, 
+      quantity: redemptionData.quantity 
+    });
+    
+    return res.data as Redemption;
   }
 );
 
