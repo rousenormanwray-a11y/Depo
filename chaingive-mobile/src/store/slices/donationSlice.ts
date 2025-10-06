@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { donationsAPI } from '../../api/donations';
+import { analytics } from '../../services/analyticsService';
 import { DonationCycle } from '../../types';
 
 interface DonationState {
@@ -29,6 +30,7 @@ export const giveDonation = createAsyncThunk(
   }) => {
     try {
       const res = await donationsAPI.give(payload);
+      analytics.track('donation_initiated', { amount: payload.amount, preference: payload.recipientPreference });
       return res.data;
     } catch (e: any) {
       return Promise.reject(new Error(e.message || 'Failed to initiate donation'));
@@ -41,6 +43,7 @@ export const confirmReceipt = createAsyncThunk(
   async (payload: { transactionId: string; confirm: boolean }) => {
     try {
       const res = await donationsAPI.confirmReceipt(payload);
+      analytics.track('donation_receipt_confirmed', { transactionId: payload.transactionId });
       return res.data;
     } catch (e: any) {
       return Promise.reject(new Error(e.message || 'Failed to confirm receipt'));

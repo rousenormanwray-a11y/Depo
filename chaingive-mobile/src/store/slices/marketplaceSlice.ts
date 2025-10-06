@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { MarketplaceItem, Redemption } from '../../types';
 import { marketplaceAPI } from '../../api/marketplace';
+import { analytics } from '../../services/analyticsService';
 
 // Mock marketplace data
 const mockMarketplaceItems: MarketplaceItem[] = [
@@ -160,6 +161,7 @@ export const redeemItem = createAsyncThunk(
         quantity: redemptionData.quantity,
         deliveryInfo: redemptionData.deliveryInfo,
       });
+      analytics.track('redeem_initiated', { itemId: redemptionData.itemId, quantity: redemptionData.quantity });
       return res.data as Redemption;
     } catch (_err) {
       // Mock fallback
@@ -184,6 +186,7 @@ export const redeemItem = createAsyncThunk(
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
+      analytics.track('redeem_mock', { itemId: redemptionData.itemId, quantity: redemptionData.quantity });
       return newRedemption;
     }
   }
