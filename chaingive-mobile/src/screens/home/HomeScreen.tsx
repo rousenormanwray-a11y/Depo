@@ -15,6 +15,8 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 
 import { AppDispatch, RootState } from '../../store/store';
 import { fetchUserBalance } from '../../store/slices/authSlice';
+import { fetchDashboard } from '../../store/slices/gamificationSlice';
+import StreakWidget from '../../components/gamification/StreakWidget';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, layout } from '../../theme/spacing';
@@ -26,6 +28,7 @@ const HomeScreen: React.FC = () => {
   const navigation = useNavigation();
   const dispatch = useDispatch<AppDispatch>();
   const { user, loading } = useSelector((state: RootState) => state.auth);
+  const { streak, todaysProgress } = useSelector((state: RootState) => state.gamification);
 
   const [refreshing, setRefreshing] = useState(false);
 
