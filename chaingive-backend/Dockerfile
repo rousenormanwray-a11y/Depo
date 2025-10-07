@@ -9,6 +9,7 @@ WORKDIR /app
 
 # Copy package files from subdirectory
 COPY chaingive-backend/package*.json ./
+COPY chaingive-backend/package-lock.json ./
 COPY chaingive-backend/prisma ./prisma/
 
 # Install dependencies (including devDependencies for build)
