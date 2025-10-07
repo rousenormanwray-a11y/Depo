@@ -44,7 +44,7 @@ dotenv.config();
 initializeSentry();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = parseInt(process.env.PORT || '3000', 10);
 const API_VERSION = process.env.API_VERSION || 'v1';
 
 // Sentry request handler (must be first middleware)
@@ -65,7 +65,7 @@ app.use(morgan('combined', { stream: { write: (message) => logger.info(message.t
 app.use(rateLimiter);
 
 // Health check
-app.get('/health', (req, res) => {
+app.get('/health', (_req, res) => {
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),

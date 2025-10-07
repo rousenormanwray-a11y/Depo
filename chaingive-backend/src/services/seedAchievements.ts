@@ -321,13 +321,21 @@ export async function seedMissionTemplates() {
     ];
     
     for (const template of templates) {
-      await prisma.missionTemplate.upsert({
-        where: { 
-          type: template.type 
-        },
-        create: template,
-        update: template,
+      // Find existing mission by type
+      const existing = await prisma.missionTemplate.findFirst({
+        where: { type: template.type },
       });
+
+      if (existing) {
+        await prisma.missionTemplate.update({
+          where: { id: existing.id },
+          data: template,
+        });
+      } else {
+        await prisma.missionTemplate.create({
+          data: template,
+        });
+      }
     }
     
     logger.info(`✅ Seeded ${templates.length} mission templates`);

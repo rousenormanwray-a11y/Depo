@@ -29,7 +29,7 @@ export function initializeEmailService() {
   });
 
   // Verify connection
-  transporter.verify((error, success) => {
+  transporter.verify((error, _success) => {
     if (error) {
       logger.error('Email service configuration error:', error);
     } else {
@@ -247,7 +247,7 @@ export async function sendReceiptConfirmationEmail(
           
           <div class="highlight-box">
             <h2 style="margin: 0; color: #1e40af;">₦${amount.toLocaleString()}</h2>
-            <p style="margin: 5px 0; color: #1e40af;">from ${donor}</p>
+            <p style="margin: 5px 0; color: #1e40af;">from ${recipient}</p>
             <p style="margin: 5px 0; font-size: 12px; color: #64748b;">Ref: ${transactionRef}</p>
           </div>
 
