@@ -1,0 +1,47 @@
+# Koyeb Configuration for ChainGive Backend
+
+services:
+  - name: chaingive-backend
+    type: web
+    # Build configuration
+    build:
+      method: docker
+      dockerfile: Dockerfile
+    
+    # Instance configuration
+    instance_type: nano
+    scaling:
+      min: 1
+      max: 3
+    
+    # Port configuration
+    ports:
+      - port: 8000
+        protocol: http
+    
+    # Health check
+    health_checks:
+      - http:
+          path: /health
+          port: 8000
+          interval_seconds: 30
+          timeout_seconds: 3
+    
+    # Environment variables (set these in Koyeb dashboard)
+    # env:
+    #   - name: NODE_ENV
+    #     value: production
+    #   - name: DATABASE_URL
+    #     value: your-database-url
+    #   - name: JWT_SECRET
+    #     value: your-jwt-secret
+    
+    # Regions
+    regions:
+      - fra
+    
+    # Auto-deploy
+    git:
+      branch: main
+      build_command: npm run build
+      run_command: npm start
