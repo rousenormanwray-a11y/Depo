@@ -60,7 +60,7 @@ app.use(morgan('combined', { stream: { write: (message) => logger.info(message.t
 app.use(rateLimiter);
 
 // Health check
-app.get('/health', (req, res) => {
+app.get(['/','/health'], (req, res) => {
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
@@ -68,6 +68,7 @@ app.get('/health', (req, res) => {
     environment: process.env.NODE_ENV,
   });
 });
+app.head(['/','/health'], (_req, res) => res.sendStatus(200));
 
 // API Routes
 app.use(`/${API_VERSION}/auth`, authRoutes);
