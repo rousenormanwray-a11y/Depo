@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import prisma from '../utils/prisma';
 import { AppError } from '../middleware/errorHandler';
 import logger from '../utils/logger';
-import { sendOTP, verifyOTP, storeOTP } from '../services/otp.service';
+import { sendOTP, verifyOTP } from '../services/otp.service';
 import { sendWelcomeEmail } from '../services/email.service';
 
 /**
@@ -90,16 +90,17 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
         await tx.referral.create({
           data: {
             referrerId,
-            referredId: newUser.id,
-            status: 'pending',
+            referredUserId: newUser.id,
+            referralCode: referralCode || '',
+            status: 'registered',
           },
         });
 
         // Award 25 coins to referrer
-        await tx.wallet.update({
-          where: { userId: referrerId },
+        await tx.user.update({
+          where: { id: referrerId },
           data: {
-            charityCoins: { increment: 25 },
+            charityCoinsBalance: { increment: 25 },
           },
         });
       }

@@ -443,9 +443,9 @@ export const updateUserRole = async (req: AuthRequest, res: Response, next: Next
     await prisma.adminAction.create({
       data: {
         adminId,
-        actionType: 'update_user_role',
-        targetUserId: userId,
-        metadata: JSON.stringify({ newRole: role }),
+        action: 'update_user_role',
+        targetId: userId,
+        details: JSON.stringify({ newRole: role }),
       },
     });
 
