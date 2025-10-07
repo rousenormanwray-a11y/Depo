@@ -35,6 +35,7 @@ import disputeRoutes from './routes/dispute.routes';
 import coinPurchaseRoutes from './routes/coinPurchase.routes';
 import gamificationRoutes from './routes/gamification.routes';
 import gamificationAdminRoutes from './routes/gamificationAdmin.routes';
+import cryptoPaymentRoutes from './routes/cryptoPayment.routes';
 
 // Load environment variables
 dotenv.config();
@@ -95,6 +96,7 @@ app.use(`/${API_VERSION}/disputes`, disputeRoutes);
 app.use(`/${API_VERSION}/coins/purchase`, coinPurchaseRoutes);
 app.use(`/${API_VERSION}/gamification`, gamificationRoutes);
 app.use(`/${API_VERSION}/admin/gamification`, gamificationAdminRoutes);
+app.use(`/${API_VERSION}`, cryptoPaymentRoutes); // Crypto payment routes (admin & agent)
 
 // Serve uploaded files statically
 app.use('/uploads', express.static('uploads'));

@@ -894,3 +894,137 @@ model GamificationStats {
  * gamificationStats   GamificationStats?      @relation("UserGamificationStats")
  * }
  */
+
+// ============================================
+// 7. CRYPTO PAYMENT SYSTEM
+// ============================================
+
+// BTCPay Server Configuration
+model CryptoPaymentConfig {
+  id String @id @default(uuid())
+
+  // BTCPay Server Settings
+  btcpayServerUrl String @map("btcpay_server_url")
+  btcpayApiKey    String @map("btcpay_api_key") // Encrypted in application
+  btcpayStoreId   String @map("btcpay_store_id")
+
+  // System Settings
+  isEnabled Boolean @default(false) @map("is_enabled")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("crypto_payment_configs")
+}
+
+// Supported Cryptocurrencies
+model CryptoCoin {
+  id String @id @default(uuid())
+
+  // Crypto Details
+  symbol  String // BTC, ETH, USDT, USDC, LTC, BCH, XRP
+  name    String // Bitcoin, Ethereum, etc.
+  network String // Bitcoin Mainnet, Ethereum Mainnet, ERC-20, TRC-20
+
+  // Wallet Configuration
+  walletAddress String @map("wallet_address")
+
+  // Limits
+  minAmount             Decimal @default(10) @map("min_amount") @db.Decimal(12, 2) // Minimum in NGN
+  maxAmount             Decimal @default(1000000) @map("max_amount") @db.Decimal(12, 2) // Maximum in NGN
+  confirmationsRequired Int     @default(3) @map("confirmations_required")
+
+  // Display
+  icon  String @default("currency-btc")
+  color String @default("#F7931A")
+
+  // Status
+  isEnabled Boolean @default(true) @map("is_enabled")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  payments CryptoPayment[]
+
+  @@unique([symbol, network])
+  @@index([isEnabled])
+  @@map("crypto_coins")
+}
+
+// Crypto Payment Records
+model CryptoPayment {
+  id String @id @default(uuid())
+
+  // Agent Info
+  agentId   String @map("agent_id")
+  agentName String @map("agent_name")
+
+  // Crypto Coin
+  cryptoCoinId String     @map("crypto_coin_id")
+  coinSymbol   String     @map("coin_symbol") // Denormalized for quick access
+  cryptoCoin   CryptoCoin @relation(fields: [cryptoCoinId], references: [id])
+
+  // Amounts
+  coinAmount   Int     @map("coin_amount") // ChainGive coins to credit
+  ngnAmount    Decimal @map("ngn_amount") @db.Decimal(12, 2) // NGN equivalent
+  cryptoAmount String  @map("crypto_amount") // Crypto amount (string for precision)
+
+  // Wallet & Transaction
+  walletAddress   String  @map("wallet_address")
+  transactionHash String? @map("transaction_hash")
+
+  // BTCPay Integration
+  btcpayInvoiceId String? @map("btcpay_invoice_id")
+  confirmations   Int     @default(0)
+
+  // Status
+  status String @default("pending") @map("status") // pending, confirmed, rejected, expired
+
+  // Admin Actions
+  adminNotes       String?   @map("admin_notes")
+  rejectionReason  String?   @map("rejection_reason")
+  confirmedBy      String?   @map("confirmed_by") // Admin user ID
+  confirmedAt      DateTime? @map("confirmed_at")
+  rejectedBy       String?   @map("rejected_by") // Admin user ID
+  rejectedAt       DateTime? @map("rejected_at")
+
+  // Expiry
+  expiresAt DateTime @map("expires_at")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Audit Trail
+  logs CryptoPaymentLog[]
+
+  @@index([agentId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([expiresAt])
+  @@map("crypto_payments")
+}
+
+// Audit Log for Crypto Payments
+model CryptoPaymentLog {
+  id String @id @default(uuid())
+
+  paymentId String        @map("payment_id")
+  payment   CryptoPayment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  // Log Details
+  action      String // "created", "confirmed", "rejected", "expired", "synced"
+  performedBy String? @map("performed_by") // Admin user ID or "system"
+  details     String? // JSON string with additional info
+  ipAddress   String? @map("ip_address")
+
+  // Timestamp
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([paymentId])
+  @@index([createdAt])
+  @@map("crypto_payment_logs")
+}
