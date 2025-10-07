@@ -319,12 +319,18 @@ export const agentConfirmPayment = async (req: AuthRequest, res: Response, next:
 
     logger.info(`Agent ${agent.id} confirmed payment for transaction ${transactionId} - ${transaction.quantity} coins released to user ${transaction.userId}`);
 
+    // Get agent user details for notification
+    const agentUser = await prisma.user.findUnique({
+      where: { id: agent.userId },
+      select: { firstName: true, lastName: true },
+    });
+
     // Notify user via push + SMS
     await sendTemplateNotification(
       transaction.userId,
       'COINS_PURCHASED',
       transaction.quantity,
-      `${agent.user.firstName} ${agent.user.lastName}`
+      agentUser ? `${agentUser.firstName} ${agentUser.lastName}` : 'Agent'
     );
 
     const user = await prisma.user.findUnique({

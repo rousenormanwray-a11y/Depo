@@ -30,6 +30,7 @@ export async function processCycleReminders(job: Job) {
             id: true,
             firstName: true,
             phoneNumber: true,
+            email: true,
           },
         },
       },

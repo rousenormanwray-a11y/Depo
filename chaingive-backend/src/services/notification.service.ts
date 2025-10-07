@@ -76,6 +76,15 @@ export const NotificationTemplates = {
     body: (recipient: string, amount: number) => 
       `You've been matched with ${recipient} for ₦${amount.toLocaleString()}. Accept now!`,
   },
+  MATCH_ACCEPTED: {
+    title: '✅ Match Accepted!',
+    body: (donor: string, amount: number) => 
+      `${donor} accepted your match for ₦${amount.toLocaleString()}. Payment incoming!`,
+  },
+  MATCH_REJECTED: {
+    title: '❌ Match Declined',
+    body: 'Your match was declined. We\'ll find you a new match shortly.',
+  },
   MATCH_EXPIRED: {
     title: '⏱️ Match Expired',
     body: 'Your match expired. Create a new donation when ready.',
@@ -131,6 +140,16 @@ export const NotificationTemplates = {
     body: (reason: string) => 
       `Your coin purchase was rejected: ${reason}`,
   },
+  PAYMENT_PENDING: {
+    title: '⏳ Payment Pending',
+    body: (amount: number) => 
+      `Payment of ₦${amount.toLocaleString()} is pending confirmation. Please verify.`,
+  },
+  PAYMENT_REJECTED: {
+    title: '❌ Payment Rejected',
+    body: (amount: number) => 
+      `Payment of ₦${amount.toLocaleString()} was rejected. Amount refunded.`,
+  },
 
   // KYC & Verification
   KYC_APPROVED: {
@@ -140,6 +159,44 @@ export const NotificationTemplates = {
   KYC_REJECTED: {
     title: '❌ Verification Failed',
     body: 'Your verification was rejected. Please submit new documents.',
+  },
+
+  // Disputes
+  DISPUTE_CREATED: {
+    title: '🚨 Dispute Created',
+    body: (disputeId: string) => 
+      `A dispute has been filed for your transaction. Case #${disputeId}`,
+  },
+  DISPUTE_RESOLVED: {
+    title: '✅ Dispute Resolved',
+    body: (resolution: string) => 
+      `Your dispute has been resolved: ${resolution}`,
+  },
+
+  // Gamification
+  mission_reminder: {
+    title: '🎯 Daily Missions Available',
+    body: (missionsLeft: number) => 
+      `You have ${missionsLeft} missions left today. Complete them to earn coins!`,
+  },
+  mission_urgent: {
+    title: '⚡ Urgent: Missions Expiring Soon!',
+    body: (hoursLeft: number) => 
+      `Only ${hoursLeft} hours left to complete your daily missions!`,
+  },
+  streak_alert: {
+    title: '🔥 Don\'t Break Your Streak!',
+    body: (streakDays: number) => 
+      `Your ${streakDays}-day streak is at risk! Log in today to keep it going.`,
+  },
+  perfect_day: {
+    title: '🌟 Perfect Day Achievement!',
+    body: 'You completed all missions today! Bonus coins awarded.',
+  },
+  achievement_unlocked: {
+    title: '🏆 Achievement Unlocked!',
+    body: (achievementName: string) => 
+      `Congrats! You unlocked: ${achievementName}`,
   },
 
   // General

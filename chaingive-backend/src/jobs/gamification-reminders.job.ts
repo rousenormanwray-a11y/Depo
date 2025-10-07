@@ -1,4 +1,4 @@
-import { prisma } from '../utils/prisma';
+import prisma from '../utils/prisma';
 import logger from '../utils/logger';
 import { sendTemplateNotification } from '../services/notification.service';
 import { sendSMS } from '../services/sms.service';

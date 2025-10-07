@@ -8,6 +8,8 @@ export interface AuthRequest extends Request {
     id: string;
     phoneNumber: string;
     email?: string;
+    firstName: string;
+    lastName: string;
     role: string;
     tier: number;
   };
@@ -36,6 +38,8 @@ export const authenticate = async (
       id: string;
       phoneNumber: string;
       email?: string;
+      firstName: string;
+      lastName: string;
       role: string;
       tier: number;
     };
@@ -47,6 +51,8 @@ export const authenticate = async (
         id: true,
         phoneNumber: true,
         email: true,
+        firstName: true,
+        lastName: true,
         role: true,
         tier: true,
         isActive: true,

@@ -103,7 +103,7 @@ export const uploadFields = (fields: Array<{ name: string; maxCount: number }>) 
 /**
  * Get file URL
  */
-export function getFileUrl(filename: string, category: 'payments' | 'kyc' | 'profiles' | 'marketplace' = 'temp'): string {
+export function getFileUrl(filename: string, category: 'payments' | 'kyc' | 'profiles' | 'marketplace' | 'temp' = 'temp'): string {
   const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
   return `${baseUrl}/uploads/${category}/${filename}`;
 }
