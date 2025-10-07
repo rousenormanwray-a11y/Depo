@@ -1,0 +1,24 @@
+# Nixpacks configuration for Railway
+# This tells Railway how to build the ChainGive backend
+
+[variables]
+NIXPACKS_PATH = "chaingive-backend"
+
+[phases.setup]
+nixPkgs = ["nodejs-20_x"]
+
+[phases.install]
+cmds = [
+  "cd chaingive-backend",
+  "npm ci"
+]
+
+[phases.build]
+cmds = [
+  "cd chaingive-backend",
+  "npx prisma generate",
+  "npm run build"
+]
+
+[start]
+cmd = "cd chaingive-backend && node dist/server.js"
