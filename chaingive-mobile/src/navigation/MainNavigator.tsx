@@ -13,6 +13,9 @@ import HomeNavigator from './HomeNavigator';
 import MarketplaceNavigator from './MarketplaceNavigator';
 import ProfileNavigator from './ProfileNavigator';
 import AgentNavigator from './AgentNavigator';
+import DailyMissionsScreen from '../screens/gamification/DailyMissionsScreen';
+import LeaderboardScreen from '../screens/leaderboard/LeaderboardScreen';
+import ReferralScreen from '../screens/referral/ReferralScreen';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
@@ -96,9 +99,33 @@ const MainNavigator: React.FC = () => {
         }}
       />
       <Tab.Screen 
+        name="Missions" 
+        component={DailyMissionsScreen}
+        options={{ tabBarLabel: 'Missions' }}
+        listeners={{
+          tabPress: handleTabPress,
+        }}
+      />
+      <Tab.Screen 
+        name="Leaderboard" 
+        component={LeaderboardScreen}
+        options={{ tabBarLabel: 'Leaderboard' }}
+        listeners={{
+          tabPress: handleTabPress,
+        }}
+      />
+      <Tab.Screen 
         name="Marketplace" 
         component={MarketplaceNavigator}
         options={{ tabBarLabel: 'Marketplace' }}
+        listeners={{
+          tabPress: handleTabPress,
+        }}
+      />
+      <Tab.Screen 
+        name="Referral" 
+        component={ReferralScreen}
+        options={{ tabBarLabel: 'Referral' }}
         listeners={{
           tabPress: handleTabPress,
         }}

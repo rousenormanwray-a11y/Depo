@@ -68,24 +68,52 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
         },
         select: {
           id: true,
-        phoneNumber: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        tier: true,
-      },
-    });
+          phoneNumber: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          role: true,
+          tier: true,
+        },
+      });
 
-    // Create wallet for user
-    await prisma.wallet.create({
-      data: {
-        userId: user.id,
-      },
+      // Create wallet for user
+      await tx.wallet.create({
+        data: {
+          userId: newUser.id,
+        },
+      });
+
+      // Process referral if referrerId exists
+      if (referrerId) {
+        // Create referral record
+        await tx.referral.create({
+          data: {
+            referrerId,
+            referredId: newUser.id,
+            status: 'pending',
+          },
+        });
+
+        // Award 25 coins to referrer
+        await tx.wallet.update({
+          where: { userId: referrerId },
+          data: {
+            charityCoins: { increment: 25 },
+          },
+        });
+      }
+
+      return newUser;
     });
 
     // Send OTP for phone verification
     await sendOTP(phoneNumber);
+
+    // Send welcome email if email provided
+    if (email) {
+      await sendWelcomeEmail(email, firstName);
+    }
 
     logger.info(`User registered: ${user.id}`);
 
