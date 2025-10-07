@@ -12,6 +12,7 @@ export { default as streakService } from './streakService';
 export { default as achievementService } from './achievementService';
 export { default as adminService } from './adminService';
 export { default as pushNotificationService } from './pushNotificationService';
+export { default as cryptoPaymentService } from './cryptoPaymentService';
 
 // Export types
 export type { Notification, NotificationResponse, UnreadCountResponse } from './notificationService';
@@ -27,3 +28,15 @@ export type {
   UserAchievements, 
   AchievementProgress 
 } from './achievementService';
+export type {
+  AdminMetric,
+  AdminQuickStat,
+  AdminActivity,
+} from './adminService';
+export type {
+  CryptoPaymentConfig,
+  CryptoCoin,
+  CryptoPayment,
+  BTCPayInvoice,
+  BTCPayServerConfig,
+} from './cryptoPaymentService';
