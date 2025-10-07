@@ -209,7 +209,16 @@ const ChecklistScreen: React.FC = () => {
           />
         }
       />
+      
+      {/* Celebration when all items completed */}
+      {showCelebration && (
+        <>
+          <LottieSuccess size={250} />
+          <ConfettiCelebration />
+        </>
+      )}
     </SafeAreaView>
+  </PageTransition>
   );
 };
 
