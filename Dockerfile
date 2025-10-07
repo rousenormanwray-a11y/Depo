@@ -1,12 +1,12 @@
-# ChainGive Backend - Railway Root Dockerfile
-# This Dockerfile is at the repository root for Railway deployment
+# ChainGive Backend - Railway Dockerfile (Root Level)
+# Build from repository root for Railway deployment
 
 # Stage 1: Build
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files from chaingive-backend subdirectory
+# Copy package files from backend subdirectory
 COPY chaingive-backend/package*.json ./
 COPY chaingive-backend/package-lock.json ./
 COPY chaingive-backend/prisma ./prisma/
@@ -14,7 +14,7 @@ COPY chaingive-backend/prisma ./prisma/
 # Install dependencies (including devDependencies for build)
 RUN npm ci
 
-# Copy all source code from chaingive-backend
+# Copy all backend source code
 COPY chaingive-backend/ .
 
 # Generate Prisma Client
@@ -46,12 +46,12 @@ RUN mkdir -p uploads
 # Set NODE_ENV
 ENV NODE_ENV=production
 
-# Expose port (Railway provides PORT env variable)
-EXPOSE ${PORT:-3000}
+# Expose port
+EXPOSE 3000
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=40s \
-  CMD node -e "require('http').get('http://localhost:${PORT:-3000}/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
 # Start the application
 CMD ["node", "dist/server.js"]
