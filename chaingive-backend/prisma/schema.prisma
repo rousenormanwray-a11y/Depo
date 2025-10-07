@@ -1028,3 +1028,63 @@ model CryptoPaymentLog {
   @@index([createdAt])
   @@map("crypto_payment_logs")
 }
+
+// ============================================
+// 8. GAMIFICATION ADMIN CONFIGURATION
+// ============================================
+
+model GamificationConfig {
+  id          String   @id @default(uuid())
+  
+  // Mission Configuration
+  missionsEnabled       Boolean  @default(true)
+  missionBonusReward    Int      @default(50)
+  weekendMultiplier     Float    @default(1.5)
+  
+  // Streak Configuration
+  streakEnabled         Boolean  @default(true)
+  streakRewards         Json     @default("{\"1\":10,\"2\":15,\"3\":20,\"4\":25,\"5\":30,\"6\":40,\"7\":50,\"14\":100,\"30\":250,\"60\":500,\"90\":1000}")
+  
+  // Progress Rings Configuration
+  ringsEnabled          Boolean  @default(true)
+  ringPerfectDayBonus   Int      @default(100)
+  giveGoal              Int      @default(1)
+  earnGoal              Int      @default(50)
+  engageGoal            Int      @default(3)
+  
+  // Weekly Challenge Configuration
+  challengesEnabled     Boolean  @default(true)
+  
+  // Achievement Configuration
+  achievementsEnabled   Boolean  @default(true)
+  
+  // Metadata
+  updatedAt   DateTime  @updatedAt
+  updatedBy   String?   // Admin user ID
+  
+  @@map("gamification_config")
+}
+
+model MissionTemplate {
+  id          String   @id @default(uuid())
+  
+  type        String   // donate, buy_coins, refer, leaderboard, marketplace, profile_update, kyc_submit
+  name        String
+  description String
+  reward      Int      // Coins awarded
+  icon        String   @default("check-circle")
+  
+  // Scheduling
+  isActive    Boolean  @default(true)
+  priority    Int      @default(0)
+  daysOfWeek  Json     @default("[0,1,2,3,4,5,6]") // Array of days (0=Sunday, 6=Saturday)
+  
+  // Metadata
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  updatedBy   String?  // Admin user ID
+  
+  @@index([type])
+  @@index([isActive])
+  @@map("mission_templates")
+}
