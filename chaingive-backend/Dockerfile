@@ -30,9 +30,10 @@ WORKDIR /app
 
 # Install production dependencies only
 COPY chaingive-backend/package*.json ./
+COPY chaingive-backend/package-lock.json ./
 COPY chaingive-backend/prisma ./prisma/
 
-RUN npm ci --only=production && \
+RUN npm ci --omit=dev && \
     npx prisma generate && \
     npm cache clean --force
 
