@@ -46,12 +46,10 @@ RUN mkdir -p uploads
 # Set NODE_ENV
 ENV NODE_ENV=production
 
-# Expose port
-EXPOSE 3000
+# Expose port (Railway provides PORT env variable)
+EXPOSE ${PORT:-8080}
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+# No HEALTHCHECK in Dockerfile - Railway manages health checks via railway.json
 
 # Start the application
 CMD ["node", "dist/server.js"]
