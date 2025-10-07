@@ -135,18 +135,19 @@ export const giveDonation = async (req: AuthRequest, res: Response, next: NextFu
     // Send SMS
     await sendDonationConfirmationSMS(
       recipient.phoneNumber,
-      recipient.firstName,
       amount,
-      donor.firstName
+      recipient.firstName
     );
 
     // Send email if available
     if (recipient.email) {
       await sendDonationReceiptEmail(
         recipient.email,
-        recipient.firstName,
+        req.user!.firstName,
         amount,
-        donor.firstName
+        recipient.firstName,
+        transactionRef,
+        new Date()
       );
     }
 
@@ -235,15 +236,21 @@ export const confirmReceipt = async (req: AuthRequest, res: Response, next: Next
           select: { phoneNumber: true, firstName: true, email: true },
         });
 
+        // Get recipient details
+        const recipient = await prisma.user.findUnique({
+          where: { id: transaction.toUserId! },
+          select: { firstName: true },
+        });
+
         if (donor) {
           await sendReceiptConfirmationSMS(
             donor.phoneNumber,
-            donor.firstName,
-            Number(transaction.amount)
+            Number(transaction.amount),
+            donor.firstName
           );
 
           // Send email confirmation
-          if (donor.email) {
+          if (donor.email && recipient) {
             await sendReceiptConfirmationEmail(
               donor.email,
               donor.firstName,

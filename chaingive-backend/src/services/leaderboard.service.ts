@@ -107,9 +107,9 @@ export async function recalculateAllLeaderboards(): Promise<void> {
       const positionBoost = currentBoosts.find(b => b.boostType === 'position')?.boostValue || 0;
 
       // Calculate new score
-      const newScore = calculateLeaderboardScore(
+      const newScore = await calculateLeaderboardScore(
         {
-          totalDonated: user.totalDonated,
+          totalDonated: Number(user.totalDonated),
           totalCyclesCompleted: user.totalCyclesCompleted,
           charityCoinsBalance: user.charityCoinsBalance,
           avgCompletionDays,
@@ -125,7 +125,7 @@ export async function recalculateAllLeaderboards(): Promise<void> {
       await prisma.leaderboard.upsert({
         where: { userId: user.id },
         update: {
-          totalDonations: user.totalDonated,
+          totalDonations: Number(user.totalDonated),
           cyclesCompleted: user.totalCyclesCompleted,
           coinsEarned: user.charityCoinsBalance,
           avgCompletionDays,
@@ -136,7 +136,7 @@ export async function recalculateAllLeaderboards(): Promise<void> {
         },
         create: {
           userId: user.id,
-          totalDonations: user.totalDonated,
+          totalDonations: Number(user.totalDonated),
           cyclesCompleted: user.totalCyclesCompleted,
           coinsEarned: user.charityCoinsBalance,
           avgCompletionDays,

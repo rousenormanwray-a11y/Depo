@@ -473,7 +473,7 @@ function generateAccessToken(payload: any): string {
     throw new AppError('JWT secret not configured', 500, 'CONFIG_ERROR');
   }
 
-  return jwt.sign(payload, secret, { expiresIn });
+  return jwt.sign(payload, secret, { expiresIn } as jwt.SignOptions);
 }
 
 function generateRefreshToken(payload: any): string {
@@ -484,5 +484,5 @@ function generateRefreshToken(payload: any): string {
     throw new AppError('JWT refresh secret not configured', 500, 'CONFIG_ERROR');
   }
 
-  return jwt.sign(payload, secret, { expiresIn });
+  return jwt.sign(payload, secret, { expiresIn } as jwt.SignOptions);
 }
