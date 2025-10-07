@@ -76,6 +76,8 @@ export const authenticate = async (
       id: user.id,
       phoneNumber: user.phoneNumber,
       email: user.email || undefined,
+      firstName: user.firstName,
+      lastName: user.lastName,
       role: user.role,
       tier: user.tier,
     };

@@ -76,8 +76,8 @@ export function rateLimitMiddleware(limiter: any, message?: string) {
       res.set('X-RateLimit-Limit', String(limiter.points));
       res.set('X-RateLimit-Remaining', String(rejRes.remainingPoints || 0));
       res.set('X-RateLimit-Reset', String(new Date(Date.now() + rejRes.msBeforeNext)));
-
-      logger.warn(`Rate limit exceeded for ${key} on ${req.path}`);
+      
+      logger.warn(`Rate limit exceeded for ${identifier} on ${req.path}`);
 
       res.status(429).json({
         success: false,
