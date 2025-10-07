@@ -184,7 +184,10 @@ export type AuthStackParamList = {
 
 export type MainTabParamList = {
   Home: undefined;
+  Missions: undefined;
+  Leaderboard: undefined;
   Marketplace: undefined;
+  Referral: undefined;
   Profile: undefined;
   Agent?: undefined;
 };
@@ -198,6 +201,21 @@ export type HomeStackParamList = {
   TransactionDetail: { transactionId: string };
   CycleDetail: { cycleId: string };
   CycleHistory: undefined;
+  CoinPurchase: undefined;
+  Achievements: undefined;
+  WeeklyChallenges: undefined;
+  // Admin Screens
+  AdminDashboard: undefined;
+  UserManagement: { filter?: string };
+  TransactionMonitoring: { filter?: string };
+  DisputeManagement: undefined;
+  UserDetail: { userId: string };
+  TransactionDetail: { transactionId: string };
+  ActivityLog: undefined;
+  AgentManagement: undefined;
+  AdminSettings: undefined;
+  CryptoPaymentSettings: undefined;
+  CryptoPaymentConfirmation: undefined;
 };
 
 export type MarketplaceStackParamList = {
@@ -214,6 +232,8 @@ export type ProfileStackParamList = {
   KYCVerification: undefined;
   Help: undefined;
   Notifications: undefined;
+  // Admin access from profile
+  AdminDashboard: undefined;
 };
 
 export type AgentStackParamList = {
@@ -221,4 +241,7 @@ export type AgentStackParamList = {
   VerifyUser: undefined;
   CashDeposit: undefined;
   VerificationDetail: { requestId: string };
+  BuyCoinsWithCrypto: undefined;
+  ConfirmCoinPayment: { purchaseId: string };
+  PendingCoinPurchases: undefined;
 };

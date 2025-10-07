@@ -8,6 +8,7 @@ import SettingsScreen from '../screens/profile/SettingsScreen';
 import KYCVerificationScreen from '../screens/profile/KYCVerificationScreen';
 import HelpScreen from '../screens/profile/HelpScreen';
 import NotificationsScreen from '../screens/profile/NotificationsScreen';
+import AdminDashboardScreen from '../screens/admin/AdminDashboardScreen';
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
 
@@ -25,6 +26,8 @@ const ProfileNavigator: React.FC = () => {
       <Stack.Screen name="KYCVerification" component={KYCVerificationScreen} />
       <Stack.Screen name="Help" component={HelpScreen} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} />
+      {/* Admin Dashboard Access */}
+      <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
     </Stack.Navigator>
   );
 };
