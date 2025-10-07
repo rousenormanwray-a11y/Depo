@@ -1,13 +1,12 @@
 import { Router } from 'express';
-import { requireAuth } from '../middleware/auth';
-import { requireRole } from '../middleware/roleCheck';
+import { authenticate, requireRole } from '../middleware/auth';
 import * as gamificationAdminController from '../controllers/gamificationAdmin.controller';
 
 const router = Router();
 
 // All routes require admin/csc_council role
-router.use(requireAuth);
-router.use(requireRole(['csc_council', 'agent'])); // Agents can view, CSC can edit
+router.use(authenticate);
+router.use(requireRole('csc_council', 'agent')); // Agents can view, CSC can edit
 
 // ============================================
 // CONFIGURATION

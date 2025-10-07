@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import { requireAuth } from '../middleware/auth';
+import { authenticate } from '../middleware/auth';
 import * as gamificationController from '../controllers/gamification.controller';
 
 const router = Router();
 
 // All routes require authentication
-router.use(requireAuth);
+router.use(authenticate);
 
 // ============================================
 // DAILY MISSIONS

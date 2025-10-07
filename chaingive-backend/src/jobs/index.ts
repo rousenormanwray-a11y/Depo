@@ -35,10 +35,23 @@ escrowQueue.process(processEscrowRelease);
 matchQueue.process(processMatchExpiration);
 cycleQueue.process(processCycleReminders);
 leaderboardQueue.process(processLeaderboardUpdate);
-reportQueue.process(processDailyReport);
-reportQueue.process(processWeeklyReport);
-reportQueue.process(processMonthlyDigest);
 coinEscrowQueue.process(processCoinEscrowExpiration);
+
+// Report queue handles multiple report types
+reportQueue.process(async (job) => {
+  switch (job.name) {
+    case 'daily-report':
+      return processDailyReport(job);
+    case 'weekly-report':
+      return processWeeklyReport(job);
+    case 'monthly-digest':
+      return processMonthlyDigest(job);
+    default:
+      logger.warn(`Unknown report job type: ${job.name}`);
+  }
+});
+
+// Gamification queue handles multiple gamification jobs  
 gamificationQueue.process(async (job) => {
   const { processGamificationJob } = await import('./gamification.job');
   return processGamificationJob(job);

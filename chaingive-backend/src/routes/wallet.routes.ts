@@ -45,7 +45,7 @@ router.post('/deposit', validate(walletValidation.depositSchema), walletControll
  */
 router.post(
   '/withdraw', 
-  withdrawalLimiter, 
+  rateLimitMiddleware(withdrawalLimiter, 'Too many withdrawal requests'),
   validate(walletValidation.withdrawSchema), 
   walletController.initiateWithdrawal
 );
