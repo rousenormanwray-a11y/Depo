@@ -14,14 +14,14 @@ export const createListing = async (req: AuthRequest, res: Response, next: NextF
 
     const listing = await prisma.marketplaceListing.create({
       data: {
-        title,
+        vendorName: 'Admin',
+        itemName: title,
         description,
-        coinPrice,
         category,
+        coinPrice,
         imageUrl,
         stockQuantity,
-        availableQuantity: stockQuantity,
-        isAvailable: true,
+        isInStock: true,
       },
     });
 
@@ -49,14 +49,14 @@ export const updateListing = async (req: AuthRequest, res: Response, next: NextF
     const listing = await prisma.marketplaceListing.update({
       where: { id: listingId },
       data: {
-        ...(title && { title }),
+        ...(title && { itemName: title }),
         ...(description && { description }),
-        ...(coinPrice && { coinPrice }),
-        ...(stockQuantity && { 
+        ...(coinPrice !== undefined && { coinPrice }),
+        ...(stockQuantity !== undefined && { 
           stockQuantity,
-          availableQuantity: stockQuantity,
+          isInStock: stockQuantity > 0,
         }),
-        ...(isAvailable !== undefined && { isAvailable }),
+        ...(isAvailable !== undefined && { isInStock: isAvailable }),
       },
     });
 
@@ -120,7 +120,7 @@ export const getAllRedemptions = async (req: AuthRequest, res: Response, next: N
         },
         listing: {
           select: {
-            title: true,
+            itemName: true,
             category: true,
           },
         },
@@ -151,8 +151,7 @@ export const approveRedemption = async (req: AuthRequest, res: Response, next: N
     const redemption = await prisma.redemption.update({
       where: { id: redemptionId },
       data: {
-        status: 'approved',
-        approvedAt: new Date(),
+        status: 'completed',
       },
       include: {
         user: {
@@ -165,7 +164,7 @@ export const approveRedemption = async (req: AuthRequest, res: Response, next: N
         },
         listing: {
           select: {
-            title: true,
+            itemName: true,
           },
         },
       },

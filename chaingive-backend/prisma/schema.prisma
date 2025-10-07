@@ -586,3 +586,17 @@ model AdminAction {
   @@index([createdAt])
   @@map("admin_actions")
 }
+
+// Feature Flags
+model FeatureFlag {
+  id          String   @id @default(uuid())
+  featureName String   @unique @map("feature_name")
+  isEnabled   Boolean  @default(true) @map("is_enabled")
+  description String?  @map("description")
+  updatedBy   String?  @map("updated_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([featureName])
+  @@map("feature_flags")
+}

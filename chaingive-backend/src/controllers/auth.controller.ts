@@ -437,8 +437,8 @@ export const resetPassword = async (req: Request, res: Response, next: NextFunct
 
 // Helper functions
 function generateAccessToken(payload: any): string {
-  const secret = process.env.JWT_SECRET;
-  const expiresIn = process.env.JWT_EXPIRES_IN || '1h';
+  const secret = process.env.JWT_SECRET as string;
+  const expiresIn = (process.env.JWT_EXPIRES_IN || '1h') as any;
 
   if (!secret) {
     throw new AppError('JWT secret not configured', 500, 'CONFIG_ERROR');
@@ -448,8 +448,8 @@ function generateAccessToken(payload: any): string {
 }
 
 function generateRefreshToken(payload: any): string {
-  const secret = process.env.JWT_REFRESH_SECRET;
-  const expiresIn = process.env.JWT_REFRESH_EXPIRES_IN || '30d';
+  const secret = process.env.JWT_REFRESH_SECRET as string;
+  const expiresIn = (process.env.JWT_REFRESH_EXPIRES_IN || '30d') as any;
 
   if (!secret) {
     throw new AppError('JWT refresh secret not configured', 500, 'CONFIG_ERROR');

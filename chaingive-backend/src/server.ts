@@ -39,7 +39,7 @@ dotenv.config();
 initializeSentry();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT: number = Number(process.env.PORT) || 3000;
 const API_VERSION = process.env.API_VERSION || 'v1';
 
 // Sentry request handler (must be first middleware)

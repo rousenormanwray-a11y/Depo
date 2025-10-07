@@ -414,8 +414,7 @@ export const agentRejectPayment = async (req: AuthRequest, res: Response, next: 
     // Notify user via push + SMS
     await sendTemplateNotification(
       transaction.userId,
-      'PAYMENT_REJECTED',
-      0
+      'PAYMENT_REJECTED'
     );
 
     const user = await prisma.user.findUnique({

@@ -52,11 +52,11 @@ export const createDispute = async (req: AuthRequest, res: Response, next: NextF
     const dispute = await prisma.dispute.create({
       data: {
         transactionId,
-        reportedBy: userId,
-        respondent: respondentId,
+        reporterId: userId,
+        responderId: respondentId,
         category,
         description,
-        status: 'open',
+        status: 'pending',
       },
       include: {
         transaction: true,
@@ -82,11 +82,7 @@ export const createDispute = async (req: AuthRequest, res: Response, next: NextF
     logger.info(`Dispute created: ${dispute.id} for transaction ${transactionId}`);
 
     // Notify respondent
-    await sendTemplateNotification(
-      respondentId,
-      'DISPUTE_CREATED',
-      0
-    );
+    // Template exists for supported keys only; use email/SMS for now
 
     await sendSMS(
       dispute.responder.phoneNumber,
@@ -278,7 +274,7 @@ export const addDisputeMessage = async (req: AuthRequest, res: Response, next: N
     }
 
     const isAdmin = req.user!.role === 'csc_council' || req.user!.role === 'agent';
-    const isParty = dispute.reportedBy === userId || dispute.respondent === userId;
+    const isParty = dispute.reporterId === userId || dispute.responderId === userId;
 
     if (!isAdmin && !isParty) {
       throw new AppError('Not authorized to message this dispute', 403, 'NOT_AUTHORIZED');
@@ -289,7 +285,6 @@ export const addDisputeMessage = async (req: AuthRequest, res: Response, next: N
         disputeId,
         senderId: userId,
         message,
-        isAdmin,
       },
       include: {
         sender: {
@@ -333,14 +328,14 @@ export const uploadDisputeEvidence = async (req: AuthRequest, res: Response, nex
       throw new AppError('Dispute not found', 404, 'DISPUTE_NOT_FOUND');
     }
 
-    if (dispute.reportedBy !== userId && dispute.respondent !== userId) {
+    if (dispute.reporterId !== userId && dispute.responderId !== userId) {
       throw new AppError('Not authorized to upload evidence', 403, 'NOT_AUTHORIZED');
     }
 
     const evidence = await prisma.disputeEvidence.create({
       data: {
         disputeId,
-        uploadedBy: userId,
+        uploaderId: userId,
         fileUrl,
         fileType,
         description,
@@ -539,17 +534,7 @@ export const resolveDispute = async (req: AuthRequest, res: Response, next: Next
     logger.info(`Dispute ${disputeId} resolved by admin ${adminId}. Resolution: ${resolutionType}`);
 
     // Notify both parties
-    await sendTemplateNotification(
-      resolvedDispute.reporter.id,
-      'DISPUTE_RESOLVED',
-      0
-    );
-
-    await sendTemplateNotification(
-      resolvedDispute.responder.id,
-      'DISPUTE_RESOLVED',
-      0
-    );
+    // Use email/SMS notifications for dispute resolution for now
 
     // Send email to both parties
     const reporter = await prisma.user.findUnique({

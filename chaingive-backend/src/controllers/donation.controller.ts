@@ -134,9 +134,8 @@ export const giveDonation = async (req: AuthRequest, res: Response, next: NextFu
     // Send SMS
     await sendDonationConfirmationSMS(
       recipient.phoneNumber,
-      recipient.firstName,
       amount,
-      donor.firstName
+      req.user!.firstName
     );
 
     // Send email if available
