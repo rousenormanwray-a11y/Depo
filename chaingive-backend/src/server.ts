@@ -107,7 +107,8 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 // Start server
-app.listen(PORT, () => {
+// Bind to 0.0.0.0 to allow external connections (required for Docker/Koyeb)
+app.listen(PORT, '0.0.0.0', () => {
   logger.info(`🚀 ChainGive API Server running on port ${PORT}`);
   logger.info(`📝 Environment: ${process.env.NODE_ENV}`);
   logger.info(`🔗 API Version: ${API_VERSION}`);
