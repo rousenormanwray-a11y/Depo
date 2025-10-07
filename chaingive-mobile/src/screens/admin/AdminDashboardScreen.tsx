@@ -10,6 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import * as Haptics from 'expo-haptics';
 
@@ -23,6 +24,13 @@ import { AnimatedNumber } from '../../components/animated';
 import { CardSkeleton, ListSkeleton } from '../../components/skeletons';
 import { adminService } from '../../services';
 import type { AdminMetric, AdminQuickStat, AdminActivity } from '../../services/adminService';
+import {
+  PageTransition,
+  CountUpAnimation,
+  PulseRing,
+  ConfettiCelebration,
+  LottieSuccess,
+} from '../../components/animations';
 
 const { width: screenWidth } = Dimensions.get('window');
 const cardWidth = (screenWidth - (spacing.md * 3)) / 2;
@@ -33,11 +41,14 @@ type QuickStat = AdminQuickStat & { urgent?: boolean; action: () => void };
 type ActivityItem = AdminActivity & { icon: string; urgent?: boolean };
 
 const AdminDashboardScreen: React.FC = () => {
+  const navigation = useNavigation<any>();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [metrics, setMetrics] = useState<MetricCard[]>([]);
   const [quickStats, setQuickStats] = useState<QuickStat[]>([]);
   const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
     loadDashboardData();
@@ -98,8 +109,64 @@ const AdminDashboardScreen: React.FC = () => {
 
   const handleQuickStatPress = (title: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    
     // Navigate to relevant admin screen based on title
-    console.log('Quick stat pressed:', title);
+    switch (title) {
+      case 'Pending KYC':
+        navigation.navigate('UserManagement', { filter: 'pending_kyc' });
+        break;
+      case 'Open Disputes':
+        navigation.navigate('DisputeManagement');
+        break;
+      case 'Failed Txns':
+      case 'Failed Transactions':
+        navigation.navigate('TransactionMonitoring', { filter: 'failed' });
+        break;
+      case 'Active Agents':
+        navigation.navigate('AgentManagement');
+        break;
+      default:
+        console.log('Quick stat pressed:', title);
+    }
+  };
+
+  const handleQuickActionPress = (action: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    
+    switch (action) {
+      case 'Manage Users':
+        navigation.navigate('UserManagement');
+        break;
+      case 'Transactions':
+        navigation.navigate('TransactionMonitoring');
+        break;
+      case 'Disputes':
+        navigation.navigate('DisputeManagement');
+        break;
+      case 'Settings':
+        navigation.navigate('AdminSettings');
+        break;
+      default:
+        console.log('Quick action pressed:', action);
+    }
+  };
+
+  const handleActivityPress = (activity: ActivityItem) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
+    switch (activity.type) {
+      case 'user':
+        navigation.navigate('UserDetail', { userId: activity.user });
+        break;
+      case 'transaction':
+        navigation.navigate('TransactionDetail', { transactionId: activity.id });
+        break;
+      case 'verification':
+        navigation.navigate('VerificationDetail', { requestId: activity.id });
+        break;
+      default:
+        console.log('Activity pressed:', activity);
+    }
   };
 
   const handleRefresh = async () => {
@@ -127,7 +194,8 @@ const AdminDashboardScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <PageTransition type="fadeIn">
+      <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <View>
@@ -177,17 +245,12 @@ const AdminDashboardScreen: React.FC = () => {
                     <Icon name={metric.icon} size={28} color={metric.color} />
                   </View>
                   <Text style={styles.metricLabel}>{metric.label}</Text>
-                  <AnimatedNumber
-                    value={metric.label === 'Total Volume' ? metric.value : metric.value}
-                    duration={1000}
-                    formatter={(val) => 
-                      metric.label === 'Total Volume'
-                        ? formatCurrency(val)
-                        : metric.label === 'Success Rate'
-                        ? `${val.toFixed(1)}%`
-                        : formatNumber(val)
-                    }
+                  <CountUpAnimation
+                    value={typeof metric.value === 'number' ? metric.value : parseFloat(metric.value.toString())}
                     style={styles.metricValue}
+                    prefix={metric.label === 'Total Volume' ? '₦' : ''}
+                    suffix={metric.label === 'Success Rate' ? '%' : ''}
+                    decimals={metric.label === 'Success Rate' ? 1 : 0}
                   />
                   <View style={styles.metricChange}>
                     <Icon
@@ -222,43 +285,65 @@ const AdminDashboardScreen: React.FC = () => {
           ) : (
             <View style={styles.quickStatsGrid}>
               {quickStats.map((stat, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={[
-                    styles.quickStatCard,
-                    { width: cardWidth },
-                    stat.urgent && styles.urgentCard,
-                  ]}
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                    stat.action();
-                  }}
-                >
-                  <View style={styles.quickStatHeader}>
-                    <Icon
-                      name={stat.icon}
-                      size={24}
-                      color={stat.urgent ? colors.error : colors.text.secondary}
-                    />
-                    {stat.urgent && (
-                      <EnhancedBadge
-                        value="!"
-                        color={colors.error}
-                        size="small"
-                        pulse
+                {stat.urgent ? (
+                  <PulseRing size={cardWidth} color={colors.error} key={index}>
+                    <TouchableOpacity
+                      style={[
+                        styles.quickStatCard,
+                        { width: cardWidth },
+                        styles.urgentCard,
+                      ]}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                        stat.action();
+                      }}
+                    >
+                      <View style={styles.quickStatHeader}>
+                        <Icon
+                          name={stat.icon}
+                          size={24}
+                          color={colors.error}
+                        />
+                        <EnhancedBadge
+                          value="!"
+                          color={colors.error}
+                          size="small"
+                          pulse
+                        />
+                      </View>
+                      <CountUpAnimation
+                        value={stat.value}
+                        style={[styles.quickStatValue, { color: colors.error }]}
                       />
-                    )}
-                  </View>
-                  <AnimatedNumber
-                    value={stat.value}
-                    duration={800}
+                      <Text style={styles.quickStatLabel}>{stat.label}</Text>
+                    </TouchableOpacity>
+                  </PulseRing>
+                ) : (
+                  <TouchableOpacity
+                    key={index}
                     style={[
-                      styles.quickStatValue,
-                      stat.urgent && { color: colors.error },
+                      styles.quickStatCard,
+                      { width: cardWidth },
                     ]}
-                  />
-                  <Text style={styles.quickStatLabel}>{stat.label}</Text>
-                </TouchableOpacity>
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                      stat.action();
+                    }}
+                  >
+                    <View style={styles.quickStatHeader}>
+                      <Icon
+                        name={stat.icon}
+                        size={24}
+                        color={colors.text.secondary}
+                      />
+                    </View>
+                    <CountUpAnimation
+                      value={stat.value}
+                      style={styles.quickStatValue}
+                    />
+                    <Text style={styles.quickStatLabel}>{stat.label}</Text>
+                  </TouchableOpacity>
+                )
               ))}
             </View>
           )}
@@ -345,7 +430,19 @@ const AdminDashboardScreen: React.FC = () => {
         {/* Bottom padding for floating tab bar */}
         <View style={{ height: 100 }} />
       </ScrollView>
+
+      {/* Success Animation */}
+      {showSuccess && (
+        <LottieSuccess
+          size={200}
+          onComplete={() => setShowSuccess(false)}
+        />
+      )}
+
+      {/* Celebration for major milestones */}
+      {showCelebration && <ConfettiCelebration />}
     </SafeAreaView>
+  </PageTransition>
   );
 };
 
