@@ -1,19 +1,21 @@
 # ChainGive Backend - Production Dockerfile for Koyeb
+# Build context: Repository root
+# This Dockerfile is designed to work when building from the repo root
 
 # Stage 1: Build
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
-COPY prisma ./prisma/
+# Copy package files from subdirectory
+COPY chaingive-backend/package*.json ./
+COPY chaingive-backend/prisma ./prisma/
 
 # Install dependencies (including devDependencies for build)
 RUN npm ci
 
-# Copy source code
-COPY . .
+# Copy all source code from subdirectory
+COPY chaingive-backend/ .
 
 # Generate Prisma Client
 RUN npx prisma generate
