@@ -1,0 +1,5 @@
+# Force Koyeb to use Docker
+[build]
+type = "docker"
+dockerfile = "Dockerfile"
+context = "."
