@@ -8,18 +8,24 @@ import {
   FlatList,
   RefreshControl,
   ActivityIndicator,
+  Clipboard,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import * as Haptics from 'expo-haptics';
+import ConfettiCannon from 'react-native-confetti-cannon';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { showToast } from '../../components/common/Toast';
 import { referralAPI } from '../../api/referral';
+import { EmptyStateIllustration } from '../../components/common/EmptyStateIllustration';
+import { PulseAnimation } from '../../components/gamification/PulseAnimation';
 
 const ReferralScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -28,6 +34,8 @@ const ReferralScreen: React.FC = () => {
   const [referralData, setReferralData] = useState<any>(null);
   const [history, setHistory] = useState<any[]>([]);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [copyButtonScale] = useState(new Animated.Value(1));
+  const [confettiKey, setConfettiKey] = useState(0);
 
   useEffect(() => {
     loadReferralData();
@@ -55,6 +63,25 @@ const ReferralScreen: React.FC = () => {
     setRefreshing(false);
   };
 
+  const handleCopyCode = async () => {
+    if (!referralData) return;
+
+    try {
+      Clipboard.setString(referralData.referralCode);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      
+      // Animate button
+      Animated.sequence([
+        Animated.timing(copyButtonScale, { toValue: 0.9, duration: 100, useNativeDriver: true }),
+        Animated.timing(copyButtonScale, { toValue: 1, duration: 100, useNativeDriver: true }),
+      ]).start();
+
+      showToast('Referral code copied!', 'success');
+    } catch (error) {
+      showToast('Failed to copy code', 'error');
+    }
+  };
+
   const handleShare = async () => {
     if (!referralData) return;
 
@@ -70,6 +97,8 @@ Earn 300 coins when you complete 3 cycles! 🎁`,
         title: 'Join ChainGive',
       });
 
+      // Trigger celebration
+      setConfettiKey((prev) => prev + 1);
       showToast('Shared successfully!', 'success');
     } catch (error) {
       // User cancelled

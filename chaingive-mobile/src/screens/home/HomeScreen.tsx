@@ -17,7 +17,7 @@ import * as Haptics from 'expo-haptics';
 import { AppDispatch, RootState } from '../../store/store';
 import { fetchUserBalance } from '../../store/slices/authSlice';
 import { fetchDashboard } from '../../store/slices/gamificationSlice';
-import StreakWidget from '../../components/gamification/ProgressRings';
+import StreakWidget from '../../components/gamification/StreakWidget';
 import ProgressRings from '../../components/gamification/ProgressRings';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
