@@ -27,6 +27,7 @@ const ReferralScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [referralData, setReferralData] = useState<any>(null);
   const [history, setHistory] = useState<any[]>([]);
+  const [showCelebration, setShowCelebration] = useState(false);
 
   useEffect(() => {
     loadReferralData();
@@ -145,7 +146,7 @@ Earn 300 coins when you complete 3 cycles! 🎁`,
             <Icon name="share" size={20} color={colors.white} />
             <Text style={styles.shareButtonText}>Share Referral Link</Text>
           </TouchableOpacity>
-        </View>
+        </GradientCard>
       )}
 
       {/* Rewards Info */}
@@ -186,15 +187,27 @@ Earn 300 coins when you complete 3 cycles! 🎁`,
       {referralData && (
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>{referralData.totalReferrals || 0}</Text>
+            <Icon name="people" size={24} color={colors.primary} />
+            <CountUpAnimation
+              value={referralData.totalReferrals || 0}
+              style={styles.statValue}
+            />
             <Text style={styles.statLabel}>Total Referrals</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>{referralData.activeReferrals || 0}</Text>
+            <Icon name="star" size={24} color={colors.success} />
+            <CountUpAnimation
+              value={referralData.activeReferrals || 0}
+              style={styles.statValue}
+            />
             <Text style={styles.statLabel}>Active</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>{referralData.totalCoinsEarned || 0}</Text>
+            <Icon name="monetization-on" size={24} color={colors.gold} />
+            <CountUpAnimation
+              value={referralData.totalCoinsEarned || 0}
+              style={styles.statValue}
+            />
             <Text style={styles.statLabel}>Coins Earned</Text>
           </View>
         </View>
@@ -229,7 +242,16 @@ Earn 300 coins when you complete 3 cycles! 🎁`,
           }
         />
       )}
+      
+      {/* Celebration */}
+      {showCelebration && (
+        <>
+          <ConfettiCelebration />
+          <FloatingHearts count={8} />
+        </>
+      )}
     </SafeAreaView>
+  </PageTransition>
   );
 };
 

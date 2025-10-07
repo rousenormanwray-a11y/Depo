@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import * as Haptics from 'expo-haptics';
 
 import { AppDispatch, RootState } from '../../store/store';
 import {
@@ -25,6 +26,12 @@ import ProgressBar from '../../components/checklist/ProgressBar';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, layout } from '../../theme/spacing';
+import {
+  PageTransition,
+  ConfettiCelebration,
+  ProgressRing,
+  LottieSuccess,
+} from '../../components/animations';
 
 const ChecklistScreen: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -35,6 +42,7 @@ const ChecklistScreen: React.FC = () => {
 
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
+  const [showCelebration, setShowCelebration] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -52,6 +60,7 @@ const ChecklistScreen: React.FC = () => {
 
   const handleRefresh = async () => {
     if (user) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setRefreshing(true);
       await dispatch(fetchChecklistItems(user.id));
       setRefreshing(false);
@@ -60,9 +69,21 @@ const ChecklistScreen: React.FC = () => {
 
   const handleToggleItem = async (itemId: string, completed: boolean) => {
     try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       await dispatch(toggleChecklistItem({ itemId, completed })).unwrap();
       if (user) {
         await dispatch(updateUserProgress(user.id));
+      }
+      
+      // Check if all items are completed
+      const allCompleted = items.every(item => 
+        item.id === itemId ? completed : item.completed
+      );
+      
+      if (allCompleted && completed) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setShowCelebration(true);
+        setTimeout(() => setShowCelebration(false), 3000);
       }
     } catch (error) {
       Alert.alert('Error', 'Failed to update checklist item');
@@ -169,16 +190,17 @@ const ChecklistScreen: React.FC = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <FlatList
-        data={filteredItems}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id}
-        ListHeaderComponent={renderHeader}
-        ListEmptyComponent={renderEmptyState}
-        contentContainerStyle={styles.contentContainer}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
+    <PageTransition type="slideUp">
+      <SafeAreaView style={styles.container}>
+        <FlatList
+          data={filteredItems}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id}
+          ListHeaderComponent={renderHeader}
+          ListEmptyComponent={renderEmptyState}
+          contentContainerStyle={styles.contentContainer}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
