@@ -7,16 +7,17 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files from subdirectory
-COPY chaingive-backend/package*.json ./
-COPY chaingive-backend/package-lock.json ./
-COPY chaingive-backend/prisma ./prisma/
+# Copy package files (Railway builds from repo root, Dockerfile is at chaingive-backend/Dockerfile.railway)
+# So we need to go back one level and reference chaingive-backend
+COPY package*.json ./
+COPY package-lock.json ./
+COPY prisma ./prisma/
 
 # Install dependencies (including devDependencies for build)
 RUN npm ci
 
-# Copy all source code from subdirectory
-COPY chaingive-backend/ .
+# Copy all source code
+COPY . .
 
 # Generate Prisma Client
 RUN npx prisma generate
@@ -30,9 +31,9 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Install production dependencies only
-COPY chaingive-backend/package*.json ./
-COPY chaingive-backend/package-lock.json ./
-COPY chaingive-backend/prisma ./prisma/
+COPY package*.json ./
+COPY package-lock.json ./
+COPY prisma ./prisma/
 
 RUN npm ci --omit=dev && \
     npx prisma generate && \
