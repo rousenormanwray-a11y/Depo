@@ -1,21 +1,22 @@
 # ChainGive Backend - Railway Dockerfile
-# Railway builds from service directory (chaingive-backend/)
-# So paths are relative to this directory
+# This Dockerfile is specifically for Railway deployment
+# Railway builds from the repository root
 
 # Stage 1: Build
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files (they're in current directory for Railway)
-COPY package*.json ./
-COPY prisma ./prisma/
+# Copy package files from subdirectory
+COPY chaingive-backend/package*.json ./
+COPY chaingive-backend/package-lock.json ./
+COPY chaingive-backend/prisma ./prisma/
 
 # Install dependencies (including devDependencies for build)
 RUN npm ci
 
-# Copy source code
-COPY . .
+# Copy all source code from subdirectory
+COPY chaingive-backend/ .
 
 # Generate Prisma Client
 RUN npx prisma generate
@@ -29,10 +30,11 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Install production dependencies only
-COPY package*.json ./
-COPY prisma ./prisma/
+COPY chaingive-backend/package*.json ./
+COPY chaingive-backend/package-lock.json ./
+COPY chaingive-backend/prisma ./prisma/
 
-RUN npm ci --only=production && \
+RUN npm ci --omit=dev && \
     npx prisma generate && \
     npm cache clean --force
 

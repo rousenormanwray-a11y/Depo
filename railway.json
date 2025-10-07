@@ -1,11 +1,12 @@
 {
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
-    "builder": "NIXPACKS"
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "chaingive-backend/Dockerfile.railway"
   },
   "deploy": {
     "numReplicas": 1,
-    "startCommand": "cd chaingive-backend && node dist/server.js",
+    "startCommand": "node dist/server.js",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 100,
     "restartPolicyType": "ON_FAILURE",
