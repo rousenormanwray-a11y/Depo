@@ -10,6 +10,9 @@ import TransactionHistoryScreen from '../screens/home/TransactionHistoryScreen';
 import TransactionDetailScreen from '../screens/home/TransactionDetailScreen';
 import CycleDetailScreen from '../screens/donations/CycleDetailScreen';
 import CycleHistoryScreen from '../screens/donations/CycleHistoryScreen';
+import CoinPurchaseScreen from '../screens/coins/CoinPurchaseScreen';
+import AchievementsScreen from '../screens/gamification/AchievementsScreen';
+import WeeklyChallengesScreen from '../screens/gamification/WeeklyChallengesScreen';
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();
 
@@ -29,6 +32,9 @@ const HomeNavigator: React.FC = () => {
       <Stack.Screen name="TransactionDetail" component={TransactionDetailScreen} />
       <Stack.Screen name="CycleDetail" component={CycleDetailScreen} />
       <Stack.Screen name="CycleHistory" component={CycleHistoryScreen} />
+      <Stack.Screen name="CoinPurchase" component={CoinPurchaseScreen} />
+      <Stack.Screen name="Achievements" component={AchievementsScreen} />
+      <Stack.Screen name="WeeklyChallenges" component={WeeklyChallengesScreen} />
     </Stack.Navigator>
   );
 };

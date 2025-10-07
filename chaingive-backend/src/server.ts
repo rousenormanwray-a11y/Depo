@@ -10,6 +10,8 @@ import { sentryRequestHandler, sentryTracingHandler, sentryErrorHandler } from '
 import logger from './utils/logger';
 import { startScheduledJobs } from './jobs';
 import { initializeSentry } from './services/sentry.service';
+import { seedAchievements } from './services/seedAchievements';
+import { initializeFeatureFlags } from './services/featureFlags.service';
 
 // Routes
 import authRoutes from './routes/auth.routes';
@@ -31,6 +33,8 @@ import uploadRoutes from './routes/upload.routes';
 import referralRoutes from './routes/referral.routes';
 import disputeRoutes from './routes/dispute.routes';
 import coinPurchaseRoutes from './routes/coinPurchase.routes';
+import gamificationRoutes from './routes/gamification.routes';
+import gamificationAdminRoutes from './routes/gamificationAdmin.routes';
 
 // Load environment variables
 dotenv.config();
@@ -89,6 +93,8 @@ app.use(`/${API_VERSION}/upload`, uploadRoutes);
 app.use(`/${API_VERSION}/referrals`, referralRoutes);
 app.use(`/${API_VERSION}/disputes`, disputeRoutes);
 app.use(`/${API_VERSION}/coins/purchase`, coinPurchaseRoutes);
+app.use(`/${API_VERSION}/gamification`, gamificationRoutes);
+app.use(`/${API_VERSION}/admin/gamification`, gamificationAdminRoutes);
 
 // Serve uploaded files statically
 app.use('/uploads', express.static('uploads'));
@@ -110,6 +116,11 @@ app.listen(PORT, () => {
     startScheduledJobs();
     logger.info('⏰ Background jobs scheduled');
   }
+
+  // Initialize gamification system
+  seedAchievements();
+  initializeFeatureFlags();
+  logger.info('🎮 Gamification system initialized');
 });
 
 export default app;

@@ -38,6 +38,9 @@ const MainNavigator: React.FC = () => {
             case 'Home':
               iconName = 'home';
               break;
+            case 'Missions':
+              iconName = 'check-circle';
+              break;
             case 'Leaderboard':
               iconName = 'emoji-events';
               break;
