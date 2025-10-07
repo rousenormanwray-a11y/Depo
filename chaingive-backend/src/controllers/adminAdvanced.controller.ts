@@ -46,9 +46,9 @@ export const promoteToAgent = async (req: AuthRequest, res: Response, next: Next
     await prisma.adminAction.create({
       data: {
         adminId,
-        actionType: 'promote_to_agent',
-        targetUserId: userId,
-        metadata: JSON.stringify({ agentCode }),
+        action: 'promote_to_agent',
+        targetId: userId,
+        details: JSON.stringify({ agentCode }),
       },
     });
 
@@ -115,9 +115,9 @@ export const promoteInMatchQueue = async (req: AuthRequest, res: Response, next:
     await prisma.adminAction.create({
       data: {
         adminId,
-        actionType: 'promote_match_queue',
-        targetUserId: userId,
-        metadata: JSON.stringify({ priorityScore: 999 }),
+        action: 'promote_match_queue',
+        targetId: userId,
+        details: JSON.stringify({ priorityScore: 999 }),
       },
     });
 
@@ -166,9 +166,9 @@ export const sendCoins = async (req: AuthRequest, res: Response, next: NextFunct
     await prisma.adminAction.create({
       data: {
         adminId,
-        actionType: 'send_coins',
-        targetUserId: userId,
-        metadata: JSON.stringify({ amount, reason, newBalance: user.charityCoinsBalance }),
+        action: 'send_coins',
+        targetId: userId,
+        details: JSON.stringify({ amount, reason, newBalance: user.charityCoinsBalance }),
       },
     });
 
@@ -246,8 +246,8 @@ export const sendBulkEmail = async (req: AuthRequest, res: Response, next: NextF
     await prisma.adminAction.create({
       data: {
         adminId,
-        actionType: 'bulk_email',
-        metadata: JSON.stringify({ subject, filters, sent, failed, total: users.length }),
+        action: 'bulk_email',
+        details: JSON.stringify({ subject, filters, sent, failed, total: users.length }),
       },
     });
 
@@ -295,9 +295,9 @@ export const sendSingleEmail = async (req: AuthRequest, res: Response, next: Nex
     await prisma.adminAction.create({
       data: {
         adminId,
-        actionType: 'single_email',
-        targetUserId: userId,
-        metadata: JSON.stringify({ subject }),
+        action: 'single_email',
+        targetId: userId,
+        details: JSON.stringify({ subject }),
       },
     });
 
@@ -349,8 +349,8 @@ export const toggleFeatureFlag = async (req: AuthRequest, res: Response, next: N
     await prisma.adminAction.create({
       data: {
         adminId,
-        actionType: 'toggle_feature',
-        metadata: JSON.stringify({ featureName, isEnabled }),
+        action: 'toggle_feature',
+        details: JSON.stringify({ featureName, isEnabled }),
       },
     });
 

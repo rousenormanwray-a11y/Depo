@@ -178,6 +178,8 @@ export const confirmPaymentSent = async (req: AuthRequest, res: Response, next: 
               select: {
                 id: true,
                 firstName: true,
+                lastName: true,
+                phoneNumber: true,
               },
             },
           },
