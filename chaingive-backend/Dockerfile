@@ -27,8 +27,8 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Install production dependencies only
-COPY package*.json ./
-COPY prisma ./prisma/
+COPY chaingive-backend/package*.json ./
+COPY chaingive-backend/prisma ./prisma/
 
 RUN npm ci --only=production && \
     npx prisma generate && \
