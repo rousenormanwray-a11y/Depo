@@ -3,8 +3,11 @@ import * as leaderboardController from '../controllers/leaderboard.controller';
 import { authenticate } from '../middleware/auth';
 import { validate } from '../middleware/validation';
 import * as leaderboardValidation from '../validations/leaderboard.validation';
+import { requireFeature } from '../middleware/featureFlag';
 
 const router = Router();
+
+router.use(requireFeature('leaderboard'));
 
 /**
  * @route   GET /v1/leaderboard

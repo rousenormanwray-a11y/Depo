@@ -3,8 +3,11 @@ import * as marketplaceController from '../controllers/marketplace.controller';
 import { authenticate } from '../middleware/auth';
 import { validate } from '../middleware/validation';
 import * as marketplaceValidation from '../validations/marketplace.validation';
+import { requireFeature } from '../middleware/featureFlag';
 
 const router = Router();
+
+router.use(requireFeature('marketplace'));
 
 /**
  * @route   GET /v1/marketplace/listings
