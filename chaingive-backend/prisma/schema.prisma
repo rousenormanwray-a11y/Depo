@@ -36,6 +36,8 @@ model User {
   createdAt            DateTime                  @default(now()) @map("created_at")
   updatedAt            DateTime                  @updatedAt @map("updated_at")
   lastLoginAt          DateTime?                 @map("last_login_at")
+  passwordResetToken   String?                   @unique @map("password_reset_token")
+  passwordResetExpires DateTime?                 @map("password_reset_expires")
   adminActions         AdminAction[]             @relation("AdminActions")
   adminActionTargets   AdminAction[]             @relation("AdminActionTarget")
   agent                Agent?

@@ -73,6 +73,42 @@ export const giveDonation = async (req: AuthRequest, res: Response, next: NextFu
         },
       });
 
+      // --- TRUST SCORE LOGIC: START ---
+      // Check if the donor is fulfilling an obligated cycle
+      const obligatedCycle = await tx.cycle.findFirst({
+        where: {
+          userId,
+          status: 'obligated',
+        },
+        orderBy: {
+          dueDate: 'asc', // Fulfill the oldest obligation first
+        },
+      });
+
+      if (obligatedCycle) {
+        // User is paying it forward, fulfilling their obligation
+        await tx.cycle.update({
+          where: { id: obligatedCycle.id },
+          data: {
+            status: 'fulfilled',
+            givenTransactionId: txn.id,
+            givenAt: new Date(),
+          },
+        });
+
+        // Reward user for on-time completion
+        await tx.user.update({
+          where: { id: userId },
+          data: {
+            trustScore: { increment: 0.25 },
+            totalCyclesCompleted: { increment: 1 },
+          },
+        });
+
+        logger.info(`User ${userId} fulfilled cycle ${obligatedCycle.id} and earned +0.25 trust score.`);
+      }
+      // --- TRUST SCORE LOGIC: END ---
+
       // Create escrow (48-hour hold)
       await tx.escrow.create({
         data: {

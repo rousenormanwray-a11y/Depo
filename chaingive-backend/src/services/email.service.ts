@@ -543,6 +543,53 @@ export async function sendKYCApprovalEmail(email: string, firstName: string): Pr
   return sendEmail(email, subject, html);
 }
 
+/**
+ * Send password reset email
+ */
+export async function sendPasswordResetEmail(email: string, firstName: string, resetToken: string): Promise<boolean> {
+  const subject = 'Reset Your ChainGive Password';
+  const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #3b82f6; color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+        .content { background: #fff; padding: 30px; border: 1px solid #e5e7eb; }
+        .button { display: inline-block; padding: 12px 30px; background: #3b82f6; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+        .footer { text-align: center; margin-top: 30px; color: #666; font-size: 12px; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>🔑 Password Reset Request</h1>
+        </div>
+        <div class="content">
+          <h2>Hi ${firstName},</h2>
+          <p>We received a request to reset your password. Click the button below to choose a new one. This link will expire in 10 minutes.</p>
+
+          <a href="${resetUrl}" class="button">Reset Your Password</a>
+
+          <p>If you didn't request a password reset, you can safely ignore this email.</p>
+
+          <p>Best regards,<br><strong>The ChainGive Team</strong></p>
+        </div>
+        <div class="footer">
+          <p>ChainGive - Pay It Forward, Change Lives</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  return sendEmail(email, subject, html);
+}
+
+
 // Initialize on module load
 if (process.env.NODE_ENV === 'production') {
   initializeEmailService();
