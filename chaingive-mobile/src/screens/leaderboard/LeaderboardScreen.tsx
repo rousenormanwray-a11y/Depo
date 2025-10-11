@@ -131,13 +131,25 @@ const LeaderboardScreen: React.FC = () => {
 
   const renderLeaderboardEntry = ({ item, index }: { item: any; index: number }) => {
     const isCurrentUser = item.userId === user?.id;
+    const isTopThree = item.rank <= 3;
     
     return (
-      <View style={[styles.entryCard, isCurrentUser && styles.entryCardHighlight]}>
-        <View style={styles.rankBadge}>
-          <Text style={[styles.rankText, { color: getRankColor(item.rank) }]}>
-            {getRankIcon(item.rank)}
-          </Text>
+      <View style={[styles.entryCard, isCurrentUser && styles.entryCardHighlight, isTopThree && styles.topThreeCard]}>
+        {/* Rank Badge - Use LevelBadge for top 3 */}
+        <View style={styles.rankBadgeContainer}>
+          {isTopThree ? (
+            <LevelBadge 
+              level={item.rank} 
+              size={item.rank === 1 ? 'large' : 'medium'} 
+              showIcon 
+            />
+          ) : (
+            <View style={styles.rankBadge}>
+              <Text style={[styles.rankText, { color: getRankColor(item.rank) }]}>
+                #{item.rank}
+              </Text>
+            </View>
+          )}
         </View>
         
         <View style={styles.entryInfo}>
@@ -158,14 +170,28 @@ const LeaderboardScreen: React.FC = () => {
           </View>
           <Text style={styles.entryLocation}>📍 {item.locationCity}</Text>
           <View style={styles.entryStats}>
-            <Text style={styles.entryStat}>💰 ₦{item.totalDonated.toLocaleString()}</Text>
+            <Text style={styles.entryStat}>
+              💰 <CountUpAnimation
+                from={0}
+                to={item.totalDonated}
+                duration={1000}
+                formatter={(val) => `₦${(val / 1000).toFixed(0)}K`}
+                style={styles.statValue}
+              />
+            </Text>
             <Text style={styles.entryStat}>🔄 {item.cyclesCompleted} cycles</Text>
             <Text style={styles.entryStat}>🪙 {item.charityCoinsBalance} coins</Text>
           </View>
         </View>
         
         <View style={styles.scoreContainer}>
-          <Text style={styles.scoreValue}>{item.score.toLocaleString()}</Text>
+          <CountUpAnimation
+            from={0}
+            to={item.score}
+            duration={1200}
+            formatter={(val) => Math.round(val).toLocaleString()}
+            style={styles.scoreValue}
+          />
           <Text style={styles.scoreLabel}>pts</Text>
         </View>
       </View>

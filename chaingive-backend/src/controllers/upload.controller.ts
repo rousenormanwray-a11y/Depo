@@ -3,6 +3,7 @@ import { AuthRequest } from '../middleware/auth';
 import { AppError } from '../middleware/errorHandler';
 import logger from '../utils/logger';
 import { getFileUrl } from '../middleware/upload';
+import prisma from '../utils/prisma';
 
 /**
  * Upload payment proof
@@ -90,11 +91,10 @@ export const uploadProfilePicture = async (req: AuthRequest, res: Response, next
 
     const fileUrl = getFileUrl(req.file.filename, 'profiles');
 
-    // TODO: Update user profile with new picture URL
-    // await prisma.user.update({
-    //   where: { id: userId },
-    //   data: { profilePicture: fileUrl },
-    // });
+    await prisma.user.update({
+      where: { id: userId },
+      data: { profilePictureUrl: fileUrl },
+    });
 
     logger.info(`Profile picture uploaded by user ${userId}: ${fileUrl}`);
 

@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import prisma from '../utils/prisma';
 import { AppError } from '../middleware/errorHandler';
 import logger from '../utils/logger';
-import { sendOTP, verifyOTP, storeOTP } from '../services/otp.service';
+import { sendOTP, verifyOTP } from '../services/otp.service';
 import { sendWelcomeEmail } from '../services/email.service';
 
 /**
@@ -39,13 +39,9 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     // Process referral code if provided
     let referrerId: string | undefined;
     if (referralCode) {
-      // Find referrer by code (stored in metadata or generate from user data)
-      // For now, we'll create a simple referral code system
-      const referrer = await prisma.user.findFirst({
+      const referrer = await prisma.user.findUnique({
         where: {
-          // Assuming referral code is first 4 chars of firstName + last 6 of userId
-          // We'll need to search or maintain a referralCode field
-          id: { contains: referralCode.substring(4).toLowerCase() },
+          referralCode,
         },
       });
       
@@ -65,27 +61,57 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
           lastName,
           locationCity,
           locationState,
+          referralCode: `${firstName.toLowerCase()}${Date.now().toString().slice(-6)}`,
         },
         select: {
           id: true,
-        phoneNumber: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        tier: true,
-      },
-    });
+          phoneNumber: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          role: true,
+          tier: true,
+        },
+      });
 
-    // Create wallet for user
-    await prisma.wallet.create({
-      data: {
-        userId: user.id,
-      },
+      // Create wallet for user
+      await tx.wallet.create({
+        data: {
+          userId: newUser.id,
+        },
+      });
+
+      // Process referral if referrerId exists
+      if (referrerId) {
+        // Create referral record
+        await tx.referral.create({
+          data: {
+            referrerId,
+            referredUserId: newUser.id,
+            referralCode: referralCode || '',
+            status: 'registered',
+          },
+        });
+
+        // Award 25 coins to referrer
+        await tx.user.update({
+          where: { id: referrerId },
+          data: {
+            charityCoinsBalance: { increment: 25 },
+          },
+        });
+      }
+
+      return newUser;
     });
 
     // Send OTP for phone verification
     await sendOTP(phoneNumber);
+
+    // Send welcome email if email provided
+    if (email) {
+      await sendWelcomeEmail(email, firstName);
+    }
 
     logger.info(`User registered: ${user.id}`);
 
@@ -444,7 +470,7 @@ function generateAccessToken(payload: any): string {
     throw new AppError('JWT secret not configured', 500, 'CONFIG_ERROR');
   }
 
-  return jwt.sign(payload, secret, { expiresIn });
+  return jwt.sign(payload, secret, { expiresIn } as jwt.SignOptions);
 }
 
 function generateRefreshToken(payload: any): string {
@@ -455,5 +481,5 @@ function generateRefreshToken(payload: any): string {
     throw new AppError('JWT refresh secret not configured', 500, 'CONFIG_ERROR');
   }
 
-  return jwt.sign(payload, secret, { expiresIn });
+  return jwt.sign(payload, secret, { expiresIn } as jwt.SignOptions);
 }

@@ -2,7 +2,7 @@ import { Router } from 'express';
 import * as notificationController from '../controllers/notification.controller';
 import { authenticate } from '../middleware/auth';
 import { validate } from '../middleware/validation';
-import Joi from 'joi';
+import * as notificationValidation from '../validations/notification.validation';
 
 const router = Router();
 
@@ -16,12 +16,7 @@ router.use(authenticate);
  */
 router.post(
   '/device-token',
-  validate(
-    Joi.object({
-      token: Joi.string().required().min(20),
-      platform: Joi.string().valid('ios', 'android').required(),
-    })
-  ),
+  validate(notificationValidation.registerDeviceTokenSchema),
   notificationController.registerDeviceToken
 );
 
@@ -30,22 +25,17 @@ router.post(
  * @desc    Unregister device token
  * @access  Private
  */
-router.delete('/device-token/:token', notificationController.unregisterDeviceToken);
+router.delete(
+  '/device-token/:token',
+  validate(notificationValidation.unregisterDeviceTokenSchema),
+  notificationController.unregisterDeviceToken
+);
 
 /**
  * @route   POST /v1/notifications/test
  * @desc    Send test notification (for debugging)
  * @access  Private
  */
-router.post(
-  '/test',
-  validate(
-    Joi.object({
-      title: Joi.string().optional(),
-      body: Joi.string().optional(),
-    })
-  ),
-  notificationController.sendTestNotification
-);
+router.post('/test', notificationController.sendTestNotification);
 
 export default router;

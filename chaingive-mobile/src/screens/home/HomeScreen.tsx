@@ -16,6 +16,9 @@ import * as Haptics from 'expo-haptics';
 
 import { AppDispatch, RootState } from '../../store/store';
 import { fetchUserBalance } from '../../store/slices/authSlice';
+import { fetchDashboard } from '../../store/slices/gamificationSlice';
+import StreakWidget from '../../components/gamification/StreakWidget';
+import ProgressRings from '../../components/gamification/ProgressRings';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, layout } from '../../theme/spacing';
@@ -37,12 +40,15 @@ const HomeScreen: React.FC = () => {
   const navigation = useNavigation();
   const dispatch = useDispatch<AppDispatch>();
   const { user, loading } = useSelector((state: RootState) => state.auth);
+  const { streak, todaysProgress } = useSelector((state: RootState) => state.gamification);
 
   const [refreshing, setRefreshing] = useState(false);
+  const [showFAB, setShowFAB] = useState(true);
 
   useEffect(() => {
     if (user) {
       dispatch(fetchUserBalance(user.id));
+      dispatch(fetchDashboard());
     }
   }, [dispatch, user]);
 
@@ -51,7 +57,10 @@ const HomeScreen: React.FC = () => {
       setRefreshing(true);
       // Add haptic feedback
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      await dispatch(fetchUserBalance(user.id));
+      await Promise.all([
+        dispatch(fetchUserBalance(user.id)),
+        dispatch(fetchDashboard()),
+      ]);
       setRefreshing(false);
     }
   };
@@ -153,6 +162,17 @@ const HomeScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
+        {/* Streak Widget */}
+        {streak && (
+          <FadeInView duration={300}>
+            <StreakWidget
+              currentStreak={streak.currentStreak || 0}
+              longestStreak={streak.longestStreak || 0}
+              lastActiveDate={streak.lastActiveDate}
+            />
+          </FadeInView>
+        )}
+
         {/* Balance Card */}
         {loading && !user ? (
           <BalanceCardSkeleton />
@@ -183,6 +203,20 @@ const HomeScreen: React.FC = () => {
                 />
               </View>
             </View>
+          </FadeInView>
+        )}
+
+        {/* Progress Rings - Daily Goals */}
+        {todaysProgress && (
+          <FadeInView duration={500} delay={200}>
+            <ProgressRings
+              giveProgress={todaysProgress.giveProgress || 0}
+              giveGoal={todaysProgress.giveGoal || 1}
+              earnProgress={todaysProgress.earnProgress || 0}
+              earnGoal={todaysProgress.earnGoal || 50}
+              engageProgress={todaysProgress.engageProgress || 0}
+              engageGoal={todaysProgress.engageGoal || 3}
+            />
           </FadeInView>
         )}
 

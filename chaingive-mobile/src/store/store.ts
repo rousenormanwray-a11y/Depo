@@ -8,6 +8,9 @@ import agentReducer from './slices/agentSlice';
 import marketplaceReducer from './slices/marketplaceSlice';
 import walletReducer from './slices/walletSlice';
 import donationReducer from './slices/donationSlice';
+import coinPurchaseReducer from './slices/coinPurchaseSlice';
+import leaderboardReducer from './slices/leaderboardSlice';
+import gamificationReducer from './slices/gamificationSlice';
 
 // Persist config
 const persistConfig = {
@@ -24,6 +27,9 @@ const rootReducer = combineReducers({
   marketplace: marketplaceReducer,
   wallet: walletReducer,
   donation: donationReducer,
+  coinPurchase: coinPurchaseReducer,
+  leaderboard: leaderboardReducer,
+  gamification: gamificationReducer,
 });
 
 // Persisted reducer

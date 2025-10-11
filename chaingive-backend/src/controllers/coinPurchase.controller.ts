@@ -5,6 +5,7 @@ import { AppError } from '../middleware/errorHandler';
 import logger from '../utils/logger';
 import { sendTemplateNotification } from '../services/notification.service';
 import { sendSMS } from '../services/sms.service';
+import gamificationService from '../services/gamification.service';
 
 /**
  * Get available agents for coin purchase
@@ -177,6 +178,8 @@ export const confirmPaymentSent = async (req: AuthRequest, res: Response, next: 
               select: {
                 id: true,
                 firstName: true,
+                lastName: true,
+                phoneNumber: true,
               },
             },
           },
@@ -318,12 +321,18 @@ export const agentConfirmPayment = async (req: AuthRequest, res: Response, next:
 
     logger.info(`Agent ${agent.id} confirmed payment for transaction ${transactionId} - ${transaction.quantity} coins released to user ${transaction.userId}`);
 
+    // Get agent user details for notification
+    const agentUser = await prisma.user.findUnique({
+      where: { id: agent.userId },
+      select: { firstName: true, lastName: true },
+    });
+
     // Notify user via push + SMS
     await sendTemplateNotification(
       transaction.userId,
       'COINS_PURCHASED',
       transaction.quantity,
-      `${agent.user.firstName} ${agent.user.lastName}`
+      agentUser ? `${agentUser.firstName} ${agentUser.lastName}` : 'Agent'
     );
 
     const user = await prisma.user.findUnique({

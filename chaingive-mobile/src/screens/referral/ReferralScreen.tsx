@@ -8,18 +8,24 @@ import {
   FlatList,
   RefreshControl,
   ActivityIndicator,
+  Clipboard,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import * as Haptics from 'expo-haptics';
+import ConfettiCannon from 'react-native-confetti-cannon';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { showToast } from '../../components/common/Toast';
 import { referralAPI } from '../../api/referral';
+import { EmptyStateIllustration } from '../../components/common/EmptyStateIllustration';
+import { PulseAnimation } from '../../components/gamification/PulseAnimation';
 
 const ReferralScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -27,6 +33,9 @@ const ReferralScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [referralData, setReferralData] = useState<any>(null);
   const [history, setHistory] = useState<any[]>([]);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [copyButtonScale] = useState(new Animated.Value(1));
+  const [confettiKey, setConfettiKey] = useState(0);
 
   useEffect(() => {
     loadReferralData();
@@ -54,6 +63,25 @@ const ReferralScreen: React.FC = () => {
     setRefreshing(false);
   };
 
+  const handleCopyCode = async () => {
+    if (!referralData) return;
+
+    try {
+      Clipboard.setString(referralData.referralCode);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      
+      // Animate button
+      Animated.sequence([
+        Animated.timing(copyButtonScale, { toValue: 0.9, duration: 100, useNativeDriver: true }),
+        Animated.timing(copyButtonScale, { toValue: 1, duration: 100, useNativeDriver: true }),
+      ]).start();
+
+      showToast('Referral code copied!', 'success');
+    } catch (error) {
+      showToast('Failed to copy code', 'error');
+    }
+  };
+
   const handleShare = async () => {
     if (!referralData) return;
 
@@ -69,6 +97,8 @@ Earn 300 coins when you complete 3 cycles! 🎁`,
         title: 'Join ChainGive',
       });
 
+      // Trigger celebration
+      setConfettiKey((prev) => prev + 1);
       showToast('Shared successfully!', 'success');
     } catch (error) {
       // User cancelled
@@ -145,7 +175,7 @@ Earn 300 coins when you complete 3 cycles! 🎁`,
             <Icon name="share" size={20} color={colors.white} />
             <Text style={styles.shareButtonText}>Share Referral Link</Text>
           </TouchableOpacity>
-        </View>
+        </GradientCard>
       )}
 
       {/* Rewards Info */}
@@ -186,15 +216,27 @@ Earn 300 coins when you complete 3 cycles! 🎁`,
       {referralData && (
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>{referralData.totalReferrals || 0}</Text>
+            <Icon name="people" size={24} color={colors.primary} />
+            <CountUpAnimation
+              value={referralData.totalReferrals || 0}
+              style={styles.statValue}
+            />
             <Text style={styles.statLabel}>Total Referrals</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>{referralData.activeReferrals || 0}</Text>
+            <Icon name="star" size={24} color={colors.success} />
+            <CountUpAnimation
+              value={referralData.activeReferrals || 0}
+              style={styles.statValue}
+            />
             <Text style={styles.statLabel}>Active</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>{referralData.totalCoinsEarned || 0}</Text>
+            <Icon name="monetization-on" size={24} color={colors.gold} />
+            <CountUpAnimation
+              value={referralData.totalCoinsEarned || 0}
+              style={styles.statValue}
+            />
             <Text style={styles.statLabel}>Coins Earned</Text>
           </View>
         </View>
@@ -229,7 +271,16 @@ Earn 300 coins when you complete 3 cycles! 🎁`,
           }
         />
       )}
+      
+      {/* Celebration */}
+      {showCelebration && (
+        <>
+          <ConfettiCelebration />
+          <FloatingHearts count={8} />
+        </>
+      )}
     </SafeAreaView>
+  </PageTransition>
   );
 };
 

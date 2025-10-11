@@ -128,8 +128,8 @@ export const getMyDisputes = async (req: AuthRequest, res: Response, next: NextF
     const disputes = await prisma.dispute.findMany({
       where: {
         OR: [
-          { reportedBy: userId },
-          { respondent: userId },
+          { reporterId: userId },
+          { responderId: userId },
         ],
       },
       include: {
@@ -240,7 +240,7 @@ export const getDisputeDetails = async (req: AuthRequest, res: Response, next: N
 
     // Verify user is authorized to view
     const isAdmin = req.user!.role === 'csc_council' || req.user!.role === 'agent';
-    const isParty = dispute.reportedBy === userId || dispute.respondent === userId;
+    const isParty = dispute.reporterId === userId || dispute.responderId === userId;
 
     if (!isAdmin && !isParty) {
       throw new AppError('Not authorized to view this dispute', 403, 'NOT_AUTHORIZED');

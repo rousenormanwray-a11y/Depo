@@ -22,7 +22,7 @@ export const sentryTracingHandler = Sentry.Handlers.tracingHandler();
  * Sentry error handler middleware
  * Must be placed AFTER all routes and BEFORE other error handlers
  */
-export const sentryErrorHandler = Sentry.Handlers.errorHandler({
+export const sentryErrorHandler: any = Sentry.Handlers.errorHandler({
   shouldHandleError(error) {
     // Capture all errors with status code >= 500
     // Or errors that don't have a status code

@@ -1,0 +1,14 @@
+# Koyeb Configuration File
+# This tells Koyeb to use Docker
+
+[build]
+type = "docker"
+dockerfile = "Dockerfile"
+
+[deploy]
+type = "web"
+ports = [8000]
+
+[[deploy.routes]]
+path = "/"
+port = 8000

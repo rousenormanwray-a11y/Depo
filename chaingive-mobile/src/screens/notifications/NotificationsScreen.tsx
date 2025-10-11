@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { useDispatch, useSelector } from 'react-redux';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import * as Haptics from 'expo-haptics';
 
@@ -23,92 +24,85 @@ import {
   SwipeableRow,
 } from '../../components/animations';
 import EnhancedBadge from '../../components/common/EnhancedBadge';
+import { RootState, AppDispatch } from '../../store/store';
+import {
+  fetchNotifications,
+  fetchUnreadCount,
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
+  deleteNotification,
+} from '../../store/slices/notificationSlice';
+import type { Notification } from '../../services/notificationService';
 
 const { width: screenWidth } = Dimensions.get('window');
 
-interface Notification {
-  id: string;
-  type: 'DONATION' | 'CYCLE' | 'MARKETPLACE' | 'AGENT' | 'SYSTEM';
-  title: string;
-  message: string;
-  read: boolean;
-  createdAt: string;
-  data?: any;
-}
-
-// Mock notifications - replace with API call
-const mockNotifications: Notification[] = [
-  {
-    id: '1',
-    type: 'DONATION',
-    title: 'Donation Received!',
-    message: 'You received ₦5,000 from John Doe',
-    read: false,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    type: 'CYCLE',
-    title: 'Cycle Due Soon',
-    message: 'Your donation cycle is due in 3 days',
-    read: false,
-    createdAt: new Date(Date.now() - 3600000).toISOString(),
-  },
-  {
-    id: '3',
-    type: 'MARKETPLACE',
-    title: 'Redemption Successful',
-    message: 'Your airtime of ₦500 has been delivered',
-    read: true,
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-  },
-  {
-    id: '4',
-    type: 'AGENT',
-    title: 'Agent Request',
-    message: 'Jane wants to buy ₦10,000 in coins',
-    read: true,
-    createdAt: new Date(Date.now() - 172800000).toISOString(),
-  },
-];
+// Type mapping from API to display
+type NotificationType = 'donation' | 'achievement' | 'system' | 'marketplace' | 'agent' | 'cycle';
 
 const NotificationsScreen: React.FC = () => {
   const navigation = useNavigation();
+  const dispatch = useDispatch<AppDispatch>();
+  
+  const { 
+    notifications: allNotifications, 
+    unreadCount, 
+    loading, 
+    hasMore,
+    page,
+  } = useSelector((state: RootState) => state.notifications);
 
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
-  const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<'ALL' | 'UNREAD'>('ALL');
 
-  const handleMarkAsRead = (id: string) => {
+  // Fetch notifications on mount
+  useEffect(() => {
+    dispatch(fetchNotifications({ page: 1, limit: 20 }));
+    dispatch(fetchUnreadCount());
+  }, [dispatch]);
+
+  // Filter notifications based on selected filter
+  const notifications = filter === 'UNREAD' 
+    ? allNotifications.filter(n => !n.read)
+    : allNotifications;
+
+  const handleMarkAsRead = async (id: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setNotifications((prev) =>
-      prev.map((notif) =>
-        notif.id === id ? { ...notif, read: true } : notif
-      )
-    );
+    try {
+      await dispatch(markNotificationAsRead(id)).unwrap();
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+    }
   };
 
-  const handleDeleteNotification = (id: string) => {
+  const handleDeleteNotification = async (id: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setNotifications((prev) => prev.filter((notif) => notif.id !== id));
+    try {
+      await dispatch(deleteNotification(id)).unwrap();
+    } catch (error) {
+      console.error('Failed to delete notification:', error);
+    }
   };
 
   const handleRefresh = async () => {
-    setRefreshing(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    // TODO: Fetch notifications from API
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setRefreshing(false);
+    try {
+      await Promise.all([
+        dispatch(fetchNotifications({ page: 1, limit: 20 })).unwrap(),
+        dispatch(fetchUnreadCount()).unwrap(),
+      ]);
+    } catch (error) {
+      console.error('Failed to refresh notifications:', error);
+    }
   };
 
-  const handleNotificationPress = (notification: Notification) => {
+  const handleNotificationPress = async (notification: Notification) => {
     // Mark as read
-    setNotifications(prev =>
-      prev.map(n => n.id === notification.id ? { ...n, read: true } : n)
-    );
+    if (!notification.read) {
+      await handleMarkAsRead(notification.id);
+    }
 
     // Navigate based on notification type
-    switch (notification.type) {
+    const notifType = notification.type.toUpperCase();
+    switch (notifType) {
       case 'DONATION':
       case 'CYCLE':
         navigation.navigate('CycleDetail', { cycleId: notification.data?.cycleId });
@@ -124,12 +118,26 @@ const NotificationsScreen: React.FC = () => {
     }
   };
 
-  const handleMarkAllRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  const handleMarkAllRead = async () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    try {
+      await dispatch(markAllNotificationsAsRead()).unwrap();
+    } catch (error) {
+      console.error('Failed to mark all as read:', error);
+    }
   };
 
-  const handleClearAll = () => {
-    setNotifications([]);
+  const handleClearAll = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    // Delete all notifications one by one
+    // Note: This might need a bulk delete API endpoint for better performance
+    try {
+      await Promise.all(
+        notifications.map(n => dispatch(deleteNotification(n.id)))
+      );
+    } catch (error) {
+      console.error('Failed to clear all notifications:', error);
+    }
   };
 
   const formatTime = (dateString: string) => {
@@ -331,7 +339,7 @@ const NotificationsScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={refreshing}
+            refreshing={loading}
             onRefresh={handleRefresh}
             colors={[colors.primary]}
             tintColor={colors.primary}

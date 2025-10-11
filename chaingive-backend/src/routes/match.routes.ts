@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import * as matchController from '../controllers/match.controller';
 import { authenticate } from '../middleware/auth';
+import { validate } from '../middleware/validation';
+import * as matchValidation from '../validations/match.validation';
 
 const router = Router();
 
@@ -19,13 +21,18 @@ router.get('/pending', matchController.getPendingMatches);
  * @desc    Accept a match
  * @access  Private
  */
-router.post('/:id/accept', matchController.acceptMatch);
+router.post('/:id/accept', validate(matchValidation.matchIdSchema), matchController.acceptMatch);
 
 /**
  * @route   POST /v1/matches/:id/reject
  * @desc    Reject a match
  * @access  Private
  */
-router.post('/:id/reject', matchController.rejectMatch);
+router.post(
+  '/:id/reject',
+  validate(matchValidation.matchIdSchema),
+  validate(matchValidation.rejectMatchSchema),
+  matchController.rejectMatch
+);
 
 export default router;

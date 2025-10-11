@@ -1,0 +1,45 @@
+# Node
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Build
+dist
+
+# Logs
+logs
+*.log
+
+# Environment
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation
+*.md
+!README.md
+
+# Test files
+**/*.test.ts
+**/*.spec.ts
+coverage
+
+# Uploads (should be in cloud storage in production)
+uploads/*

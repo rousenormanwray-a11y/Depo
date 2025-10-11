@@ -6,6 +6,9 @@ import AgentDashboardScreen from '../screens/agent/AgentDashboardScreen';
 import VerifyUserScreen from '../screens/agent/VerifyUserScreen';
 import CashDepositScreen from '../screens/agent/CashDepositScreen';
 import VerificationDetailScreen from '../screens/agent/VerificationDetailScreen';
+import BuyCoinsWithCryptoScreen from '../screens/agent/BuyCoinsWithCryptoScreen';
+import ConfirmCoinPaymentScreen from '../screens/agent/ConfirmCoinPaymentScreen';
+import PendingCoinPurchasesScreen from '../screens/wallet/PendingCoinPurchasesScreen';
 
 const Stack = createNativeStackNavigator<AgentStackParamList>();
 

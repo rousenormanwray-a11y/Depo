@@ -13,3 +13,6 @@
 pkg/
 # Ignore src/ in root but not in subdirectories
 /src/
+chaingive-mobile/node_modules/
+chaingive-mobile/node_modules/
+**/node_modules/

@@ -7,6 +7,8 @@ import { requireFeature } from '../middleware/featureFlag';
 
 const router = Router();
 
+router.use(requireFeature('marketplace'));
+
 /**
  * @route   GET /v1/marketplace/listings
  * @desc    Get marketplace listings

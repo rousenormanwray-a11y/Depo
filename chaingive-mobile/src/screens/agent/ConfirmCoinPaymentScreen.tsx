@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import * as Haptics from 'expo-haptics';
 
 import { agentService, PendingCoinPurchase } from '../../services/agentService';
 import Button from '../../components/common/Button';
@@ -20,6 +21,14 @@ import Input from '../../components/common/Input';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, layout } from '../../theme/spacing';
+import {
+  CountUpAnimation,
+  ConfettiCelebration,
+  PageTransition,
+  LottieSuccess,
+  FloatingHearts,
+  PulseRing,
+} from '../../components/animations';
 
 const ConfirmCoinPaymentScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -32,6 +41,8 @@ const ConfirmCoinPaymentScreen: React.FC = () => {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [confirming, setConfirming] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
     fetchPendingRequests();
@@ -50,21 +61,25 @@ const ConfirmCoinPaymentScreen: React.FC = () => {
   };
 
   const handleRefresh = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setRefreshing(true);
     await fetchPendingRequests();
     setRefreshing(false);
   };
 
   const handleCallUser = (phoneNumber: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     Linking.openURL(`tel:${phoneNumber}`);
   };
 
   const handleConfirmPayment = (purchase: PendingCoinPurchase) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSelectedPurchase(purchase);
     setShowConfirmModal(true);
   };
 
   const handleReject = (purchase: PendingCoinPurchase) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     setSelectedPurchase(purchase);
     setShowRejectModal(true);
   };
@@ -81,17 +96,27 @@ const ConfirmCoinPaymentScreen: React.FC = () => {
 
       setShowConfirmModal(false);
       
-      Alert.alert(
-        'Coins Released!',
-        `You've successfully released ${formatCurrency(selectedPurchase.amount)} to ${selectedPurchase.user.firstName}.\n\n` +
-        `Your commission: ${formatCurrency(response.commission)}`,
-        [
-          {
-            text: 'OK',
-            onPress: () => fetchPendingRequests(),
-          },
-        ]
-      );
+      // Show success animations!
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setShowSuccess(true);
+      setShowCelebration(true);
+      
+      setTimeout(() => {
+        setShowSuccess(false);
+        setShowCelebration(false);
+        
+        Alert.alert(
+          '🎉 Coins Released!',
+          `You've successfully released ${formatCurrency(selectedPurchase.amount)} to ${selectedPurchase.user.firstName}.\n\n` +
+          `Your commission: ${formatCurrency(response.commission)}`,
+          [
+            {
+              text: 'Awesome!',
+              onPress: () => fetchPendingRequests(),
+            },
+          ]
+        );
+      }, 2500);
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to confirm payment');
     } finally {
@@ -262,7 +287,8 @@ const ConfirmCoinPaymentScreen: React.FC = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <PageTransition type="slideUp">
+      <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -561,6 +587,23 @@ const styles = StyleSheet.create({
     color: colors.warning,
     marginLeft: spacing.sm,
     flex: 1,
+  },
+  confirmButton: {
+    marginBottom: spacing.sm,
+  },
+  rejectInfo: {
+    ...typography.bodyRegular,
+    color: colors.text.secondary,
+    marginBottom: spacing.md,
+  },
+  rejectSubmitButton: {
+    marginTop: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+});
+
+export default ConfirmCoinPaymentScreen;
+lex: 1,
   },
   confirmButton: {
     marginBottom: spacing.sm,

@@ -7,6 +7,8 @@ import { requireFeature } from '../middleware/featureFlag';
 
 const router = Router();
 
+router.use(requireFeature('leaderboard'));
+
 /**
  * @route   GET /v1/leaderboard
  * @desc    Get global leaderboard (top 100)
