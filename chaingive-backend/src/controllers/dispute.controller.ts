@@ -56,7 +56,7 @@ export const createDispute = async (req: AuthRequest, res: Response, next: NextF
         responderId: respondentId,
         category,
         description,
-        status: 'open',
+        status: 'pending',
       },
       include: {
         transaction: true,
@@ -82,11 +82,7 @@ export const createDispute = async (req: AuthRequest, res: Response, next: NextF
     logger.info(`Dispute created: ${dispute.id} for transaction ${transactionId}`);
 
     // Notify respondent
-    await sendTemplateNotification(
-      respondentId,
-      'DISPUTE_CREATED',
-      0
-    );
+    // Template exists for supported keys only; use email/SMS for now
 
     await sendSMS(
       dispute.responder.phoneNumber,
@@ -538,17 +534,7 @@ export const resolveDispute = async (req: AuthRequest, res: Response, next: Next
     logger.info(`Dispute ${disputeId} resolved by admin ${adminId}. Resolution: ${resolutionType}`);
 
     // Notify both parties
-    await sendTemplateNotification(
-      resolvedDispute.reporter.id,
-      'DISPUTE_RESOLVED',
-      0
-    );
-
-    await sendTemplateNotification(
-      resolvedDispute.responder.id,
-      'DISPUTE_RESOLVED',
-      0
-    );
+    // Use email/SMS notifications for dispute resolution for now
 
     // Send email to both parties
     const reporter = await prisma.user.findUnique({

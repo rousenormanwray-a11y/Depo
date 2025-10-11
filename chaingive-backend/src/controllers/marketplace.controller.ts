@@ -89,7 +89,7 @@ export const redeemItem = async (req: AuthRequest, res: Response, next: NextFunc
     }
 
     // Calculate total cost
-    const totalCoins = listing.coinPrice * quantity;
+    const totalCoins = Number(listing.coinPrice) * Number(quantity);
 
     // Check user's Charity Coins balance
     const user = await prisma.user.findUnique({
@@ -112,7 +112,7 @@ export const redeemItem = async (req: AuthRequest, res: Response, next: NextFunc
           userId,
           listingId,
           coinsSpent: totalCoins,
-          realValue: listing.realValue * quantity,
+          realValue: Number(listing.realValue) * Number(quantity),
           status: 'pending',
           deliveryMethod: 'instant',
           deliveryData: deliveryPhone ? { phone: deliveryPhone } : undefined,

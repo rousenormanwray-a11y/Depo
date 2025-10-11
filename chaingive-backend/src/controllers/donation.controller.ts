@@ -9,7 +9,6 @@ import { sendTemplateNotification } from '../services/notification.service';
 import { markSecondDonation } from '../services/forceRecycle.service';
 import { sendDonationConfirmationSMS, sendReceiptConfirmationSMS } from '../services/sms.service';
 import { sendDonationReceiptEmail, sendReceiptConfirmationEmail } from '../services/email.service';
-import gamificationService from '../services/gamification.service';
 
 /**
  * Give donation
@@ -136,18 +135,16 @@ export const giveDonation = async (req: AuthRequest, res: Response, next: NextFu
     await sendDonationConfirmationSMS(
       recipient.phoneNumber,
       amount,
-      recipient.firstName
+      req.user!.firstName
     );
 
     // Send email if available
     if (recipient.email) {
       await sendDonationReceiptEmail(
         recipient.email,
-        req.user!.firstName,
-        amount,
         recipient.firstName,
-        transactionRef,
-        new Date()
+        amount,
+        donor.firstName
       );
     }
 
@@ -236,21 +233,15 @@ export const confirmReceipt = async (req: AuthRequest, res: Response, next: Next
           select: { phoneNumber: true, firstName: true, email: true },
         });
 
-        // Get recipient details
-        const recipient = await prisma.user.findUnique({
-          where: { id: transaction.toUserId! },
-          select: { firstName: true },
-        });
-
         if (donor) {
           await sendReceiptConfirmationSMS(
             donor.phoneNumber,
-            Number(transaction.amount),
-            donor.firstName
+            donor.firstName,
+            Number(transaction.amount)
           );
 
           // Send email confirmation
-          if (donor.email && recipient) {
+          if (donor.email) {
             await sendReceiptConfirmationEmail(
               donor.email,
               donor.firstName,

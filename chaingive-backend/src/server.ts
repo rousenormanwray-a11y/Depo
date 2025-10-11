@@ -10,8 +10,6 @@ import { sentryRequestHandler, sentryTracingHandler, sentryErrorHandler } from '
 import logger from './utils/logger';
 import { startScheduledJobs } from './jobs';
 import { initializeSentry } from './services/sentry.service';
-import { seedAchievements } from './services/seedAchievements';
-import { initializeFeatureFlags } from './services/featureFlags.service';
 
 // Routes
 import authRoutes from './routes/auth.routes';
@@ -33,9 +31,6 @@ import uploadRoutes from './routes/upload.routes';
 import referralRoutes from './routes/referral.routes';
 import disputeRoutes from './routes/dispute.routes';
 import coinPurchaseRoutes from './routes/coinPurchase.routes';
-import gamificationRoutes from './routes/gamification.routes';
-import gamificationAdminRoutes from './routes/gamificationAdmin.routes';
-import cryptoPaymentRoutes from './routes/cryptoPayment.routes';
 
 // Load environment variables
 dotenv.config();
@@ -44,7 +39,7 @@ dotenv.config();
 initializeSentry();
 
 const app = express();
-const PORT = parseInt(process.env.PORT || '3000', 10);
+const PORT: number = Number(process.env.PORT) || 3000;
 const API_VERSION = process.env.API_VERSION || 'v1';
 
 // Sentry request handler (must be first middleware)
@@ -65,7 +60,7 @@ app.use(morgan('combined', { stream: { write: (message) => logger.info(message.t
 app.use(rateLimiter);
 
 // Health check
-app.get('/health', (_req, res) => {
+app.get(['/','/health'], (req, res) => {
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
@@ -73,6 +68,7 @@ app.get('/health', (_req, res) => {
     environment: process.env.NODE_ENV,
   });
 });
+app.head(['/','/health'], (_req, res) => res.sendStatus(200));
 
 // API Routes
 app.use(`/${API_VERSION}/auth`, authRoutes);
@@ -94,9 +90,6 @@ app.use(`/${API_VERSION}/upload`, uploadRoutes);
 app.use(`/${API_VERSION}/referrals`, referralRoutes);
 app.use(`/${API_VERSION}/disputes`, disputeRoutes);
 app.use(`/${API_VERSION}/coins/purchase`, coinPurchaseRoutes);
-app.use(`/${API_VERSION}/gamification`, gamificationRoutes);
-app.use(`/${API_VERSION}/admin/gamification`, gamificationAdminRoutes);
-app.use(`/${API_VERSION}`, cryptoPaymentRoutes); // Crypto payment routes (admin & agent)
 
 // Serve uploaded files statically
 app.use('/uploads', express.static('uploads'));
@@ -107,8 +100,7 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 // Start server
-// Bind to 0.0.0.0 to allow external connections (required for Docker/Koyeb)
-app.listen(PORT, '0.0.0.0', () => {
+app.listen(PORT, () => {
   logger.info(`🚀 ChainGive API Server running on port ${PORT}`);
   logger.info(`📝 Environment: ${process.env.NODE_ENV}`);
   logger.info(`🔗 API Version: ${API_VERSION}`);
@@ -119,11 +111,6 @@ app.listen(PORT, '0.0.0.0', () => {
     startScheduledJobs();
     logger.info('⏰ Background jobs scheduled');
   }
-
-  // Initialize gamification system
-  seedAchievements();
-  initializeFeatureFlags();
-  logger.info('🎮 Gamification system initialized');
 });
 
 export default app;
