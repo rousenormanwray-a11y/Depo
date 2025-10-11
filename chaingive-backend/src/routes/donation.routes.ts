@@ -3,12 +3,12 @@ import * as donationController from '../controllers/donation.controller';
 import { authenticate } from '../middleware/auth';
 import { validate } from '../middleware/validation';
 import * as donationValidation from '../validations/donation.validation';
-import { rateLimitMiddleware, donationLimiter } from '../middleware/advancedRateLimiter';
+import { requireFeature } from '../middleware/featureFlag';
 
 const router = Router();
 
 // All routes require authentication
-router.use(authenticate);
+router.use(authenticate, requireFeature('donations'));
 
 /**
  * @route   POST /v1/donations/give

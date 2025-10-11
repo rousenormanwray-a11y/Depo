@@ -39,13 +39,9 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     // Process referral code if provided
     let referrerId: string | undefined;
     if (referralCode) {
-      // Find referrer by code (stored in metadata or generate from user data)
-      // For now, we'll create a simple referral code system
-      const referrer = await prisma.user.findFirst({
+      const referrer = await prisma.user.findUnique({
         where: {
-          // Assuming referral code is first 4 chars of firstName + last 6 of userId
-          // We'll need to search or maintain a referralCode field
-          id: { contains: referralCode.substring(4).toLowerCase() },
+          referralCode,
         },
       });
       
@@ -65,6 +61,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
           lastName,
           locationCity,
           locationState,
+          referralCode: `${firstName.toLowerCase()}${Date.now().toString().slice(-6)}`,
         },
         select: {
           id: true,

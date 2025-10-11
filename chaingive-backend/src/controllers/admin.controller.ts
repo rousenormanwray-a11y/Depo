@@ -4,6 +4,7 @@ import prisma from '../utils/prisma';
 import { AppError } from '../middleware/errorHandler';
 import logger from '../utils/logger';
 import { sendKYCApprovalEmail } from '../services/email.service';
+import { sendKYCApprovalSMS } from '../services/sms.service';
 
 /**
  * Get all users with filters and pagination
@@ -424,6 +425,13 @@ export const approveKYC = async (req: AuthRequest, res: Response, next: NextFunc
         kycRecord.verificationType
       );
     }
+
+    // Send SMS notification
+    await sendKYCApprovalSMS(
+      kycRecord.user.phoneNumber,
+      kycRecord.user.firstName,
+      kycRecord.verificationType
+    );
 
     res.status(200).json({
       success: true,
