@@ -3,7 +3,6 @@ import { AuthRequest } from '../middleware/auth';
 import prisma from '../utils/prisma';
 import { AppError } from '../middleware/errorHandler';
 import logger from '../utils/logger';
-import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Get wallet balance

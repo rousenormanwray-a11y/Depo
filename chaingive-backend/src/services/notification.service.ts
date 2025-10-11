@@ -89,6 +89,14 @@ export const NotificationTemplates = {
     title: '⏱️ Match Expired',
     body: 'Your match expired. Create a new donation when ready.',
   },
+  MATCH_ACCEPTED: {
+    title: '✅ Match Accepted',
+    body: (amount: number, recipient: string) => `Your match for ₦${amount.toLocaleString()} was accepted by ${recipient}. Proceed to transfer.`,
+  },
+  MATCH_REJECTED: {
+    title: '❌ Match Rejected',
+    body: () => 'Your match request was rejected. We will find a new match soon.',
+  },
 
   // Coins & Leaderboard
   COINS_EARNED: {
@@ -99,7 +107,7 @@ export const NotificationTemplates = {
   COINS_PURCHASED: {
     title: '✅ Coins Received',
     body: (coins: number, agent: string) => 
-      `${coins} Charity Coins added to your account from agent ${agent}.`,
+      `${coins.toLocaleString()} Charity Coins added to your account from agent ${agent}.`,
   },
   LEADERBOARD_RANK_UP: {
     title: '📈 You Moved Up!',
@@ -127,6 +135,14 @@ export const NotificationTemplates = {
     title: '❌ Redemption Rejected',
     body: (item: string) => 
       `Your redemption for ${item} was rejected. Coins have been refunded.`,
+  },
+  PAYMENT_PENDING: {
+    title: '⏳ Payment Pending',
+    body: (amount: number) => `Payment confirmation pending for ₦${amount.toLocaleString()}.`,
+  },
+  PAYMENT_REJECTED: {
+    title: '❌ Payment Rejected',
+    body: () => `Your payment was rejected. Please try again or contact the agent.`,
   },
 
   // Agent related

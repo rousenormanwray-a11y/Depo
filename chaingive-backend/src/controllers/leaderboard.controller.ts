@@ -102,7 +102,7 @@ export const getMyPosition = async (req: AuthRequest, res: Response, next: NextF
           )
         : 0;
 
-      const score = await calculateLeaderboardScore(user, null, userId);
+      const score = await calculateLeaderboardScore(user as any, null as any, userId);
 
       const newLeaderboard = await prisma.leaderboard.create({
         data: {

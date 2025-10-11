@@ -377,7 +377,7 @@ export const getAdminActionLogs = async (req: AuthRequest, res: Response, next: 
     const { limit = 100, actionType } = req.query;
 
     const where: any = {};
-    if (actionType) where.actionType = actionType;
+    if (actionType) where.action = actionType;
 
     const actions = await prisma.adminAction.findMany({
       where,

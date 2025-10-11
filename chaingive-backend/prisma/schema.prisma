@@ -1,3 +1,6 @@
+// ChainGive Database Schema
+// Based on Technical Architecture Document v2.4
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,65 +10,64 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// User Management
 model User {
-  id                   String                    @id @default(uuid())
-  phoneNumber          String                    @unique @map("phone_number")
-  email                String?                   @unique
-  passwordHash         String                    @map("password_hash")
-  firstName            String                    @map("first_name")
-  lastName             String                    @map("last_name")
-  referralCode         String?             @unique @map("referral_code")
-  role                 String                    @default("beginner")
-  tier                 Int                       @default(1)
-  trustScore           Decimal                   @default(5.00) @map("trust_score") @db.Decimal(3, 2)
-  totalCyclesCompleted Int                       @default(0) @map("total_cycles_completed")
-  totalDonated         Decimal                   @default(0) @map("total_donated") @db.Decimal(12, 2)
-  totalReceived        Decimal                   @default(0) @map("total_received") @db.Decimal(12, 2)
-  charityCoinsBalance  Int                       @default(0) @map("charity_coins_balance")
-  kycStatus            String                    @default("pending") @map("kyc_status")
-  isActive             Boolean                   @default(true) @map("is_active")
-  isBanned             Boolean                   @default(false) @map("is_banned")
-  banReason            String?                   @map("ban_reason")
-  preferredLanguage    String                    @default("en") @map("preferred_language")
-  locationCity         String?                   @map("location_city")
-  locationState        String?                   @map("location_state")
-  locationCountry      String                    @default("NG") @map("location_country")
-  fcmToken             String?                   @map("fcm_token")
-  devicePlatform       String?                   @map("device_platform")
-  profilePictureUrl    String?                   @map("profile_picture_url")
-  createdAt            DateTime                  @default(now()) @map("created_at")
-  updatedAt            DateTime                  @updatedAt @map("updated_at")
-  lastLoginAt          DateTime?                 @map("last_login_at")
-  passwordResetToken   String?                   @unique @map("password_reset_token")
-  passwordResetExpires DateTime?                 @map("password_reset_expires")
-  adminActions         AdminAction[]             @relation("AdminActions")
-  adminActionTargets   AdminAction[]             @relation("AdminActionTarget")
-  agent                Agent?
-  coinSales            CoinSaleToUser[]
-  cycles               Cycle[]
-  dailyMissions        DailyMission[]            @relation("UserDailyMissions")
-  dailyProgress        DailyProgress[]           @relation("UserDailyProgress")
-  dailyStreak          DailyStreak?              @relation("UserStreak")
-  disputeEvidence      DisputeEvidence[]
-  disputeMessages      DisputeMessage[]
-  disputesMediated     Dispute[]                 @relation("DisputeMediator")
-  disputesReported     Dispute[]                 @relation("DisputeReporter")
-  disputesResponded    Dispute[]                 @relation("DisputeRespondent")
-  gamificationStats    GamificationStats?        @relation("UserGamificationStats")
-  kycRecords           KycRecord[]
-  verifiedBy           KycRecord[]               @relation("VerifiedBy")
-  leaderboardBoosts    LeaderboardBoost[]
-  leaderboard          Leaderboard?
-  donorMatches         Match[]                   @relation("MatchDonor")
-  recipientMatches     Match[]                   @relation("MatchRecipient")
-  redemptions          Redemption[]
-  referralsReceived    Referral[]                @relation("Referred")
-  referralsGiven       Referral[]                @relation("Referrer")
-  sentTransactions     Transaction[]             @relation("TransactionFrom")
-  receivedTransactions Transaction[]             @relation("TransactionTo")
-  achievements         UserAchievement[]         @relation("UserAchievements")
+  id                   String  @id @default(uuid())
+  phoneNumber          String  @unique @map("phone_number")
+  email                String? @unique
+  passwordHash         String  @map("password_hash")
+  firstName            String  @map("first_name")
+  lastName             String  @map("last_name")
+  role                 String  @default("beginner") // beginner, agent, power_partner, csc_council
+  tier                 Int     @default(1) // 1, 2, 3
+  trustScore           Decimal @default(5.00) @map("trust_score") @db.Decimal(3, 2)
+  totalCyclesCompleted Int     @default(0) @map("total_cycles_completed")
+  totalDonated         Decimal @default(0) @map("total_donated") @db.Decimal(12, 2)
+  totalReceived        Decimal @default(0) @map("total_received") @db.Decimal(12, 2)
+  charityCoinsBalance  Int     @default(0) @map("charity_coins_balance")
+  kycStatus            String  @default("pending") @map("kyc_status") // pending, approved, rejected
+  isActive             Boolean @default(true) @map("is_active")
+  isBanned             Boolean @default(false) @map("is_banned")
+  banReason            String? @map("ban_reason")
+  preferredLanguage    String  @default("en") @map("preferred_language") // en, pidgin, yo, ha, ig
+  locationCity         String? @map("location_city")
+  locationState        String? @map("location_state")
+  locationCountry      String  @default("NG") @map("location_country")
+
+  // Push Notifications
+  fcmToken       String? @map("fcm_token")
+  devicePlatform String? @map("device_platform") // 'ios' or 'android'
+
+  // Profile
+  profilePictureUrl String? @map("profile_picture_url")
+
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  lastLoginAt DateTime? @map("last_login_at")
+
+  // Relations
   wallet               Wallet?
-  weeklyChallenges     WeeklyChallengeProgress[] @relation("UserWeeklyChallenges")
+  kycRecords           KycRecord[]
+  agent                Agent?
+  sentTransactions     Transaction[]      @relation("TransactionFrom")
+  receivedTransactions Transaction[]      @relation("TransactionTo")
+  cycles               Cycle[]
+  donorMatches         Match[]            @relation("MatchDonor")
+  recipientMatches     Match[]            @relation("MatchRecipient")
+  redemptions          Redemption[]
+  verifiedBy           KycRecord[]        @relation("VerifiedBy")
+  coinSales            CoinSaleToUser[]
+  leaderboard          Leaderboard?
+  leaderboardBoosts    LeaderboardBoost[]
+  referralsGiven       Referral[]         @relation("Referrer")
+  referralsReceived    Referral[]         @relation("Referred")
+  disputesReported     Dispute[]          @relation("DisputeReporter")
+  disputesResponded    Dispute[]          @relation("DisputeRespondent")
+  disputesMediated     Dispute[]          @relation("DisputeMediator")
+  disputeMessages      DisputeMessage[]
+  disputeEvidence      DisputeEvidence[]
+  adminActions         AdminAction[]      @relation("AdminActions")
+  adminActionTargets   AdminAction[]      @relation("AdminActionTarget")
 
   @@index([phoneNumber])
   @@index([email])
@@ -74,6 +76,7 @@ model User {
   @@map("users")
 }
 
+// Wallet Management
 model Wallet {
   id                 String   @id @default(uuid())
   userId             String   @unique @map("user_id")
@@ -84,36 +87,41 @@ model Wallet {
   totalOutflows      Decimal  @default(0.00) @map("total_outflows") @db.Decimal(12, 2)
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")
-  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("wallets")
 }
 
+// Transaction Management
 model Transaction {
-  id                 String         @id @default(uuid())
-  transactionRef     String         @unique @map("transaction_ref")
-  type               String
-  fromUserId         String?        @map("from_user_id")
-  toUserId           String?        @map("to_user_id")
-  amount             Decimal        @db.Decimal(12, 2)
-  fee                Decimal        @default(0.00) @db.Decimal(12, 2)
-  netAmount          Decimal        @map("net_amount") @db.Decimal(12, 2)
-  status             String         @default("pending")
-  paymentMethod      String?        @map("payment_method")
-  paymentProviderRef String?        @map("payment_provider_ref")
-  cycleId            String?        @map("cycle_id")
+  id                 String    @id @default(uuid())
+  transactionRef     String    @unique @map("transaction_ref")
+  type               String // deposit, withdrawal, donation_sent, donation_received, marketplace_redemption
+  fromUserId         String?   @map("from_user_id")
+  toUserId           String?   @map("to_user_id")
+  amount             Decimal   @db.Decimal(12, 2)
+  fee                Decimal   @default(0.00) @db.Decimal(12, 2)
+  netAmount          Decimal   @map("net_amount") @db.Decimal(12, 2)
+  status             String    @default("pending") // pending, in_transit, completed, failed, refunded
+  paymentMethod      String?   @map("payment_method") // bank_transfer, opay, palmpay, flutterwave, paystack
+  paymentProviderRef String?   @map("payment_provider_ref")
+  cycleId            String?   @map("cycle_id")
   metadata           Json?
-  blockchainTxHash   String?        @map("blockchain_tx_hash")
-  createdAt          DateTime       @default(now()) @map("created_at")
-  updatedAt          DateTime       @updatedAt @map("updated_at")
-  completedAt        DateTime?      @map("completed_at")
-  blockchainLog      BlockchainLog?
-  Dispute            Dispute[]
-  escrows            Escrow[]
-  cycle              Cycle?         @relation(fields: [cycleId], references: [id])
-  fromUser           User?          @relation("TransactionFrom", fields: [fromUserId], references: [id])
-  toUser             User?          @relation("TransactionTo", fields: [toUserId], references: [id])
+  blockchainTxHash   String?   @map("blockchain_tx_hash")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+  completedAt        DateTime? @map("completed_at")
+
+  // Relations
+  fromUser      User?          @relation("TransactionFrom", fields: [fromUserId], references: [id])
+  toUser        User?          @relation("TransactionTo", fields: [toUserId], references: [id])
+  cycle         Cycle?         @relation(fields: [cycleId], references: [id])
+  escrows       Escrow[]
+  blockchainLog BlockchainLog?
+  Dispute       Dispute[]
 
   @@index([transactionRef])
   @@index([fromUserId])
@@ -123,17 +131,20 @@ model Transaction {
   @@map("transactions")
 }
 
+// Escrow Management
 model Escrow {
-  id            String      @id @default(uuid())
-  transactionId String      @map("transaction_id")
-  amount        Decimal     @db.Decimal(12, 2)
-  status        String      @default("holding")
-  holdUntil     DateTime    @map("hold_until")
-  releasedAt    DateTime?   @map("released_at")
-  refundedAt    DateTime?   @map("refunded_at")
-  refundReason  String?     @map("refund_reason")
-  createdAt     DateTime    @default(now()) @map("created_at")
-  transaction   Transaction @relation(fields: [transactionId], references: [id])
+  id            String    @id @default(uuid())
+  transactionId String    @map("transaction_id")
+  amount        Decimal   @db.Decimal(12, 2)
+  status        String    @default("holding") // holding, released, refunded
+  holdUntil     DateTime  @map("hold_until")
+  releasedAt    DateTime? @map("released_at")
+  refundedAt    DateTime? @map("refunded_at")
+  refundReason  String?   @map("refund_reason")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  transaction Transaction @relation(fields: [transactionId], references: [id])
 
   @@index([transactionId])
   @@index([status])
@@ -141,27 +152,33 @@ model Escrow {
   @@map("escrows")
 }
 
+// Donation Cycles
 model Cycle {
-  id                    String        @id @default(uuid())
-  userId                String        @map("user_id")
-  amount                Decimal       @db.Decimal(12, 2)
-  status                String        @default("pending")
-  receivedFromUserId    String?       @map("received_from_user_id")
-  givenToUserId         String?       @map("given_to_user_id")
-  receivedTransactionId String?       @map("received_transaction_id")
-  givenTransactionId    String?       @map("given_transaction_id")
-  dueDate               DateTime?     @map("due_date")
-  receivedAt            DateTime?     @map("received_at")
-  fulfilledAt           DateTime?     @map("fulfilled_at")
-  daysToFulfill         Int?          @map("days_to_fulfill")
-  charityCoinsEarned    Int           @default(0) @map("charity_coins_earned")
-  cycleNumber           Int           @default(1) @map("cycle_number")
-  isSecondDonation      Boolean       @default(false) @map("is_second_donation")
-  qualifiesForReceipt   Boolean       @default(true) @map("qualifies_for_receipt")
-  createdAt             DateTime      @default(now()) @map("created_at")
-  updatedAt             DateTime      @updatedAt @map("updated_at")
-  user                  User          @relation(fields: [userId], references: [id])
-  transactions          Transaction[]
+  id                    String    @id @default(uuid())
+  userId                String    @map("user_id")
+  amount                Decimal   @db.Decimal(12, 2)
+  status                String    @default("pending") // pending, in_transit, received, obligated, fulfilled, defaulted
+  receivedFromUserId    String?   @map("received_from_user_id")
+  givenToUserId         String?   @map("given_to_user_id")
+  receivedTransactionId String?   @map("received_transaction_id")
+  givenTransactionId    String?   @map("given_transaction_id")
+  dueDate               DateTime? @map("due_date")
+  receivedAt            DateTime? @map("received_at")
+  fulfilledAt           DateTime? @map("fulfilled_at")
+  daysToFulfill         Int?      @map("days_to_fulfill")
+  charityCoinsEarned    Int       @default(0) @map("charity_coins_earned")
+
+  // Force Recycle Fields
+  cycleNumber         Int     @default(1) @map("cycle_number")
+  isSecondDonation    Boolean @default(false) @map("is_second_donation")
+  qualifiesForReceipt Boolean @default(true) @map("qualifies_for_receipt")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user         User          @relation(fields: [userId], references: [id])
+  transactions Transaction[]
 
   @@index([userId])
   @@index([status])
@@ -171,12 +188,13 @@ model Cycle {
   @@map("cycles")
 }
 
+// Matching System
 model Match {
   id              String    @id @default(uuid())
   donorId         String    @map("donor_id")
   recipientId     String    @map("recipient_id")
   amount          Decimal   @db.Decimal(12, 2)
-  status          String    @default("pending")
+  status          String    @default("pending") // pending, accepted, rejected, expired, completed
   priorityScore   Decimal?  @map("priority_score") @db.Decimal(5, 2)
   matchedAt       DateTime  @default(now()) @map("matched_at")
   expiresAt       DateTime? @map("expires_at")
@@ -184,8 +202,10 @@ model Match {
   completedAt     DateTime? @map("completed_at")
   rejectionReason String?   @map("rejection_reason")
   createdAt       DateTime  @default(now()) @map("created_at")
-  donor           User      @relation("MatchDonor", fields: [donorId], references: [id])
-  recipient       User      @relation("MatchRecipient", fields: [recipientId], references: [id])
+
+  // Relations
+  donor     User @relation("MatchDonor", fields: [donorId], references: [id])
+  recipient User @relation("MatchRecipient", fields: [recipientId], references: [id])
 
   @@index([donorId])
   @@index([recipientId])
@@ -193,18 +213,21 @@ model Match {
   @@map("matches")
 }
 
+// KYC Management
 model KycRecord {
   id               String    @id @default(uuid())
   userId           String    @map("user_id")
-  verificationType String    @map("verification_type")
+  verificationType String    @map("verification_type") // phone, email, bvn, nin, agent, selfie
   verificationData Json?     @map("verification_data")
-  status           String    @default("pending")
+  status           String    @default("pending") // pending, approved, rejected
   verifiedByUserId String?   @map("verified_by_user_id")
   verifiedAt       DateTime? @map("verified_at")
   rejectionReason  String?   @map("rejection_reason")
   createdAt        DateTime  @default(now()) @map("created_at")
-  user             User      @relation(fields: [userId], references: [id])
-  verifiedBy       User?     @relation("VerifiedBy", fields: [verifiedByUserId], references: [id])
+
+  // Relations
+  user       User  @relation(fields: [userId], references: [id])
+  verifiedBy User? @relation("VerifiedBy", fields: [verifiedByUserId], references: [id])
 
   @@unique([userId, verificationType])
   @@index([userId])
@@ -212,26 +235,33 @@ model KycRecord {
   @@map("kyc_records")
 }
 
+// Agent Management
 model Agent {
-  id                 String                  @id @default(uuid())
-  userId             String                  @unique @map("user_id")
-  agentCode          String                  @unique @map("agent_code")
-  coinBalance        Int                     @default(0) @map("coin_balance")
-  totalCoinsStocked  Int                     @default(0) @map("total_coins_stocked")
-  totalCoinsSold     Int                     @default(0) @map("total_coins_sold")
-  lifetimeRevenue    Decimal                 @default(0.00) @map("lifetime_revenue") @db.Decimal(12, 2)
-  totalVerifications Int                     @default(0) @map("total_verifications")
-  totalCommissions   Decimal                 @default(0.00) @map("total_commissions") @db.Decimal(12, 2)
-  rating             Decimal                 @default(5.00) @db.Decimal(3, 2)
-  totalRatings       Int                     @default(0) @map("total_ratings")
-  isActive           Boolean                 @default(true) @map("is_active")
-  suspendedUntil     DateTime?               @map("suspended_until")
-  suspensionReason   String?                 @map("suspension_reason")
-  createdAt          DateTime                @default(now()) @map("created_at")
-  updatedAt          DateTime                @updatedAt @map("updated_at")
-  user               User                    @relation(fields: [userId], references: [id])
-  coinPurchases      CoinPurchaseFromAdmin[]
-  coinSales          CoinSaleToUser[]
+  id        String @id @default(uuid())
+  userId    String @unique @map("user_id")
+  agentCode String @unique @map("agent_code")
+
+  // Coin Inventory
+  coinBalance       Int     @default(0) @map("coin_balance")
+  totalCoinsStocked Int     @default(0) @map("total_coins_stocked")
+  totalCoinsSold    Int     @default(0) @map("total_coins_sold")
+  lifetimeRevenue   Decimal @default(0.00) @map("lifetime_revenue") @db.Decimal(12, 2)
+
+  // Legacy fields
+  totalVerifications Int       @default(0) @map("total_verifications")
+  totalCommissions   Decimal   @default(0.00) @map("total_commissions") @db.Decimal(12, 2)
+  rating             Decimal   @default(5.00) @db.Decimal(3, 2)
+  totalRatings       Int       @default(0) @map("total_ratings")
+  isActive           Boolean   @default(true) @map("is_active")
+  suspendedUntil     DateTime? @map("suspended_until")
+  suspensionReason   String?   @map("suspension_reason")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  user          User                    @relation(fields: [userId], references: [id])
+  coinPurchases CoinPurchaseFromAdmin[]
+  coinSales     CoinSaleToUser[]
 
   @@index([userId])
   @@index([agentCode])
@@ -239,25 +269,28 @@ model Agent {
   @@map("agents")
 }
 
+// Marketplace
 model MarketplaceListing {
-  id               String       @id @default(uuid())
-  vendorName       String       @map("vendor_name")
-  itemName         String       @map("item_name")
+  id               String   @id @default(uuid())
+  vendorName       String   @map("vendor_name")
+  itemName         String   @map("item_name")
   description      String?
-  category         String?
-  coinPrice        Int          @map("coin_price")
-  realValue        Decimal      @map("real_value") @db.Decimal(12, 2)
-  stockQuantity    Int          @default(0) @map("stock_quantity")
-  isInStock        Boolean      @default(true) @map("is_in_stock")
-  paymentMethods   String[]     @map("payment_methods")
-  rating           Decimal      @default(0.00) @db.Decimal(3, 2)
-  totalRatings     Int          @default(0) @map("total_ratings")
-  totalRedemptions Int          @default(0) @map("total_redemptions")
-  imageUrl         String?      @map("image_url")
-  isActive         Boolean      @default(true) @map("is_active")
-  createdAt        DateTime     @default(now()) @map("created_at")
-  updatedAt        DateTime     @updatedAt @map("updated_at")
-  redemptions      Redemption[]
+  category         String? // airtime, data, vouchers, services
+  coinPrice        Int      @map("coin_price")
+  realValue        Decimal  @map("real_value") @db.Decimal(12, 2)
+  stockQuantity    Int      @default(0) @map("stock_quantity")
+  isInStock        Boolean  @default(true) @map("is_in_stock")
+  paymentMethods   String[] @map("payment_methods")
+  rating           Decimal  @default(0.00) @db.Decimal(3, 2)
+  totalRatings     Int      @default(0) @map("total_ratings")
+  totalRedemptions Int      @default(0) @map("total_redemptions")
+  imageUrl         String?  @map("image_url")
+  isActive         Boolean  @default(true) @map("is_active")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  redemptions Redemption[]
 
   @@index([category])
   @@index([isActive])
@@ -265,18 +298,20 @@ model MarketplaceListing {
 }
 
 model Redemption {
-  id             String             @id @default(uuid())
-  userId         String             @map("user_id")
-  listingId      String             @map("listing_id")
-  coinsSpent     Int                @map("coins_spent")
-  realValue      Decimal            @map("real_value") @db.Decimal(12, 2)
-  status         String             @default("pending")
-  deliveryMethod String?            @map("delivery_method")
-  deliveryData   Json?              @map("delivery_data")
-  completedAt    DateTime?          @map("completed_at")
-  createdAt      DateTime           @default(now()) @map("created_at")
-  listing        MarketplaceListing @relation(fields: [listingId], references: [id])
-  user           User               @relation(fields: [userId], references: [id])
+  id             String    @id @default(uuid())
+  userId         String    @map("user_id")
+  listingId      String    @map("listing_id")
+  coinsSpent     Int       @map("coins_spent")
+  realValue      Decimal   @map("real_value") @db.Decimal(12, 2)
+  status         String    @default("pending") // pending, processing, completed, failed
+  deliveryMethod String?   @map("delivery_method") // instant, manual, voucher_code
+  deliveryData   Json?     @map("delivery_data")
+  completedAt    DateTime? @map("completed_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  user    User               @relation(fields: [userId], references: [id])
+  listing MarketplaceListing @relation(fields: [listingId], references: [id])
 
   @@index([userId])
   @@index([listingId])
@@ -284,30 +319,34 @@ model Redemption {
   @@map("redemptions")
 }
 
+// Blockchain Logging
 model BlockchainLog {
-  id            String      @id @default(uuid())
-  transactionId String      @unique @map("transaction_id")
-  blockchain    String      @default("polygon")
-  txHash        String      @unique @map("tx_hash")
-  blockNumber   BigInt?     @map("block_number")
-  gasUsed       BigInt?     @map("gas_used")
-  gasPrice      BigInt?     @map("gas_price")
-  status        String      @default("pending")
-  confirmations Int         @default(0)
+  id            String    @id @default(uuid())
+  transactionId String    @unique @map("transaction_id")
+  blockchain    String    @default("polygon")
+  txHash        String    @unique @map("tx_hash")
+  blockNumber   BigInt?   @map("block_number")
+  gasUsed       BigInt?   @map("gas_used")
+  gasPrice      BigInt?   @map("gas_price")
+  status        String    @default("pending") // pending, confirmed, failed
+  confirmations Int       @default(0)
   metadata      Json?
-  createdAt     DateTime    @default(now()) @map("created_at")
-  confirmedAt   DateTime?   @map("confirmed_at")
-  transaction   Transaction @relation(fields: [transactionId], references: [id])
+  createdAt     DateTime  @default(now()) @map("created_at")
+  confirmedAt   DateTime? @map("confirmed_at")
+
+  // Relations
+  transaction Transaction @relation(fields: [transactionId], references: [id])
 
   @@index([transactionId])
   @@index([txHash])
   @@map("blockchain_logs")
 }
 
+// Crypto Wallet Addresses (Admin-managed)
 model CryptoWallet {
   id        String   @id @default(uuid())
-  currency  String
-  network   String
+  currency  String // BTC, USDT, ETH
+  network   String // TRC20, ERC20, Bitcoin
   address   String   @unique
   qrCodeUrl String?  @map("qr_code_url")
   isActive  Boolean  @default(true) @map("is_active")
@@ -320,6 +359,7 @@ model CryptoWallet {
   @@map("crypto_wallets")
 }
 
+// Agent Coin Purchases from Admin (Crypto Payments)
 model CoinPurchaseFromAdmin {
   id              String    @id @default(uuid())
   agentId         String    @map("agent_id")
@@ -331,14 +371,16 @@ model CoinPurchaseFromAdmin {
   paymentAddress  String    @map("payment_address")
   txHash          String?   @map("tx_hash")
   txProofUrl      String?   @map("tx_proof_url")
-  status          String    @default("pending")
+  status          String    @default("pending") // pending, verifying, confirmed, rejected
   adminApprovedBy String?   @map("admin_approved_by")
   approvedAt      DateTime? @map("approved_at")
   rejectionReason String?   @map("rejection_reason")
   notes           String?
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
-  agent           Agent     @relation(fields: [agentId], references: [id])
+
+  // Relations
+  agent Agent @relation(fields: [agentId], references: [id])
 
   @@index([agentId])
   @@index([status])
@@ -346,27 +388,37 @@ model CoinPurchaseFromAdmin {
   @@map("coin_purchases_from_admin")
 }
 
+// Agent Coin Sales to Users - P2P Escrow System
 model CoinSaleToUser {
-  id              String    @id @default(uuid())
-  agentId         String    @map("agent_id")
-  userId          String    @map("user_id")
-  quantity        Int
-  pricePerCoin    Decimal   @map("price_per_coin") @db.Decimal(10, 2)
-  totalPrice      Decimal   @map("total_price") @db.Decimal(12, 2)
-  status          String    @default("pending") @map("status")
-  coinsLocked     Boolean   @default(false) @map("coins_locked")
-  lockedAt        DateTime? @map("locked_at")
-  expiresAt       DateTime? @map("expires_at")
-  paymentMethod   String?   @map("payment_method")
-  paymentProof    String?   @map("payment_proof")
-  paidAt          DateTime? @map("paid_at")
-  confirmedAt     DateTime? @map("confirmed_at")
-  agentCommission Decimal?  @map("agent_commission") @db.Decimal(12, 2)
-  platformRevenue Decimal?  @map("platform_revenue") @db.Decimal(12, 2)
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
-  agent           Agent     @relation(fields: [agentId], references: [id])
-  user            User      @relation(fields: [userId], references: [id])
+  id           String  @id @default(uuid())
+  agentId      String  @map("agent_id")
+  userId       String  @map("user_id")
+  quantity     Int
+  pricePerCoin Decimal @map("price_per_coin") @db.Decimal(10, 2)
+  totalPrice   Decimal @map("total_price") @db.Decimal(12, 2)
+  status       String  @default("pending") @map("status") // pending, escrowed, completed, cancelled, expired
+
+  // Escrow Fields
+  coinsLocked Boolean   @default(false) @map("coins_locked")
+  lockedAt    DateTime? @map("locked_at")
+  expiresAt   DateTime? @map("expires_at") // 30 minutes to pay
+
+  // Payment Confirmation
+  paymentMethod String?   @map("payment_method") // bank_transfer, mobile_money, cash
+  paymentProof  String?   @map("payment_proof")
+  paidAt        DateTime? @map("paid_at")
+  confirmedAt   DateTime? @map("confirmed_at")
+
+  // Revenue tracking (optional, kept for compatibility)
+  agentCommission Decimal? @map("agent_commission") @db.Decimal(12, 2)
+  platformRevenue Decimal? @map("platform_revenue") @db.Decimal(12, 2)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  agent Agent @relation(fields: [agentId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
 
   @@index([agentId])
   @@index([userId])
@@ -377,40 +429,51 @@ model CoinSaleToUser {
   @@map("coin_sales_to_users")
 }
 
+// Leaderboard System
 model Leaderboard {
-  id                String             @id @default(uuid())
-  userId            String             @unique @map("user_id")
-  totalDonations    Decimal            @default(0) @map("total_donations") @db.Decimal(12, 2)
-  cyclesCompleted   Int                @default(0) @map("cycles_completed")
-  coinsEarned       Int                @default(0) @map("coins_earned")
-  avgCompletionDays Int                @default(0) @map("avg_completion_days")
-  visibilityBoost   Int                @default(0) @map("visibility_boost")
-  multiplierBoost   Decimal            @default(1.0) @map("multiplier_boost") @db.Decimal(3, 2)
-  positionBoost     Int                @default(0) @map("position_boost")
-  totalScore        Decimal            @default(0) @map("total_score") @db.Decimal(12, 2)
-  rank              Int?
-  updatedAt         DateTime           @updatedAt @map("updated_at")
-  boosts            LeaderboardBoost[]
-  user              User               @relation(fields: [userId], references: [id])
+  id                String  @id @default(uuid())
+  userId            String  @unique @map("user_id")
+  totalDonations    Decimal @default(0) @map("total_donations") @db.Decimal(12, 2)
+  cyclesCompleted   Int     @default(0) @map("cycles_completed")
+  coinsEarned       Int     @default(0) @map("coins_earned")
+  avgCompletionDays Int     @default(0) @map("avg_completion_days")
+
+  // Boost modifiers
+  visibilityBoost Int     @default(0) @map("visibility_boost")
+  multiplierBoost Decimal @default(1.0) @map("multiplier_boost") @db.Decimal(3, 2)
+  positionBoost   Int     @default(0) @map("position_boost")
+
+  // Calculated score
+  totalScore Decimal @default(0) @map("total_score") @db.Decimal(12, 2)
+  rank       Int?
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user   User               @relation(fields: [userId], references: [id])
+  boosts LeaderboardBoost[]
 
   @@index([totalScore])
   @@index([rank])
   @@map("leaderboards")
 }
 
+// Leaderboard Boosts
 model LeaderboardBoost {
-  id            String      @id @default(uuid())
-  userId        String      @map("user_id")
-  leaderboardId String      @map("leaderboard_id")
-  boostType     String      @map("boost_type")
-  coinsSpent    Int         @map("coins_spent")
-  boostValue    Decimal     @map("boost_value") @db.Decimal(10, 2)
-  duration      Int?
-  expiresAt     DateTime?   @map("expires_at")
-  isActive      Boolean     @default(true) @map("is_active")
-  createdAt     DateTime    @default(now()) @map("created_at")
-  leaderboard   Leaderboard @relation(fields: [leaderboardId], references: [id])
-  user          User        @relation(fields: [userId], references: [id])
+  id            String    @id @default(uuid())
+  userId        String    @map("user_id")
+  leaderboardId String    @map("leaderboard_id")
+  boostType     String    @map("boost_type") // visibility, multiplier, position
+  coinsSpent    Int       @map("coins_spent")
+  boostValue    Decimal   @map("boost_value") @db.Decimal(10, 2)
+  duration      Int? // Duration in days (null = permanent)
+  expiresAt     DateTime? @map("expires_at")
+  isActive      Boolean   @default(true) @map("is_active")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  user        User        @relation(fields: [userId], references: [id])
+  leaderboard Leaderboard @relation(fields: [leaderboardId], references: [id])
 
   @@index([userId])
   @@index([leaderboardId])
@@ -419,19 +482,22 @@ model LeaderboardBoost {
   @@map("leaderboard_boosts")
 }
 
+// Referral System
 model Referral {
   id             String    @id @default(uuid())
   referrerId     String    @map("referrer_id")
   referredUserId String    @map("referred_user_id")
   referralCode   String    @map("referral_code")
-  status         String    @default("registered") @map("status")
+  status         String    @default("registered") @map("status") // registered, first_cycle, completed
   coinsEarned    Int       @default(0) @map("coins_earned")
   registeredAt   DateTime  @default(now()) @map("registered_at")
   firstCycleAt   DateTime? @map("first_cycle_at")
   completedAt    DateTime? @map("completed_at")
   createdAt      DateTime  @default(now()) @map("created_at")
-  referredUser   User      @relation("Referred", fields: [referredUserId], references: [id])
-  referrer       User      @relation("Referrer", fields: [referrerId], references: [id])
+
+  // Relations
+  referrer     User @relation("Referrer", fields: [referrerId], references: [id])
+  referredUser User @relation("Referred", fields: [referredUserId], references: [id])
 
   @@index([referrerId])
   @@index([referredUserId])
@@ -439,26 +505,29 @@ model Referral {
   @@map("referrals")
 }
 
+// Dispute Resolution
 model Dispute {
-  id             String            @id @default(uuid())
-  reporterId     String            @map("reporter_id")
-  responderId    String            @map("responder_id")
-  transactionId  String            @map("transaction_id")
-  category       String            @map("category")
-  description    String            @map("description")
-  status         String            @default("pending") @map("status")
-  resolution     String?           @map("resolution")
-  resolutionType String?           @map("resolution_type")
-  mediatorId     String?           @map("mediator_id")
-  resolvedAt     DateTime?         @map("resolved_at")
-  createdAt      DateTime          @default(now()) @map("created_at")
-  updatedAt      DateTime          @updatedAt @map("updated_at")
-  evidence       DisputeEvidence[]
-  messages       DisputeMessage[]
-  mediator       User?             @relation("DisputeMediator", fields: [mediatorId], references: [id])
-  reporter       User              @relation("DisputeReporter", fields: [reporterId], references: [id])
-  responder      User              @relation("DisputeRespondent", fields: [responderId], references: [id])
-  transaction    Transaction       @relation(fields: [transactionId], references: [id])
+  id             String    @id @default(uuid())
+  reporterId     String    @map("reporter_id")
+  responderId    String    @map("responder_id")
+  transactionId  String    @map("transaction_id")
+  category       String    @map("category") // non_receipt, wrong_amount, fraud, other
+  description    String    @map("description")
+  status         String    @default("pending") @map("status") // pending, investigating, resolved
+  resolution     String?   @map("resolution")
+  resolutionType String?   @map("resolution_type") // refund, no_action, partial_refund
+  mediatorId     String?   @map("mediator_id")
+  resolvedAt     DateTime? @map("resolved_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  reporter    User              @relation("DisputeReporter", fields: [reporterId], references: [id])
+  responder   User              @relation("DisputeRespondent", fields: [responderId], references: [id])
+  mediator    User?             @relation("DisputeMediator", fields: [mediatorId], references: [id])
+  transaction Transaction       @relation(fields: [transactionId], references: [id])
+  messages    DisputeMessage[]
+  evidence    DisputeEvidence[]
 
   @@index([reporterId])
   @@index([responderId])
@@ -473,8 +542,10 @@ model DisputeMessage {
   senderId  String   @map("sender_id")
   message   String   @map("message")
   createdAt DateTime @default(now()) @map("created_at")
-  dispute   Dispute  @relation(fields: [disputeId], references: [id])
-  sender    User     @relation(fields: [senderId], references: [id])
+
+  // Relations
+  dispute Dispute @relation(fields: [disputeId], references: [id])
+  sender  User    @relation(fields: [senderId], references: [id])
 
   @@index([disputeId])
   @@map("dispute_messages")
@@ -485,25 +556,30 @@ model DisputeEvidence {
   disputeId   String   @map("dispute_id")
   uploaderId  String   @map("uploader_id")
   fileUrl     String   @map("file_url")
-  fileType    String   @map("file_type")
+  fileType    String   @map("file_type") // image, pdf, screenshot
   description String?  @map("description")
   createdAt   DateTime @default(now()) @map("created_at")
-  dispute     Dispute  @relation(fields: [disputeId], references: [id])
-  uploader    User     @relation(fields: [uploaderId], references: [id])
+
+  // Relations
+  dispute  Dispute @relation(fields: [disputeId], references: [id])
+  uploader User    @relation(fields: [uploaderId], references: [id])
 
   @@index([disputeId])
   @@map("dispute_evidence")
 }
 
+// Admin Actions Logging
 model AdminAction {
   id        String   @id @default(uuid())
   adminId   String   @map("admin_id")
-  action    String   @map("action")
-  targetId  String?  @map("target_id")
-  details   String?  @map("details")
+  action    String   @map("action") // promote_agent, send_coins, ban_user, etc.
+  targetId  String?  @map("target_id") // user/agent affected
+  details   String?  @map("details") // JSON string with details
   createdAt DateTime @default(now()) @map("created_at")
-  admin     User     @relation("AdminActions", fields: [adminId], references: [id])
-  target    User?    @relation("AdminActionTarget", fields: [targetId], references: [id])
+
+  // Relations
+  admin  User  @relation("AdminActions", fields: [adminId], references: [id])
+  target User? @relation("AdminActionTarget", fields: [targetId], references: [id])
 
   @@index([adminId])
   @@index([action])
@@ -511,292 +587,16 @@ model AdminAction {
   @@map("admin_actions")
 }
 
-model DailyMission {
-  id               String    @id @default(uuid())
-  userId           String
-  date             DateTime  @default(now())
-  mission1Type     String
-  mission1Done     Boolean   @default(false)
-  mission1Reward   Int       @default(50)
-  mission2Type     String
-  mission2Done     Boolean   @default(false)
-  mission2Reward   Int       @default(30)
-  mission3Type     String
-  mission3Done     Boolean   @default(false)
-  mission3Reward   Int       @default(20)
-  allCompleted     Boolean   @default(false)
-  bonusReward      Int       @default(50)
-  totalCoinsEarned Int       @default(0)
-  createdAt        DateTime  @default(now())
-  completedAt      DateTime?
-  user             User      @relation("UserDailyMissions", fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, date])
-  @@index([userId])
-  @@index([date])
-  @@map("daily_missions")
-}
-
-model DailyStreak {
-  id               String    @id @default(uuid())
-  userId           String    @unique
-  currentStreak    Int       @default(0)
-  longestStreak    Int       @default(0)
-  lastLoginDate    DateTime?
-  totalCoinsEarned Int       @default(0)
-  streakLevel      String    @default("bronze")
-  streakMilestones Json      @default("[]")
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-  user             User      @relation("UserStreak", fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("daily_streaks")
-}
-
-model DailyProgress {
-  id             String   @id @default(uuid())
-  userId         String
-  date           DateTime @default(now())
-  giveGoal       Int      @default(1)
-  giveProgress   Int      @default(0)
-  giveClosed     Boolean  @default(false)
-  earnGoal       Int      @default(50)
-  earnProgress   Int      @default(0)
-  earnClosed     Boolean  @default(false)
-  engageGoal     Int      @default(3)
-  engageProgress Int      @default(0)
-  engageClosed   Boolean  @default(false)
-  allRingsClosed Boolean  @default(false)
-  bonusAwarded   Boolean  @default(false)
-  bonusAmount    Int      @default(100)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  user           User     @relation("UserDailyProgress", fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, date])
-  @@index([userId])
-  @@index([date])
-  @@map("daily_progress")
-}
-
-model WeeklyChallenge {
-  id          String                    @id @default(uuid())
-  name        String
-  description String
-  type        String
-  targetValue Int
-  rewardCoins Int                       @default(500)
-  rewardType  String?
-  rewardValue String?
-  startDate   DateTime
-  endDate     DateTime
-  weekNumber  Int
-  isActive    Boolean                   @default(true)
-  createdAt   DateTime                  @default(now())
-  progress    WeeklyChallengeProgress[]
-
-  @@index([isActive])
-  @@index([startDate, endDate])
-  @@map("weekly_challenges")
-}
-
-model WeeklyChallengeProgress {
-  id            String          @id @default(uuid())
-  userId        String
-  challengeId   String
-  currentValue  Int             @default(0)
-  targetValue   Int
-  percentage    Int             @default(0)
-  completed     Boolean         @default(false)
-  completedAt   DateTime?
-  rewardClaimed Boolean         @default(false)
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  challenge     WeeklyChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
-  user          User            @relation("UserWeeklyChallenges", fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, challengeId])
-  @@index([userId])
-  @@index([challengeId])
-  @@map("weekly_challenge_progress")
-}
-
-model Achievement {
-  id               String            @id @default(uuid())
-  code             String            @unique
-  name             String
-  description      String
-  category         String
-  requirementType  String
-  requirementValue Int
-  rewardCoins      Int               @default(0)
-  rewardBadge      String?
-  tier             String
-  icon             String
-  color            String            @default("#FFD700")
-  isSecret         Boolean           @default(false)
-  isActive         Boolean           @default(true)
-  createdAt        DateTime          @default(now())
-  unlocked         UserAchievement[]
-
-  @@index([category])
-  @@index([tier])
-  @@map("achievements")
-}
-
-model UserAchievement {
-  id            String      @id @default(uuid())
-  userId        String
-  achievementId String
-  unlockedAt    DateTime    @default(now())
-  progress      Int         @default(0)
-  maxProgress   Int
-  isNew         Boolean     @default(true)
-  viewedAt      DateTime?
-  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
-  user          User        @relation("UserAchievements", fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, achievementId])
-  @@index([userId])
-  @@index([unlockedAt])
-  @@map("user_achievements")
-}
-
-model GamificationStats {
-  id                      String   @id @default(uuid())
-  userId                  String   @unique
-  totalCoinsEarned        Int      @default(0)
-  totalMissionsCompleted  Int      @default(0)
-  totalPerfectDays        Int      @default(0)
-  totalAchievements       Int      @default(0)
-  weeklyMissionsCompleted Int      @default(0)
-  weeklyPerfectDays       Int      @default(0)
-  level                   Int      @default(1)
-  experience              Int      @default(0)
-  nextLevelXP             Int      @default(100)
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
-  user                    User     @relation("UserGamificationStats", fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("gamification_stats")
-}
-
-model CryptoPaymentConfig {
-  id              String   @id @default(uuid())
-  btcpayServerUrl String   @map("btcpay_server_url")
-  btcpayApiKey    String   @map("btcpay_api_key")
-  btcpayStoreId   String   @map("btcpay_store_id")
-  isEnabled       Boolean  @default(false) @map("is_enabled")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
-
-  @@map("crypto_payment_configs")
-}
-
-model CryptoCoin {
-  id                    String          @id @default(uuid())
-  symbol                String
-  name                  String
-  network               String
-  walletAddress         String          @map("wallet_address")
-  minAmount             Decimal         @default(10) @map("min_amount") @db.Decimal(12, 2)
-  maxAmount             Decimal         @default(1000000) @map("max_amount") @db.Decimal(12, 2)
-  confirmationsRequired Int             @default(3) @map("confirmations_required")
-  icon                  String          @default("currency-btc")
-  color                 String          @default("#F7931A")
-  isEnabled             Boolean         @default(true) @map("is_enabled")
-  createdAt             DateTime        @default(now()) @map("created_at")
-  updatedAt             DateTime        @updatedAt @map("updated_at")
-  payments              CryptoPayment[]
-
-  @@unique([symbol, network])
-  @@index([isEnabled])
-  @@map("crypto_coins")
-}
-
-model CryptoPayment {
-  id              String             @id @default(uuid())
-  agentId         String             @map("agent_id")
-  agentName       String             @map("agent_name")
-  cryptoCoinId    String             @map("crypto_coin_id")
-  coinSymbol      String             @map("coin_symbol")
-  coinAmount      Int                @map("coin_amount")
-  ngnAmount       Decimal            @map("ngn_amount") @db.Decimal(12, 2)
-  cryptoAmount    String             @map("crypto_amount")
-  walletAddress   String             @map("wallet_address")
-  transactionHash String?            @map("transaction_hash")
-  btcpayInvoiceId String?            @map("btcpay_invoice_id")
-  confirmations   Int                @default(0)
-  status          String             @default("pending") @map("status")
-  adminNotes      String?            @map("admin_notes")
-  rejectionReason String?            @map("rejection_reason")
-  confirmedBy     String?            @map("confirmed_by")
-  confirmedAt     DateTime?          @map("confirmed_at")
-  rejectedBy      String?            @map("rejected_by")
-  rejectedAt      DateTime?          @map("rejected_at")
-  expiresAt       DateTime           @map("expires_at")
-  createdAt       DateTime           @default(now()) @map("created_at")
-  updatedAt       DateTime           @updatedAt @map("updated_at")
-  logs            CryptoPaymentLog[]
-  cryptoCoin      CryptoCoin         @relation(fields: [cryptoCoinId], references: [id])
-
-  @@index([agentId])
-  @@index([status])
-  @@index([createdAt])
-  @@index([expiresAt])
-  @@map("crypto_payments")
-}
-
-model CryptoPaymentLog {
-  id          String        @id @default(uuid())
-  paymentId   String        @map("payment_id")
-  action      String
-  performedBy String?       @map("performed_by")
-  details     String?
-  ipAddress   String?       @map("ip_address")
-  createdAt   DateTime      @default(now()) @map("created_at")
-  payment     CryptoPayment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
-
-  @@index([paymentId])
-  @@index([createdAt])
-  @@map("crypto_payment_logs")
-}
-
-model GamificationConfig {
-  id                  String   @id @default(uuid())
-  missionsEnabled     Boolean  @default(true)
-  missionBonusReward  Int      @default(50)
-  weekendMultiplier   Float    @default(1.5)
-  streakEnabled       Boolean  @default(true)
-  streakRewards       Json     @default("{\"1\": 10, \"2\": 15, \"3\": 20, \"4\": 25, \"5\": 30, \"6\": 40, \"7\": 50, \"14\": 100, \"30\": 250, \"60\": 500, \"90\": 1000}")
-  ringsEnabled        Boolean  @default(true)
-  ringPerfectDayBonus Int      @default(100)
-  giveGoal            Int      @default(1)
-  earnGoal            Int      @default(50)
-  engageGoal          Int      @default(3)
-  challengesEnabled   Boolean  @default(true)
-  achievementsEnabled Boolean  @default(true)
-  updatedAt           DateTime @updatedAt
-  updatedBy           String?
-
-  @@map("gamification_config")
-}
-
-model MissionTemplate {
+// Feature Flags
+model FeatureFlag {
   id          String   @id @default(uuid())
-  type        String
-  name        String
-  description String
-  reward      Int
-  icon        String   @default("check-circle")
-  isActive    Boolean  @default(true)
-  priority    Int      @default(0)
-  daysOfWeek  Json     @default("[0, 1, 2, 3, 4, 5, 6]")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  updatedBy   String?
+  featureName String   @unique @map("feature_name")
+  isEnabled   Boolean  @default(true) @map("is_enabled")
+  description String?  @map("description")
+  updatedBy   String?  @map("updated_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
-  @@index([type])
-  @@index([isActive])
-  @@map("mission_templates")
+  @@index([featureName])
+  @@map("feature_flags")
 }
