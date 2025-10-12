@@ -170,6 +170,18 @@ export async function sendEscrowReleaseSMS(
 }
 
 /**
+ * Send KYC approval SMS
+ */
+export async function sendKYCApprovalSMS(
+  phoneNumber: string,
+  firstName: string,
+  verificationType: string
+): Promise<boolean> {
+  const message = `Hi ${firstName}, your KYC verification for '${verificationType}' has been approved! You can now access more features on ChainGive.`;
+  return sendSMS(phoneNumber, message);
+}
+
+/**
  * Check Termii balance
  */
 export async function checkSMSBalance(): Promise<number | null> {

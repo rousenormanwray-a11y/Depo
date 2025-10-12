@@ -146,8 +146,7 @@ export const rejectMatch = async (req: AuthRequest, res: Response, next: NextFun
     // Notify donor that match was rejected
     await sendTemplateNotification(
       match.donorId,
-      'MATCH_REJECTED',
-      0
+      'RECIPIENT_MATCH_REJECTED'
     );
 
     logger.info(`Match ${id} rejected by user ${userId}. Reason: ${reason || 'Not provided'}`);
