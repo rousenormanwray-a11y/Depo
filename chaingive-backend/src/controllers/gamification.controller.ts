@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
+import { Achievement, UserAchievement } from '@prisma/client';
 import gamificationService from '../services/gamification.service';
+import prisma from '../utils/prisma';
 import logger from '../utils/logger';
 
 /**
@@ -160,19 +162,19 @@ export async function getAllAchievements(req: Request, res: Response) {
     const userId = (req as any).user.id;
     
     const [allAchievements, userAchievements] = await Promise.all([
-      gamificationService.prisma.achievement.findMany({
+      prisma.achievement.findMany({
         where: { isActive: true },
         orderBy: [{ category: 'asc' }, { tier: 'asc' }],
       }),
-      gamificationService.prisma.userAchievement.findMany({
+      prisma.userAchievement.findMany({
         where: { userId },
         include: { achievement: true },
       }),
     ]);
     
-    const unlockedIds = new Set(userAchievements.map(ua => ua.achievementId));
+    const unlockedIds = new Set(userAchievements.map((ua: UserAchievement) => ua.achievementId));
     
-    const achievements = allAchievements.map(achievement => ({
+    const achievements = allAchievements.map((achievement: Achievement) => ({
       ...achievement,
       isUnlocked: unlockedIds.has(achievement.id),
     }));
@@ -191,7 +193,7 @@ export async function getUnlockedAchievements(req: Request, res: Response) {
   try {
     const userId = (req as any).user.id;
     
-    const achievements = await gamificationService.prisma.userAchievement.findMany({
+    const achievements = await prisma.userAchievement.findMany({
       where: { userId },
       include: { achievement: true },
       orderBy: { unlockedAt: 'desc' },
@@ -217,11 +219,11 @@ export async function getDashboard(req: Request, res: Response) {
     
     const [missions, streak, progress, challenges, achievements, stats] = await Promise.all([
       gamificationService.getTodaysMissions(userId),
-      gamificationService.prisma.dailyStreak.findUnique({ where: { userId } }),
+      prisma.dailyStreak.findUnique({ where: { userId } }),
       gamificationService.getTodaysProgress(userId),
       gamificationService.getUserWeeklyChallengeProgress(userId),
-      gamificationService.prisma.userAchievement.count({ where: { userId } }),
-      gamificationService.prisma.gamificationStats.findUnique({ where: { userId } }),
+      prisma.userAchievement.count({ where: { userId } }),
+      prisma.gamificationStats.findUnique({ where: { userId } }),
     ]);
     
     res.json({

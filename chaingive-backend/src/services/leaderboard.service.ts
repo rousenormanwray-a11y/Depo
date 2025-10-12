@@ -118,7 +118,8 @@ export async function recalculateAllLeaderboards(): Promise<void> {
           multiplierBoost,
           visibilityBoost,
           positionBoost,
-        }
+        },
+        user.id
       );
 
       // Upsert leaderboard entry
@@ -129,9 +130,9 @@ export async function recalculateAllLeaderboards(): Promise<void> {
           cyclesCompleted: user.totalCyclesCompleted,
           coinsEarned: user.charityCoinsBalance,
           avgCompletionDays,
-          multiplierBoost,
-          visibilityBoost,
-          positionBoost,
+          multiplierBoost: Number(multiplierBoost),
+          visibilityBoost: Number(visibilityBoost),
+          positionBoost: Number(positionBoost),
           totalScore: newScore,
         },
         create: {
@@ -140,9 +141,9 @@ export async function recalculateAllLeaderboards(): Promise<void> {
           cyclesCompleted: user.totalCyclesCompleted,
           coinsEarned: user.charityCoinsBalance,
           avgCompletionDays,
-          multiplierBoost,
-          visibilityBoost,
-          positionBoost,
+          multiplierBoost: Number(multiplierBoost),
+          visibilityBoost: Number(visibilityBoost),
+          positionBoost: Number(positionBoost),
           totalScore: newScore,
         },
       });
@@ -254,7 +255,7 @@ export async function updateLeaderboardAfterCycle(userId: string): Promise<void>
     await prisma.leaderboard.upsert({
       where: { userId: user.id },
       update: {
-        totalDonations: user.totalDonated,
+        totalDonations: Number(user.totalDonated),
         cyclesCompleted: user.totalCyclesCompleted,
         coinsEarned: user.charityCoinsBalance,
         avgCompletionDays,
@@ -262,13 +263,13 @@ export async function updateLeaderboardAfterCycle(userId: string): Promise<void>
       },
       create: {
         userId: user.id,
-        totalDonations: user.totalDonated,
+        totalDonations: Number(user.totalDonated),
         cyclesCompleted: user.totalCyclesCompleted,
         coinsEarned: user.charityCoinsBalance,
         avgCompletionDays,
-        multiplierBoost,
-        visibilityBoost,
-        positionBoost,
+        multiplierBoost: Number(multiplierBoost),
+        visibilityBoost: Number(visibilityBoost),
+        positionBoost: Number(positionBoost),
         totalScore: newScore,
       },
     });

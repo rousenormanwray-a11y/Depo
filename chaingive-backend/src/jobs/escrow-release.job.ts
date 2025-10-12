@@ -112,7 +112,6 @@ async function releaseEscrow(escrow: any) {
   if (transaction.toUser) {
     await sendEscrowReleaseSMS(
       transaction.toUser.phoneNumber,
-      transaction.toUser.firstName,
       Number(escrow.amount)
     );
 

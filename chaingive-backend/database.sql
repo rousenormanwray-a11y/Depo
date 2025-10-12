@@ -24,6 +24,9 @@ CREATE TABLE "users" (
     "fcm_token" TEXT,
     "device_platform" TEXT,
     "profile_picture_url" TEXT,
+    "password_reset_token" TEXT,
+    "password_reset_expires" TIMESTAMP(3),
+    "referral_code" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
     "last_login_at" TIMESTAMP(3),
@@ -194,6 +197,7 @@ CREATE TABLE "redemptions" (
     "coins_spent" INTEGER NOT NULL,
     "real_value" DECIMAL(12,2) NOT NULL,
     "status" TEXT NOT NULL DEFAULT 'pending',
+    "rejection_reason" TEXT,
     "delivery_method" TEXT,
     "delivery_data" JSONB,
     "completed_at" TIMESTAMP(3),
@@ -400,11 +404,303 @@ CREATE TABLE "feature_flags" (
     CONSTRAINT "feature_flags_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "gamification_config" (
+    "id" TEXT NOT NULL,
+    "missionsEnabled" BOOLEAN NOT NULL DEFAULT true,
+    "missionBonusReward" INTEGER NOT NULL DEFAULT 50,
+    "weekendMultiplier" DOUBLE PRECISION NOT NULL DEFAULT 1.5,
+    "streakEnabled" BOOLEAN NOT NULL DEFAULT true,
+    "streakRewards" JSONB NOT NULL DEFAULT '{"1":10,"2":15,"3":20,"4":25,"5":30,"6":40,"7":50,"14":100,"30":250,"60":500,"90":1000}',
+    "ringsEnabled" BOOLEAN NOT NULL DEFAULT true,
+    "ringPerfectDayBonus" INTEGER NOT NULL DEFAULT 100,
+    "giveGoal" INTEGER NOT NULL DEFAULT 1,
+    "earnGoal" INTEGER NOT NULL DEFAULT 50,
+    "engageGoal" INTEGER NOT NULL DEFAULT 3,
+    "challengesEnabled" BOOLEAN NOT NULL DEFAULT true,
+    "achievementsEnabled" BOOLEAN NOT NULL DEFAULT true,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "updatedBy" TEXT,
+
+    CONSTRAINT "gamification_config_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "mission_templates" (
+    "id" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT NOT NULL,
+    "reward" INTEGER NOT NULL,
+    "icon" TEXT NOT NULL DEFAULT 'check-circle',
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "priority" INTEGER NOT NULL DEFAULT 0,
+    "daysOfWeek" JSONB NOT NULL DEFAULT '[0,1,2,3,4,5,6]',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "updatedBy" TEXT,
+
+    CONSTRAINT "mission_templates_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "daily_missions" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "mission1Type" TEXT NOT NULL,
+    "mission1Name" TEXT NOT NULL,
+    "mission1Desc" TEXT NOT NULL,
+    "mission1Done" BOOLEAN NOT NULL DEFAULT false,
+    "mission1Reward" INTEGER NOT NULL DEFAULT 50,
+    "mission2Type" TEXT NOT NULL,
+    "mission2Name" TEXT NOT NULL,
+    "mission2Desc" TEXT NOT NULL,
+    "mission2Done" BOOLEAN NOT NULL DEFAULT false,
+    "mission2Reward" INTEGER NOT NULL DEFAULT 30,
+    "mission3Type" TEXT NOT NULL,
+    "mission3Name" TEXT NOT NULL,
+    "mission3Desc" TEXT NOT NULL,
+    "mission3Done" BOOLEAN NOT NULL DEFAULT false,
+    "mission3Reward" INTEGER NOT NULL DEFAULT 20,
+    "allCompleted" BOOLEAN NOT NULL DEFAULT false,
+    "bonusReward" INTEGER NOT NULL DEFAULT 50,
+    "totalCoinsEarned" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "completedAt" TIMESTAMP(3),
+
+    CONSTRAINT "daily_missions_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "daily_streaks" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "currentStreak" INTEGER NOT NULL DEFAULT 0,
+    "longestStreak" INTEGER NOT NULL DEFAULT 0,
+    "lastLoginDate" TIMESTAMP(3),
+    "totalCoinsEarned" INTEGER NOT NULL DEFAULT 0,
+    "streakLevel" TEXT NOT NULL DEFAULT 'bronze',
+    "milestones" JSONB NOT NULL DEFAULT '[]',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "daily_streaks_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "daily_progress" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "giveGoal" INTEGER NOT NULL DEFAULT 1,
+    "giveProgress" INTEGER NOT NULL DEFAULT 0,
+    "giveClosed" BOOLEAN NOT NULL DEFAULT false,
+    "earnGoal" INTEGER NOT NULL DEFAULT 50,
+    "earnProgress" INTEGER NOT NULL DEFAULT 0,
+    "earnClosed" BOOLEAN NOT NULL DEFAULT false,
+    "engageGoal" INTEGER NOT NULL DEFAULT 3,
+    "engageProgress" INTEGER NOT NULL DEFAULT 0,
+    "engageClosed" BOOLEAN NOT NULL DEFAULT false,
+    "allRingsClosed" BOOLEAN NOT NULL DEFAULT false,
+    "bonusAwarded" BOOLEAN NOT NULL DEFAULT false,
+    "bonusAmount" INTEGER NOT NULL DEFAULT 100,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "daily_progress_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "weekly_challenges" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "targetValue" INTEGER NOT NULL,
+    "rewardCoins" INTEGER NOT NULL DEFAULT 500,
+    "rewardType" TEXT,
+    "rewardValue" TEXT,
+    "startDate" TIMESTAMP(3) NOT NULL,
+    "endDate" TIMESTAMP(3) NOT NULL,
+    "weekNumber" INTEGER NOT NULL,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdBy" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "weekly_challenges_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "weekly_challenge_progress" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "challengeId" TEXT NOT NULL,
+    "currentValue" INTEGER NOT NULL DEFAULT 0,
+    "targetValue" INTEGER NOT NULL,
+    "percentage" INTEGER NOT NULL DEFAULT 0,
+    "completed" BOOLEAN NOT NULL DEFAULT false,
+    "completedAt" TIMESTAMP(3),
+    "rewardClaimed" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "weekly_challenge_progress_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "achievements" (
+    "id" TEXT NOT NULL,
+    "code" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT NOT NULL,
+    "category" TEXT NOT NULL,
+    "requirementType" TEXT NOT NULL,
+    "requirementValue" INTEGER NOT NULL,
+    "rewardCoins" INTEGER NOT NULL DEFAULT 0,
+    "rewardBadge" TEXT,
+    "tier" TEXT NOT NULL,
+    "icon" TEXT NOT NULL,
+    "color" TEXT NOT NULL DEFAULT '#FFD700',
+    "isSecret" BOOLEAN NOT NULL DEFAULT false,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdBy" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "achievements_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "user_achievements" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "achievementId" TEXT NOT NULL,
+    "unlockedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "progress" INTEGER NOT NULL DEFAULT 0,
+    "maxProgress" INTEGER NOT NULL,
+    "isNew" BOOLEAN NOT NULL DEFAULT true,
+    "viewedAt" TIMESTAMP(3),
+
+    CONSTRAINT "user_achievements_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "gamification_stats" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "totalCoinsEarned" INTEGER NOT NULL DEFAULT 0,
+    "totalMissionsCompleted" INTEGER NOT NULL DEFAULT 0,
+    "totalPerfectDays" INTEGER NOT NULL DEFAULT 0,
+    "totalAchievements" INTEGER NOT NULL DEFAULT 0,
+    "weeklyMissionsCompleted" INTEGER NOT NULL DEFAULT 0,
+    "weeklyPerfectDays" INTEGER NOT NULL DEFAULT 0,
+    "level" INTEGER NOT NULL DEFAULT 1,
+    "experience" INTEGER NOT NULL DEFAULT 0,
+    "nextLevelXP" INTEGER NOT NULL DEFAULT 100,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "gamification_stats_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "crypto_payment_configs" (
+    "id" TEXT NOT NULL,
+    "btcpayServerUrl" TEXT NOT NULL,
+    "btcpayApiKey" TEXT NOT NULL,
+    "btcpayStoreId" TEXT NOT NULL,
+    "isEnabled" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "crypto_payment_configs_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "crypto_coins" (
+    "id" TEXT NOT NULL,
+    "symbol" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "network" TEXT NOT NULL,
+    "walletAddress" TEXT NOT NULL,
+    "minAmount" DECIMAL(12,2) NOT NULL DEFAULT 10,
+    "maxAmount" DECIMAL(12,2) NOT NULL DEFAULT 1000000,
+    "confirmationsRequired" INTEGER NOT NULL DEFAULT 3,
+    "icon" TEXT NOT NULL DEFAULT 'currency-btc',
+    "color" TEXT NOT NULL DEFAULT '#F7931A',
+    "isEnabled" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "crypto_coins_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "crypto_payments" (
+    "id" TEXT NOT NULL,
+    "agentId" TEXT NOT NULL,
+    "agentName" TEXT NOT NULL,
+    "cryptoCoinId" TEXT NOT NULL,
+    "coinSymbol" TEXT NOT NULL,
+    "coinAmount" INTEGER NOT NULL,
+    "ngnAmount" DECIMAL(12,2) NOT NULL,
+    "cryptoAmount" DECIMAL(18,8) NOT NULL,
+    "walletAddress" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'pending',
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "transactionHash" TEXT,
+    "confirmations" INTEGER,
+    "adminNotes" TEXT,
+    "confirmedBy" TEXT,
+    "confirmedAt" TIMESTAMP(3),
+    "rejectionReason" TEXT,
+    "rejectedBy" TEXT,
+    "rejectedAt" TIMESTAMP(3),
+    "btcpayInvoiceId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "crypto_payments_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "crypto_payment_logs" (
+    "id" TEXT NOT NULL,
+    "paymentId" TEXT NOT NULL,
+    "action" TEXT NOT NULL,
+    "performedBy" TEXT NOT NULL,
+    "details" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "crypto_payment_logs_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "sms_logs" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT,
+    "phoneNumber" TEXT NOT NULL,
+    "message" TEXT NOT NULL,
+    "status" TEXT NOT NULL,
+    "provider" TEXT NOT NULL DEFAULT 'termii',
+    "cost" DECIMAL(8,4),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "sms_logs_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "users_phone_number_key" ON "users"("phone_number");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "users_password_reset_token_key" ON "users"("password_reset_token");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "users_referral_code_key" ON "users"("referral_code");
 
 -- CreateIndex
 CREATE INDEX "users_phone_number_idx" ON "users"("phone_number");
@@ -625,6 +921,90 @@ CREATE UNIQUE INDEX "feature_flags_feature_name_key" ON "feature_flags"("feature
 -- CreateIndex
 CREATE INDEX "feature_flags_feature_name_idx" ON "feature_flags"("feature_name");
 
+-- CreateIndex
+CREATE INDEX "mission_templates_type_idx" ON "mission_templates"("type");
+
+-- CreateIndex
+CREATE INDEX "mission_templates_isActive_idx" ON "mission_templates"("isActive");
+
+-- CreateIndex
+CREATE INDEX "daily_missions_userId_idx" ON "daily_missions"("userId");
+
+-- CreateIndex
+CREATE INDEX "daily_missions_date_idx" ON "daily_missions"("date");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "daily_missions_userId_date_key" ON "daily_missions"("userId", "date");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "daily_streaks_userId_key" ON "daily_streaks"("userId");
+
+-- CreateIndex
+CREATE INDEX "daily_progress_userId_idx" ON "daily_progress"("userId");
+
+-- CreateIndex
+CREATE INDEX "daily_progress_date_idx" ON "daily_progress"("date");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "daily_progress_userId_date_key" ON "daily_progress"("userId", "date");
+
+-- CreateIndex
+CREATE INDEX "weekly_challenges_isActive_idx" ON "weekly_challenges"("isActive");
+
+-- CreateIndex
+CREATE INDEX "weekly_challenges_startDate_endDate_idx" ON "weekly_challenges"("startDate", "endDate");
+
+-- CreateIndex
+CREATE INDEX "weekly_challenge_progress_userId_idx" ON "weekly_challenge_progress"("userId");
+
+-- CreateIndex
+CREATE INDEX "weekly_challenge_progress_challengeId_idx" ON "weekly_challenge_progress"("challengeId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "weekly_challenge_progress_userId_challengeId_key" ON "weekly_challenge_progress"("userId", "challengeId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "achievements_code_key" ON "achievements"("code");
+
+-- CreateIndex
+CREATE INDEX "achievements_category_idx" ON "achievements"("category");
+
+-- CreateIndex
+CREATE INDEX "achievements_tier_idx" ON "achievements"("tier");
+
+-- CreateIndex
+CREATE INDEX "user_achievements_userId_idx" ON "user_achievements"("userId");
+
+-- CreateIndex
+CREATE INDEX "user_achievements_unlockedAt_idx" ON "user_achievements"("unlockedAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "user_achievements_userId_achievementId_key" ON "user_achievements"("userId", "achievementId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "gamification_stats_userId_key" ON "gamification_stats"("userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "crypto_coins_symbol_network_key" ON "crypto_coins"("symbol", "network");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "crypto_payments_btcpayInvoiceId_key" ON "crypto_payments"("btcpayInvoiceId");
+
+-- CreateIndex
+CREATE INDEX "crypto_payments_agentId_idx" ON "crypto_payments"("agentId");
+
+-- CreateIndex
+CREATE INDEX "crypto_payments_status_idx" ON "crypto_payments"("status");
+
+-- CreateIndex
+CREATE INDEX "crypto_payment_logs_paymentId_idx" ON "crypto_payment_logs"("paymentId");
+
+-- CreateIndex
+CREATE INDEX "sms_logs_userId_idx" ON "sms_logs"("userId");
+
+-- CreateIndex
+CREATE INDEX "sms_logs_phoneNumber_idx" ON "sms_logs"("phoneNumber");
+
 -- AddForeignKey
 ALTER TABLE "wallets" ADD CONSTRAINT "wallets_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -720,3 +1100,33 @@ ALTER TABLE "admin_actions" ADD CONSTRAINT "admin_actions_admin_id_fkey" FOREIGN
 
 -- AddForeignKey
 ALTER TABLE "admin_actions" ADD CONSTRAINT "admin_actions_target_id_fkey" FOREIGN KEY ("target_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "daily_missions" ADD CONSTRAINT "daily_missions_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "daily_streaks" ADD CONSTRAINT "daily_streaks_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "daily_progress" ADD CONSTRAINT "daily_progress_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "weekly_challenge_progress" ADD CONSTRAINT "weekly_challenge_progress_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "weekly_challenge_progress" ADD CONSTRAINT "weekly_challenge_progress_challengeId_fkey" FOREIGN KEY ("challengeId") REFERENCES "weekly_challenges"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "user_achievements" ADD CONSTRAINT "user_achievements_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "user_achievements" ADD CONSTRAINT "user_achievements_achievementId_fkey" FOREIGN KEY ("achievementId") REFERENCES "achievements"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "gamification_stats" ADD CONSTRAINT "gamification_stats_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "crypto_payments" ADD CONSTRAINT "crypto_payments_cryptoCoinId_fkey" FOREIGN KEY ("cryptoCoinId") REFERENCES "crypto_coins"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "crypto_payment_logs" ADD CONSTRAINT "crypto_payment_logs_paymentId_fkey" FOREIGN KEY ("paymentId") REFERENCES "crypto_payments"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
