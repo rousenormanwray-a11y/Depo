@@ -9,6 +9,7 @@ const router = Router();
 
 // All routes require authentication
 router.use(authenticate);
+router.use(requireFeature('coin_purchases'));
 
 /**
  * User Endpoints
@@ -23,7 +24,6 @@ router.get(
 // Request coin purchase (creates escrow)
 router.post(
   '/request',
-  requireFeature('coin_purchases'),
   validate(coinPurchaseValidation.requestPurchaseSchema),
   coinPurchaseController.requestCoinPurchase
 );
