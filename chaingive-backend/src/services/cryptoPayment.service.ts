@@ -590,7 +590,7 @@ export const initiateAgentCryptoPurchase = async (data: {
   
   // Calculate crypto amount
   const exchangeRate = EXCHANGE_RATES[cryptoCoin.symbol] || 1;
-  const cryptoAmount = (ngnAmount / exchangeRate).toFixed(8);
+  const cryptoAmount = Number((ngnAmount / exchangeRate).toFixed(8));
   
   // Calculate expiry (30 minutes from now)
   const expiresAt = new Date(Date.now() + 30 * 60 * 1000);

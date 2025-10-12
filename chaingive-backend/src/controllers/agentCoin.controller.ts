@@ -301,7 +301,7 @@ export const sellCoinsToUser = async (req: AuthRequest, res: Response, next: Nex
           userId: user.id,
           quantity,
           pricePerCoin,
-          totalAmount,
+          totalPrice: totalAmount,
           paymentMethod,
           paymentProof,
           agentCommission,

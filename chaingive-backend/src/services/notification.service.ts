@@ -81,19 +81,15 @@ export const NotificationTemplates = {
     body: (donor: string, amount: number) => 
       `${donor} accepted your match for ₦${amount.toLocaleString()}. Payment incoming!`,
   },
-  MATCH_REJECTED: {
-    title: '❌ Match Declined',
-    body: 'Your match was declined. We\'ll find you a new match shortly.',
-  },
   MATCH_EXPIRED: {
     title: '⏱️ Match Expired',
     body: 'Your match expired. Create a new donation when ready.',
   },
-  MATCH_ACCEPTED: {
+  DONOR_MATCH_ACCEPTED: {
     title: '✅ Match Accepted',
     body: (amount: number, recipient: string) => `Your match for ₦${amount.toLocaleString()} was accepted by ${recipient}. Proceed to transfer.`,
   },
-  MATCH_REJECTED: {
+  RECIPIENT_MATCH_REJECTED: {
     title: '❌ Match Rejected',
     body: () => 'Your match request was rejected. We will find a new match soon.',
   },
@@ -156,12 +152,12 @@ export const NotificationTemplates = {
     body: (reason: string) => 
       `Your coin purchase was rejected: ${reason}`,
   },
-  PAYMENT_PENDING: {
+  AGENT_PAYMENT_PENDING: {
     title: '⏳ Payment Pending',
     body: (amount: number) => 
       `Payment of ₦${amount.toLocaleString()} is pending confirmation. Please verify.`,
   },
-  PAYMENT_REJECTED: {
+  AGENT_PAYMENT_REJECTED: {
     title: '❌ Payment Rejected',
     body: (amount: number) => 
       `Payment of ₦${amount.toLocaleString()} was rejected. Amount refunded.`,
@@ -373,7 +369,7 @@ export async function sendTemplateNotification(
   ...args: any[]
 ): Promise<boolean> {
   const { title, body } = NotificationTemplates[template];
-  const bodyText = typeof body === 'function' ? body(...args) : body;
+  const bodyText = typeof body === 'function' ? (body as (...args: any[]) => string)(...args) : body;
 
   return sendPushNotification(userId, title, bodyText, {
     template,
