@@ -22,6 +22,9 @@ export enum FeatureFlag {
   FORCE_RECYCLE = 'force_recycle',
   MATCH_EXPIRATION = 'match_expiration',
   ESCROW_RELEASE = 'escrow_release',
+  ADMIN_PANEL = 'admin_panel',
+  GAMIFICATION = 'gamification',
+  UPLOADS = 'uploads',
 }
 
 /**

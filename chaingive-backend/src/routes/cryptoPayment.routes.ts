@@ -14,6 +14,9 @@ const router = Router();
 const adminRouter = Router();
 adminRouter.use(authenticate);
 adminRouter.use(requireRole('csc_council', 'agent')); // Placeholder for 'admin' role
+import { requireFeature } from '../middleware/featureFlag';
+import { FeatureFlag } from '../services/featureFlags.service';
+adminRouter.use(requireFeature(FeatureFlag.ADMIN_PANEL));
 
 /**
  * BTCPay Server Configuration
@@ -172,6 +175,7 @@ adminRouter.get('/stats', cryptoPaymentController.getCryptoPaymentStats);
 const agentRouter = Router();
 agentRouter.use(authenticate);
 agentRouter.use(requireRole('agent')); // Only agents can purchase
+agentRouter.use(requireFeature(FeatureFlag.COIN_PURCHASES));
 
 // Get available crypto coins
 agentRouter.get('/coins', cryptoPaymentController.getAvailableCryptoCoins);
