@@ -19,6 +19,7 @@ export const createListing = async (req: AuthRequest, res: Response, next: NextF
         description,
         category,
         coinPrice,
+        realValue: coinPrice * 50, // Assuming a conversion rate
         imageUrl,
         stockQuantity,
         isInStock: true,
@@ -220,7 +221,7 @@ export const rejectRedemption = async (req: AuthRequest, res: Response, next: Ne
       prisma.marketplaceListing.update({
         where: { id: redemption.listingId },
         data: {
-          availableQuantity: { increment: 1 },
+          stockQuantity: { increment: 1 },
         },
       }),
     ]);

@@ -2,6 +2,8 @@ import { Router } from 'express';
 import * as agentCoinController from '../controllers/agentCoin.controller';
 import { authenticate, requireRole } from '../middleware/auth';
 import { validate } from '../middleware/validation';
+import { requireFeature } from '../middleware/featureFlag';
+import { FeatureFlag } from '../services/featureFlags.service';
 import * as agentCoinValidation from '../validations/agentCoin.validation';
 
 const router = Router();
@@ -9,6 +11,7 @@ const router = Router();
 // All routes require authentication and agent role
 router.use(authenticate);
 router.use(requireRole('agent', 'power_partner'));
+router.use(requireFeature(FeatureFlag.AGENT_NETWORK));
 
 /**
  * @route   GET /v1/agents/coins/inventory
